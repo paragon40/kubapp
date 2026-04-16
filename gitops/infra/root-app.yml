@@ -8,7 +8,7 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/timzapone/kubapp-project.git
+    repoURL: https://github.com/paragon40/kubapp.git
     targetRevision: main
     path: gitops/infra/apps
 

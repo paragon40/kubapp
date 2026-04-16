@@ -1,11 +1,25 @@
-name: Upate Terraform Infrastrucuture
+name: Terraform Provision
 
 on:
-  push: {}
-#    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Action to run
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
+      env:
+        description: Environment
+        required: false
+        default: dev
+        type: choice
+        options:
+          - dev
 
 jobs:
-  terraform-infra:
+  orchestrate:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,21 +29,47 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_OIDC }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Terraform Init
+      - name: Infra Init and Validate
         working-directory: iac/infra
-        run: terraform init
+        run: |
+          terraform init
+          terraform validate
 
-      - name: Terraform Plan
-        working-directory: iac/infra
-        run: terraform plan -var-file="terraform.tfvars"
+      - name: K8s Init and Validate
+        working-directory: iac/k8s
+        run: |
+          terraform init
+          terraform validate
 
-      - name: Terraform Apply
-        working-directory: iac/infra
-        run: terraform apply -auto-approve -var-file="terraform.tfvars"
+      - name: Apply Infra and K8s
+        if: ${{ github.event.inputs.action == 'apply' }}
+        run: |
+          echo "APPLY MODE"
+
+          echo "Infra apply"
+          cd iac/infra
+          terraform apply -auto-approve -var-file="terraform.tfvars"
+
+          echo "K8s apply"
+          cd ../k8s
+          terraform apply -auto-approve -var-file="terraform.tfvars"
+
+      - name: Destroy K8s and Infra
+        if: ${{ github.event.inputs.action == 'destroy' }}
+        run: |
+          echo "DESTROY MODE"
+
+          echo "Destroy K8s first"
+          cd iac/k8s
+          terraform destroy -auto-approve -var-file="terraform.tfvars"
+
+          echo "Destroy Infra second"
+          cd ../infra
+          terraform destroy -auto-approve -var-file="terraform.tfvars"
 
