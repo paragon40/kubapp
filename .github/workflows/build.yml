@@ -1,30 +1,119 @@
-name: build-user-app
+name: Build and Push Docker Images
 
 on:
   push:
     paths:
-      - "user/**"
+      - "docker/**"
+
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Build mode
+        required: false
+        default: cached
+        type: choice
+        options:
+          - cached
+          - fresh
+      env:
+        description: Env mode
+        required: false
+        default: dev
+        type: choice
+        options:
+          - dev
+          - prod
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Configure AWS
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_OIDC }}
-          aws-region: us-east-1
+      - name: Install dependencies
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y jq curl
 
-      - name: Login to Doker
-        run: aws ecr get-login-password | docker login --username AWS --password-stdin <ECR_URL>
+      - name: Generate dynamic matrix
+        id: set-matrix
+        run: |
+          SERVICES=$(find docker -mindepth 1 -maxdepth 1 -type d -not -path "*/\.*" -printf '%f\n' \
+          | sort \
+          | jq -R -s -c 'split("\n")[:-1]')
+          echo "matrix={\"service\":$SERVICES}" >> $GITHUB_OUTPUT
 
-      - name: Build image
-        run: docker build -t user-app:${{ github.sha }} .
+          if [ "$SERVICES" = "[]" ]; then
+            echo "No services found in docker/"
+            exit 1
+          fi
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+
+    env:
+      REGISTRY: "docker.io/${{ secrets.DOCKER_USERNAME }}"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Login to Docker registry
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login $REGISTRY \
+          -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # =========================
+      # BUILD MODE
+      # =========================
+      - name: Build Docker image
+        run: |
+          MODE=${{ github.event.inputs.mode || 'cached' }}
+
+          if [ "$MODE" = "fresh" ]; then
+            echo "Fresh build (no cache)"
+            docker build --no-cache \
+              -t $REGISTRY/${{ matrix.service }}:${{ github.sha }} \
+              docker/${{ matrix.service }}
+          else
+            echo "Cached build"
+            docker build \
+              -t $REGISTRY/${{ matrix.service }}:${{ github.sha }} \
+              docker/${{ matrix.service }}
+          fi
 
       - name: Push image
         run: |
-          docker tag user-app:${{ github.sha }} <ECR_URL>:${{ github.sha }}
-          docker push <ECR_URL>:${{ github.sha }}
+          docker push $REGISTRY/${{ matrix.service }}:${{ github.sha }}
+
+      # =========================
+      # BUILD METADATA OUTPUT
+      # =========================
+      - name: Generate build metadata
+        run: |
+          mkdir -p build-meta
+
+          echo "{
+            \"service\": \"${{ matrix.service }}\",
+            \"image\": \"$REGISTRY/${{ matrix.service }}:${{ github.sha }}\",
+            \"tag\": \"${{ github.sha }}\",
+            \"registry\": \"$REGISTRY\",
+            \"env\": \"${{ github.event.inputs.env }}\"
+          }" > build-meta/${{ matrix.service }}.json
+
+      # =========================
+      # UPLOAD ARTIFACT
+      # =========================
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.service }}
+          path: build-meta/${{ matrix.service }}.json

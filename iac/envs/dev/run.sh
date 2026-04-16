@@ -13,6 +13,19 @@ INFRA_DIR="$ROOT_DIR/iac/infra"
 K8S_DIR="$ROOT_DIR/iac/k8s"
 ENV_DIR="$ROOT_DIR/iac/envs/$ENV"
 
+create_gitops() {
+  echo "🔹 Creatinging GitOps root app..."
+  kubectl apply -f "$ROOT_DIR/iac/gitops/infra/root-app.yml"
+}
+
+destroy_gitops() {
+  echo "🔹 Removing GitOps root app..."
+  kubectl delete -f "$ROOT_DIR/iac/gitops/infra/root-app.yml" || true
+
+  echo "🔹 Cleaning ArgoCD apps..."
+  kubectl delete applications.argoproj.io --all -n argocd || true
+}
+
 run_apply() {
   echo "Deploying KubApp (ENV: $ENV)"
 
