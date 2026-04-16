@@ -11,6 +11,9 @@ spec:
     repoURL: https://github.com/timzapone/kubapp-project.git
     targetRevision: main
     path: gitops/apps/admin/chart
+    helm:
+      valueFiles:
+        - ../../../envs/dev/apps/admin/values.yaml
 
   destination:
     server: https://kubernetes.default.svc
