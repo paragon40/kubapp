@@ -1,0 +1,29 @@
+name: update-gitops-user
+
+on:
+  workflow_run:
+    workflows: ["build-user-app"]
+    types:
+      - completed
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: timzapone/kubapp-project
+          token: ${{ secrets.GITOPS_TOKEN }}
+
+      - name: Update image tag
+        run: |
+          yq e '.image.tag = "${{ github.sha }}"' -i gitops/apps/user/chart/values.yaml
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "update user image ${{ github.sha }}"
+          git push
