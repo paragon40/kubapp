@@ -1,0 +1,30 @@
+name: build-user-app
+
+on:
+  push:
+    paths:
+      - "user/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC }}
+          aws-region: us-east-1
+
+      - name: Login to Doker
+        run: aws ecr get-login-password | docker login --username AWS --password-stdin <ECR_URL>
+
+      - name: Build image
+        run: docker build -t user-app:${{ github.sha }} .
+
+      - name: Push image
+        run: |
+          docker tag user-app:${{ github.sha }} <ECR_URL>:${{ github.sha }}
+          docker push <ECR_URL>:${{ github.sha }}
