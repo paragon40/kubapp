@@ -190,6 +190,7 @@ jobs:
 # =========================
   destroy:
     name: Terraform Destroy
+    needs: [plan]
     if: ${{ github.event.inputs.action == 'destroy' }}
     runs-on: ubuntu-latest
 
