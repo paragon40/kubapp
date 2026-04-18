@@ -96,17 +96,6 @@ module "iam_irsa" {
 }
 
 ############################################
-# CLOUDWATCH
-############################################
-
-module "logs" {
-  source = "./modules/logs"
-  log_groups = local.app_log_groups
-  name_prefix = local.name_prefix
-  tags = local.common_tags
-}
-
-############################################
 # EKS
 ############################################
 module "eks" {
@@ -131,9 +120,17 @@ module "eks" {
 
   tags = local.common_tags
 
-  depends_on = [
-    module.logs
-  ]
+}
+
+############################################
+# CLOUDWATCH
+############################################
+
+module "logs" {
+  source = "./modules/logs"
+  log_groups = local.app_log_groups
+  name_prefix = local.name_prefix
+  tags = local.common_tags
 }
 
 ############################################
