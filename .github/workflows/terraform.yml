@@ -65,6 +65,10 @@ jobs:
         working-directory: iac/infra
         run: terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
 
+      - name: Terraform validat (Infra)
+        working-directory: iac/infra
+        run: terraform validate
+
       - name: Generate tfvars (Infra)
         working-directory: iac/infra
         run: sops -d envs/${ENV}/${ENV}.tfvars.enc > infra.tfvars
@@ -161,6 +165,10 @@ jobs:
         working-directory: iac/k8s
         run: terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
 
+      - name: Terraform validate (k8s)
+        working-directory: iac/k8s
+        run: terraform validate
+
       - name: Generate tfvars (K8s)
         working-directory: iac/k8s
         run: sops -d envs/${ENV}/${ENV}.tfvars.enc > k8s.tfvars
@@ -223,7 +231,7 @@ jobs:
 
 
 # =========================================================
-# DESTROY (FULL CLEAN PATH)
+# DESTROY
 # =========================================================
   destroy:
     if: ${{ github.event.inputs.action == 'destroy' }}
@@ -250,6 +258,7 @@ jobs:
         run: |
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
           sops -d envs/${ENV}/${ENV}.tfvars.enc > k8s.tfvars
+          terraform validate
           terraform destroy -auto-approve -var-file=k8s.tfvars
 
       - name: Destroy Infra
@@ -257,5 +266,6 @@ jobs:
         run: |
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
           sops -d envs/${ENV}/${ENV}.tfvars.enc > infra.tfvars
+          terraform validate
           terraform destroy -auto-approve -var-file=infra.tfvars
 
