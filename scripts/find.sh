@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# find.sh - Interactive Terraform file explorer
+# find.sh - Multi-extension file explorer
 
 set -euo pipefail
 
@@ -16,102 +16,82 @@ NC="\033[0m"
 # FUNCTIONS
 # -------------------------------
 
-# List all tf and tfvars files (just filenames)
-list_all_tf_tfvars_files() {
-  echo -e "${CYAN}🔹 Listing all Terraform files (*.tf & *.tfvars)${NC}"
+usage() {
+  echo "Usage:"
+  echo "  ./find.sh <ext1> <ext2> ... <action>"
   echo
-  mapfile -t files < <(find . -type f \( -name "*.tf" -o -name "*.tfvars" \) | sort)
-  if [[ ${#files[@]} -eq 0 ]]; then
-    echo -e "${RED}❌ No Terraform files found.${NC}"
-    return
-  fi
-
-  for f in "${files[@]}"; do
-    echo -e "${YELLOW}$f${NC}"
-  done
+  echo "Examples:"
+  echo "  ./find.sh sh yml py cat"
+  echo "  ./find.sh tf tfvars list"
   echo
+  echo "Actions:"
+  echo "  list  -> list files only"
+  echo "  cat   -> print file contents"
+  exit 1
 }
 
-# Preview a single file
-preview_a_file() {
-  read -rp "Enter file path to preview: " file
-  if [[ ! -f "$file" ]]; then
-    echo -e "${RED}❌ File not found: $file${NC}"
-    return
-  fi
-  echo -e "${GREEN}----- Start of $file -----${NC}"
-  cat "$file"
-  echo -e "${GREEN}----- End of $file -----${NC}"
-}
-
-# Preview all tf and tfvars files
-preview_all_tf_tfvars_files() {
-  mapfile -t files < <(find . -type f \( -name "*.tf" -o -name "*.tfvars" \) | sort)
-  if [[ ${#files[@]} -eq 0 ]]; then
-    echo -e "${RED}❌ No Terraform files found.${NC}"
-    return
+run_search() {
+  if [[ "$#" -lt 2 ]]; then
+    usage
   fi
 
-  for f in "${files[@]}"; do
-    echo -e "${YELLOW}==================== $f ====================${NC}"
-    cat "$f"
-    echo
+  # Last argument = action
+  action="${@: -1}"
+
+  # All others = extensions
+  exts=("${@:1:$#-1}")
+
+  # Build find expression
+  find_expr=()
+  for ext in "${exts[@]}"; do
+    find_expr+=( -name "*.${ext}" -o )
   done
-}
+  unset 'find_expr[-1]'  # remove last -o
 
-# Preview all tf and tfvars files in a supplied directory
-preview_dir_tf_tfvars_files() {
-  read -rp "Enter directory path: " dir
-  if [[ ! -d "$dir" ]]; then
-    echo -e "${RED}❌ Directory not found: $dir${NC}"
-    return
-  fi
+  echo -e "${CYAN}🔹 Extensions: ${exts[*]} | Mode: $action${NC}"
 
-  mapfile -t files < <(find "$dir" -type f \( -name "*.tf" -o -name "*.tfvars" \) | sort)
+  mapfile -t files < <(find . -type f \( "${find_expr[@]}" \) | sort)
+
   if [[ ${#files[@]} -eq 0 ]]; then
-    echo -e "${RED}❌ No Terraform files found in $dir${NC}"
-    return
+    echo -e "${RED}❌ No matching files found.${NC}"
+    exit 0
   fi
 
   for f in "${files[@]}"; do
-    echo -e "${YELLOW}==================== $f ====================${NC}"
-    cat "$f"
-    echo
+    if [[ "$action" == "list" ]]; then
+      echo -e "${YELLOW}$f${NC}"
+    elif [[ "$action" == "cat" ]]; then
+      echo -e "${YELLOW}==================== $f ====================${NC}"
+      cat "$f"
+      echo
+    else
+      echo -e "${RED}❌ Unknown action: $action${NC}"
+      usage
+    fi
   done
 }
 
 # -------------------------------
-# MENU
+# INTERACTIVE MODE (fallback)
 # -------------------------------
-
-show_menu() {
-  echo "----------------------------------------"
-  echo "Terraform File Explorer - $(pwd)"
-  echo "1) List all tf & tfvars files"
-  echo "2) Preview a single file"
-  echo "3) Preview all tf & tfvars files"
-  echo "4) Preview all tf & tfvars files in a directory"
-  echo "0) Exit"
-  echo "----------------------------------------"
-}
-
 interactive_mode() {
-  while true; do
-    show_menu
-    read -rp "Choose an option: " choice
-    case "$choice" in
-      1) list_all_tf_tfvars_files ;;
-      2) preview_a_file ;;
-      3) preview_all_tf_tfvars_files ;;
-      4) preview_dir_tf_tfvars_files ;;
-      0) echo "Exiting."; exit 0 ;;
-      *) echo -e "${RED}Invalid choice${NC}" ;;
-    esac
-    echo
-  done
+  echo -e "${CYAN}No arguments provided. Entering interactive mode...${NC}"
+  echo
+  read -rp "Enter extensions (space separated, e.g. 'tf tfvars'): " ext_input
+  read -rp "Action (list/cat): " action
+
+  # Convert input string to array
+  read -ra ext_array <<< "$ext_input"
+
+  run_search "${ext_array[@]}" "$action"
 }
 
 # -------------------------------
 # MAIN
 # -------------------------------
-interactive_mode
+
+if [[ "$#" -gt 0 ]]; then
+  run_search "$@"
+else
+  interactive_mode
+fi

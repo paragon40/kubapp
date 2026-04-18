@@ -71,14 +71,14 @@ case "$ACTION" in
     echo "=============================="
     echo "Running apply"
     echo "=============================="
-    terraform apply -var-file="$TFVARS_FILE" -auto-approve
+    terraform apply --auto-approve -var-file="$TFVARS_FILE" -auto-approve
     ;;
 
   destroy)
     echo "=============================="
     echo "Running destroy"
     echo "=============================="
-    terraform destroy -var-file="$TFVARS_FILE"
+    terraform destroy --auto-approve -var-file="$TFVARS_FILE"
     ;;
 
   refresh)
