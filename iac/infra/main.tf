@@ -65,7 +65,7 @@ module "security" {
   vpc_id         = module.network.vpc_id
   sg_definitions = module.sg_prep.sg_definitions
 
-  name_prefix = var.name_prefix
+  name_prefix = local.name_prefix
 
   tags = local.common_tags
 }
@@ -132,6 +132,7 @@ module "eks" {
 module "logs" {
   source = "./modules/logs"
   log_groups = local.app_log_groups
+  name_prefix = local.name_prefix
   tags = local.common_tags
 }
 
@@ -143,6 +144,7 @@ module "efs" {
 
   vpc_id     = module.network.vpc_id
   vpc_cidr = "10.0.0.0/16"
+  name_prefix = local.name_prefix
   subnet_ids = module.network.private_subnet_ids
   tags = local.common_tags
 }
