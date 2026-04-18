@@ -52,7 +52,7 @@ output "cluster_ca_certificate" {
 }
 
 output "log_group_names" {
-  value = module.logs.log_group_names
+  value = module.logging.log_group_names
 }
 
 output "external_dns_role_arn" {
