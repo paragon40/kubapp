@@ -53,7 +53,6 @@ variable "hosted_zone_id" {
 variable "log_groups" {
   description = "CloudWatch log group definitions"
   type = map(object({
-    name      = string
     retention = number
   }))
 }
