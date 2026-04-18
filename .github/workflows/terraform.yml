@@ -40,7 +40,7 @@ jobs:
 
       - name: Install SOPS
         run: |
-          curl -Lo sops https://github.com/getsops/sops/releases/latest/download/sops-v3.9.0.linux.amd64
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
           chmod +x sops
           sudo mv sops /usr/local/bin/sops
 
@@ -140,7 +140,7 @@ jobs:
 
       - name: Install SOPS
         run: |
-          curl -Lo sops https://github.com/getsops/sops/releases/latest/download/sops-v3.9.0.linux.amd64
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
           chmod +x sops
           sudo mv sops /usr/local/bin/sops
 
@@ -197,7 +197,7 @@ jobs:
 
       - name: Install SOPS
         run: |
-          curl -Lo sops https://github.com/getsops/sops/releases/latest/download/sops-v3.9.0.linux.amd64
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
           chmod +x sops
           sudo mv sops /usr/local/bin/sops
 

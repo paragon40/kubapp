@@ -6,9 +6,10 @@ locals {
   cluster_name = "${var.cluster_name}-${var.env}"
 
   # Domain strategy
-  full_domain = var.env == "prod"
+  full_domain = ( var.env == "prod"
     ? "${var.subdomain}.${var.root_domain}"
     : "${var.env}.${var.subdomain}.${var.root_domain}"
+    )
 
   # Common tags
   common_tags = {
