@@ -1,6 +1,6 @@
 
 resource "aws_iam_policy" "external_dns" {
-  name = "external-dns-policy"
+  name = "${var.cluster_name}-external-dns-policy"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -22,10 +22,11 @@ resource "aws_iam_policy" "external_dns" {
       }
     ]
   })
+  tags = var.tags
 }
 
 resource "aws_iam_role" "external_dns" {
-  name = "external-dns-role"
+  name = "${var.cluster_name}-external-dns-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -45,6 +46,8 @@ resource "aws_iam_role" "external_dns" {
       }
     ]
   })
+  tags = var.tags
+
 }
 
 resource "aws_iam_role_policy_attachment" "external_dns" {

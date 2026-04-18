@@ -1,60 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ARTIFACT_DIR=${1:-artifacts}
+APP_DIR="gitops/infra/apps"
 
-echo "Validating GitOps V3 structure..."
+echo "Validating ArgoCD Applications..."
 
-FILES=$(find "$ARTIFACT_DIR" -name "*.json")
+FILES=$(find "$APP_DIR" -name "*.yml" -o -name "*.yaml")
 
 if [ -z "$FILES" ]; then
-  echo "No artifacts found"
+  echo "No ArgoCD apps found"
   exit 1
 fi
 
 for file in $FILES; do
-  SERVICE=$(jq -r .service "$file")
-  ENV=$(jq -r .env "$file")
+  echo "Checking $file"
 
-  echo "Checking $SERVICE ($ENV)"
-
-  # ------------------------
-  # VALIDATE INPUT DATA
-  # ------------------------
-  if [ -z "$SERVICE" ] || [ "$SERVICE" = "null" ]; then
-    echo "Invalid SERVICE in $file"
-    exit 1
-  fi
-
-  if [ -z "$ENV" ] || [ "$ENV" = "null" ]; then
-    echo "Invalid ENV in $file"
-    exit 1
-  fi
-
-  # ------------------------
-  # V3 STRUCTURE PATH
-  # ------------------------
-  VALUES_FILE="gitops/envs/$ENV/$SERVICE/values.yaml"
-
-  echo "Checking path: $VALUES_FILE"
-
-  # ------------------------
-  # CHECK FILE EXISTENCE
-  # ------------------------
-  if [ ! -f "$VALUES_FILE" ]; then
-    echo "Missing values.yaml: $VALUES_FILE"
-    exit 1
-  fi
-
-  # ------------------------
-  # YAML VALIDATION
-  # ------------------------
-  yq e '.' "$VALUES_FILE" >/dev/null || {
-    echo "Invalid YAML: $VALUES_FILE"
+  # validate YAML
+  yq e '.' "$file" >/dev/null || {
+    echo "❌ Invalid YAML: $file"
     exit 1
   }
 
+  # check required fields
+  NAME=$(yq e '.metadata.name' "$file")
+  PATH=$(yq e '.spec.source.path' "$file")
+
+  if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then
+    echo "❌ Missing app name in $file"
+    exit 1
+  fi
+
+  if [ -z "$PATH" ] || [ "$PATH" = "null" ]; then
+    echo "❌ Missing Helm path in $file"
+    exit 1
+  fi
+
+  echo "✔ $NAME -> $PATH"
 done
 
-echo "All GitOps paths valid"
-
+echo "All ArgoCD applications valid"

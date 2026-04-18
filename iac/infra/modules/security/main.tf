@@ -2,12 +2,12 @@
 resource "aws_security_group" "sg" {
   for_each = var.sg_definitions
 
-  name        = "${each.key}-${var.environment}"
+  name        = "${each.key}-${var.name_prefix}"
   description = each.value.description
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, {
-    Name = "${each.key}-${var.environment}"
+    Name = "${each.key}-${var.name_prefix}"
   })
 }
 

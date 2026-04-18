@@ -2,12 +2,16 @@ replicas: 2
 
 image:
   repository: nginx
-  tag: latest
+  tag: "latest"
   pullPolicy: IfNotPresent
 
 service:
   name: user-service
   port: 80
+
+strategy:
+  maxUnavailable: 0
+  maxSurge: 1
 
 resources:
   requests:

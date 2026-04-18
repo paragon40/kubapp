@@ -15,12 +15,13 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_cloudwatch_log_group" "vpc_flow" {
-  name              = "/aws/vpc/kubapp-flowlogs"
-  retention_in_days = 7
+  name              = var.vpc_flow_log.name
+  retention_in_days = var.vpc_flow_log.retention
+  tags = var.tags
 }
 
 resource "aws_iam_role" "flow_logs" {
-  name = "kubapp-vpc-flow-logs-role"
+  name = "${var.name}-vpc-flow-logs-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -34,10 +35,12 @@ resource "aws_iam_role" "flow_logs" {
       }
     ]
   })
+
+  tags = var.tags
 }
 
 resource "aws_iam_role_policy" "flow_logs" {
-  name = "kubapp-vpc-flow-logs-policy"
+  name = "${var.name}-vpc-flow-logs-policy"
   role = aws_iam_role.flow_logs.id
 
   policy = jsonencode({
@@ -65,6 +68,7 @@ resource "aws_flow_log" "vpc" {
   log_destination_type = "cloud-watch-logs"
   log_destination      = aws_cloudwatch_log_group.vpc_flow.arn
   iam_role_arn         = aws_iam_role.flow_logs.arn
+  tags = var.tags
 }
 
 

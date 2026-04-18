@@ -1,6 +1,6 @@
 
 resource "aws_iam_policy" "fluentbit" {
-  name = "fluentbit-cloudwatch-policy"
+  name = "${var.cluster_name}-fluentbit-cloudwatch-policy"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -14,15 +14,17 @@ resource "aws_iam_policy" "fluentbit" {
           "logs:DescribeLogStreams"
         ]
         Resource = [
-          "arn:aws:logs:${var.region}:${var.account_id}:log-group:/kubapp/*:*"
+          "arn:aws:logs:${var.region}:${var.account_id}:log-group:/${var.cluster_name}/*:*"
         ]
       }
     ]
   })
+
+  tags = var.tags
 }
 
 resource "aws_iam_role" "fluentbit" {
-  name = "fluentbit-irsa-role"
+  name = "${var.cluster_name}-fluentbit-irsa-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -41,6 +43,7 @@ resource "aws_iam_role" "fluentbit" {
       }
     ]
   })
+  tags = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "fluentbit" {

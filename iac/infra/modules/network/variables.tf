@@ -8,6 +8,14 @@ variable "vpc_cidr" {
   type        = string
 }
 
+variable "vpc_flow_log" {
+  description = "CloudWatch log group configuration for VPC flow logs"
+  type = object({
+    name      = string
+    retention = number
+  })
+}
+
 variable "azs" {
   description = "List of availability zones"
   type        = list(string)

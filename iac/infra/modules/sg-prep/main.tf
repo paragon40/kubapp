@@ -2,6 +2,7 @@ locals {
   sg_definitions = merge(
 
     {
+
       ingress = {
         description = "ALB ingress"
 

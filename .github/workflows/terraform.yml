@@ -7,27 +7,42 @@ on:
         description: Action to run
         required: true
         type: choice
-        options:
-          - apply
-          - destroy
+        options: [apply, destroy]
+
       env:
         description: Environment
-        required: false
+        required: true
         default: dev
         type: choice
-        options:
-          - dev
+        options: [dev, prod]
 
+concurrency:
+  group: terraform-${{ github.event.inputs.env }}
+  cancel-in-progress: false
+
+# =========================
+# PLAN STAGE
+# =========================
 jobs:
-  orchestrate:
+  plan:
+    name: Terraform Plan
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+
+      - name: Install SOPS
+        run: |
+          curl -Lo sops https://github.com/getsops/sops/releases/latest/download/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -35,41 +50,189 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Infra Init and Validate
+      - name: Setup AGE key
+        run: |
+          mkdir -p ~/.age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.age/age.key
+          chmod 600 ~/.age/age.key
+
+      - name: Set ENV
+        run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
+
+      # -------------------------
+      # SOPS VALIDATION
+      # -------------------------
+      - name: Validate SOPS (Infra)
+        working-directory: iac/infra
+        run: sops -d envs/${ENV}/${ENV}.enc.json > /dev/null
+
+      - name: Validate SOPS (K8s)
+        working-directory: iac/k8s
+        run: sops -d envs/${ENV}/${ENV}.enc.json > /dev/null
+
+      # -------------------------
+      # INFRA PLAN
+      # -------------------------
+      - name: Terraform Init (Infra)
+        working-directory: iac/infra
+        run: terraform init -backend-config="envs/${ENV}/backend.hcl"
+
+      - name: Terraform Plan (Infra)
         working-directory: iac/infra
         run: |
-          terraform init
-          terraform validate
+          sops -d envs/${ENV}/${ENV}.enc.json > infra.tfvars.json
+          terraform plan -input=false -no-color -var-file=infra.tfvars.json
 
-      - name: K8s Init and Validate
+      # -------------------------
+      # K8S PLAN
+      # -------------------------
+      - name: Terraform Init (K8s)
+        working-directory: iac/k8s
+        run: terraform init -backend-config="envs/${ENV}/backend.hcl"
+
+      - name: Terraform Plan (K8s)
         working-directory: iac/k8s
         run: |
-          terraform init
-          terraform validate
+          sops -d envs/${ENV}/${ENV}.enc.json > k8s.tfvars.json
+          terraform plan -input=false -no-color -var-file=k8s.tfvars.json
 
-      - name: Apply Infra and K8s
-        if: ${{ github.event.inputs.action == 'apply' }}
+      - name: Upload plan artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tf-plans-${{ github.event.inputs.env }}
+          path: |
+            iac/infra/infra.tfvars.json
+            iac/k8s/k8s.tfvars.json
+
+
+# =========================
+# APPROVAL (PROD ONLY)
+# =========================
+  approve:
+    name: Manual Approval (Prod Gate)
+    needs: plan
+    if: ${{ github.event.inputs.env == 'prod' && github.event.inputs.action == 'apply' }}
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - run: echo "Approved for production deployment"
+
+
+# =========================
+# APPLY STAGE
+# =========================
+  apply:
+    name: Terraform Apply
+    needs: [plan, approve]
+    if: ${{ github.event.inputs.action == 'apply' }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Install SOPS
         run: |
-          echo "APPLY MODE"
+          curl -Lo sops https://github.com/getsops/sops/releases/latest/download/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
 
-          echo "Infra apply"
-          cd iac/infra
-          terraform apply -auto-approve -var-file="terraform.tfvars"
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
 
-          echo "K8s apply"
-          cd ../k8s
-          terraform apply -auto-approve -var-file="terraform.tfvars"
-
-      - name: Destroy K8s and Infra
-        if: ${{ github.event.inputs.action == 'destroy' }}
+      - name: Setup AGE key
         run: |
-          echo "DESTROY MODE"
+          mkdir -p ~/.age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.age/age.key
+          chmod 600 ~/.age/age.key
 
-          echo "Destroy K8s first"
-          cd iac/k8s
-          terraform destroy -auto-approve -var-file="terraform.tfvars"
+      - name: Set ENV
+        run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
 
-          echo "Destroy Infra second"
-          cd ../infra
-          terraform destroy -auto-approve -var-file="terraform.tfvars"
+      # -------------------------
+      # INFRA APPLY
+      # -------------------------
+      - name: Terraform Apply Infra
+        working-directory: iac/infra
+        run: |
+          terraform init -backend-config="envs/${ENV}/backend.hcl"
+          sops -d envs/${ENV}/${ENV}.enc.json > infra.tfvars.json
+          terraform apply -auto-approve -var-file=infra.tfvars.json
+
+      # -------------------------
+      # K8S APPLY (AFTER INFRA)
+      # -------------------------
+      - name: Terraform Apply K8s
+        working-directory: iac/k8s
+        run: |
+          terraform init -backend-config="envs/${ENV}/backend.hcl"
+          sops -d envs/${ENV}/${ENV}.enc.json > k8s.tfvars.json
+          terraform apply -auto-approve -var-file=k8s.tfvars.json
+
+
+# =========================
+# DESTROY STAGE
+# =========================
+  destroy:
+    name: Terraform Destroy
+    if: ${{ github.event.inputs.action == 'destroy' }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SOPS
+        run: |
+          curl -Lo sops https://github.com/getsops/sops/releases/latest/download/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Setup AGE key
+        run: |
+          mkdir -p ~/.age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.age/age.key
+          chmod 600 ~/.age/age.key
+
+      - name: Set ENV
+        run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
+
+      # -------------------------
+      # DESTROY K8S FIRST
+      # -------------------------
+      - name: Destroy K8s
+        working-directory: iac/k8s
+        run: |
+          terraform init -backend-config="envs/${ENV}/backend.hcl"
+          sops -d envs/${ENV}/${ENV}.enc.json > k8s.tfvars.json
+          terraform destroy -auto-approve -var-file=k8s.tfvars.json
+
+      # -------------------------
+      # DESTROY INFRA
+      # -------------------------
+      - name: Destroy Infra
+        working-directory: iac/infra
+        run: |
+          terraform init -backend-config="envs/${ENV}/backend.hcl"
+          sops -d envs/${ENV}/${ENV}.enc.json > infra.tfvars.json
+          terraform destroy -auto-approve -var-file=infra.tfvars.json
 
