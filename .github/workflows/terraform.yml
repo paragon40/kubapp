@@ -93,8 +93,8 @@ jobs:
       - name: Terraform Plan (Infra)
         working-directory: iac/infra
         run: |
-          sops -d envs/${ENV}/${ENV}.enc.json > infra.tfvars.json
-          terraform plan -input=false -no-color -var-file=infra.tfvars.json
+          sops -d envs/${ENV}/${ENV}.tfvars.enc > infra.tfvars
+          terraform plan -input=false -no-color -var-file=infra.tfvars
 
       # -------------------------
       # K8S PLAN
@@ -110,8 +110,8 @@ jobs:
       - name: Terraform Plan (K8s)
         working-directory: iac/k8s
         run: |
-          sops -d envs/${ENV}/${ENV}.enc.json > k8s.tfvars.json
-          terraform plan -input=false -no-color -var-file=k8s.tfvars.json
+          sops -d envs/${ENV}/${ENV}.tfvars.enc > k8s.tfvars
+          terraform plan -input=false -no-color -var-file=k8s.tfvars
 
       - name: Upload plan artifacts
         uses: actions/upload-artifact@v4
@@ -183,8 +183,8 @@ jobs:
         working-directory: iac/infra
         run: |
           terraform init -backend-config="envs/${ENV}/backend.hcl"
-          sops -d envs/${ENV}/${ENV}.enc.json > infra.tfvars.json
-          terraform apply -auto-approve -var-file=infra.tfvars.json
+          sops -d envs/${ENV}/${ENV}.tfvars.enc > infra.tfvars
+          terraform apply -auto-approve -var-file=infra.tfvars
 
       # -------------------------
       # K8S APPLY (AFTER INFRA)
@@ -193,8 +193,8 @@ jobs:
         working-directory: iac/k8s
         run: |
           terraform init -backend-config="envs/${ENV}/backend.hcl"
-          sops -d envs/${ENV}/${ENV}.enc.json > k8s.tfvars.json
-          terraform apply -auto-approve -var-file=k8s.tfvars.json
+          sops -d envs/${ENV}/${ENV}.tfvars.enc > k8s.tfvars
+          terraform apply -auto-approve -var-file=k8s.tfvars
 
 
 # =========================
@@ -241,8 +241,8 @@ jobs:
         working-directory: iac/k8s
         run: |
           terraform init -backend-config="envs/${ENV}/backend.hcl"
-          sops -d envs/${ENV}/${ENV}.enc.json > k8s.tfvars.json
-          terraform destroy -auto-approve -var-file=k8s.tfvars.json
+          sops -d envs/${ENV}/${ENV}.tfvars.enc > k8s.tfvars
+          terraform destroy -auto-approve -var-file=k8s.tfvars
 
       # -------------------------
       # DESTROY INFRA
@@ -251,6 +251,6 @@ jobs:
         working-directory: iac/infra
         run: |
           terraform init -backend-config="envs/${ENV}/backend.hcl"
-          sops -d envs/${ENV}/${ENV}.enc.json > infra.tfvars.json
-          terraform destroy -auto-approve -var-file=infra.tfvars.json
+          sops -d envs/${ENV}/${ENV}.tfvars.enc > infra.tfvars
+          terraform destroy -auto-approve -var-file=infra.tfvars
 
