@@ -82,6 +82,10 @@ jobs:
         working-directory: iac/infra
         run: terraform init -backend-config="envs/${ENV}/backend.hcl"
 
+      - name: Terraform Validate (Infra)
+        working-directory: iac/infra
+        run: terraform validate
+
       - name: Terraform Plan (Infra)
         working-directory: iac/infra
         run: |
@@ -94,6 +98,10 @@ jobs:
       - name: Terraform Init (K8s)
         working-directory: iac/k8s
         run: terraform init -backend-config="envs/${ENV}/backend.hcl"
+
+      - name: Terraform Validate (k8sa)
+        working-directory: iac/k8s
+        run: terraform validate
 
       - name: Terraform Plan (K8s)
         working-directory: iac/k8s
