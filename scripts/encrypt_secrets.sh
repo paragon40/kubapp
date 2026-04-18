@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="../iac"
 STACKS=("infra" "k8s")
 
-ENV="${1:-dev}"   # default is dev only
+ENV="${1:-dev}"   # dev | prod | all
 
 # =========================
 # LOAD SETUP FUNCTIONS
@@ -14,14 +14,8 @@ SETUP="./setup_sops.sh"
 if [[ -f "$SETUP" ]]; then
   source "$SETUP"
 else
-  if [[ -n "${GITHUB_ACTIONS:-}" || -n "${CI:-}" ]]; then
-    echo "❌ setup_sops.sh missing in CI environment"
-    exit 1
-  fi
-
   echo "❌ setup_sops.sh not found"
-  read -r -p "Continue anyway? (y/n): " confirm
-  [[ "$confirm" =~ ^[Yy]$ ]] || exit 1
+  exit 1
 fi
 
 echo "Checking prerequisites..."
@@ -37,58 +31,10 @@ if [[ -z "$AGE_PUBLIC_KEY" ]]; then
   exit 1
 fi
 
-echo "Using AGE key: $AGE_PUBLIC_KEY"
+echo " Using AGE key: $AGE_PUBLIC_KEY"
 
 # =========================
-# CONVERT TFVARS -> JSON
-# =========================
-convert_tfvars() {
-  local tfvars="$1"
-  local out="${tfvars%.tfvars}.json"
-
-  echo "Converting: $tfvars → $out"
-
-  tmpdir=$(mktemp -d)
-
-  cat > "$tmpdir/main.tf" <<EOF
-terraform {
-  required_providers {
-    null = {
-      source = "hashicorp/null"
-    }
-  }
-}
-EOF
-
-  terraform -chdir="$tmpdir" init -input=false -no-color >/dev/null
-
-  terraform -chdir="$tmpdir" plan \
-    -var-file="$PWD/$tfvars" \
-    -out="$tmpdir/plan.out" >/dev/null
-
-  terraform -chdir="$tmpdir" show -json "$tmpdir/plan.out" > "$out"
-
-  rm -rf "$tmpdir"
-}
-
-# =========================
-# ENCRYPT
-# =========================
-encrypt_file() {
-  local file="$1"
-  local out="${file%.json}.enc.json"
-
-  echo "Encrypting: $file → $out"
-
-  sops --encrypt \
-    --input-type json \
-    --output-type json \
-    --age "$AGE_PUBLIC_KEY" \
-    "$file" > "$out"
-}
-
-# =========================
-# ENV SELECTION LOGIC
+# ENV SELECTION
 # =========================
 get_envs() {
   case "$ENV" in
@@ -109,28 +55,41 @@ get_envs() {
 }
 
 # =========================
-# RUN
+# ENCRYPT FUNCTION
 # =========================
-echo "Starting encryption for ENV=$ENV"
+encrypt_tfvars() {
+  local file="$1"
+  local out="${file}.enc"
+
+  echo "Encrypting: $file → $out"
+
+  sops --encrypt \
+    --age "$AGE_PUBLIC_KEY" \
+    "$file" > "$out"
+}
+
+# =========================
+# MAIN LOOP
+# =========================
+echo " Starting encryption for ENV=$ENV"
 
 for env in $(get_envs); do
   echo ""
   echo "ENV: $env"
 
   for stack in "${STACKS[@]}"; do
-    for tf in "$ROOT/$stack/envs/$env.tfvars"; do
-      [[ -f "$tf" ]] || continue
+    DIR="$ROOT/$stack/envs/$env"
 
-      convert_tfvars "$tf"
+    [[ -d "$DIR" ]] || continue
 
-      json_file="${tf%.tfvars}.json"
+    echo "   → Stack: $stack"
 
-      if [[ -f "$json_file" ]]; then
-        encrypt_file "$json_file"
-        rm -f "$json_file"
-      fi
+    for tfvars in "$DIR"/*.tfvars; do
+      [[ -f "$tfvars" ]] || continue
+      encrypt_tfvars "$tfvars"
     done
   done
 done
 
-echo "Done"
+echo ""
+echo "✅ Encryption complete"
