@@ -119,7 +119,9 @@ module "eks" {
   node_max_capacity     = 3
 
   tags = local.common_tags
-
+  depends_on = [
+    module.logs
+  ]
 }
 
 ############################################
