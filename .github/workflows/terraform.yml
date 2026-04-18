@@ -78,6 +78,10 @@ jobs:
       # -------------------------
       # INFRA PLAN
       # -------------------------
+      - name: Debug modules
+        working-directory: iac/infra
+        run: ls -R modules
+
       - name: Terraform Init (Infra)
         working-directory: iac/infra
         run: terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
