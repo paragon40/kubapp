@@ -91,7 +91,7 @@ resource "helm_release" "external_dns" {
 
   set {
     name  = "txtOwnerId"
-    value = "kubapp"
+    value = local.name_prefix
   }
 
   set {

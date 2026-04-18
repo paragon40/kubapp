@@ -1,24 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: user-app
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+
 spec:
   replicas: {{ .Values.replicas }}
 
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+      maxUnavailable: {{ .Values.strategy.maxUnavailable }}
+      maxSurge: {{ .Values.strategy.maxSurge }}
 
   selector:
     matchLabels:
-      app: user
+      app: {{ .Release.Name }}
 
   template:
     metadata:
       labels:
-        app: user
+        app: {{ .Release.Name }}
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion }}
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/part-of: kubapp
 
     spec:
       containers:
@@ -29,9 +36,6 @@ spec:
           ports:
             - containerPort: 80
 
-          # ======================
-          # Resources
-          # ======================
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}
@@ -40,9 +44,6 @@ spec:
               cpu: {{ .Values.resources.limits.cpu }}
               memory: {{ .Values.resources.limits.memory }}
 
-          # ======================
-          # Health Checks
-          # ======================
           readinessProbe:
             httpGet:
               path: {{ .Values.health.path }}
@@ -57,19 +58,33 @@ spec:
             initialDelaySeconds: {{ .Values.health.initialDelaySeconds }}
             periodSeconds: {{ .Values.health.periodSeconds }}
 
-          # ======================
-          # Environment Variables
-          # ======================
           env:
             {{- range .Values.env }}
             - name: {{ .name }}
               value: "{{ .value }}"
             {{- end }}
 
-          # ======================
-          # Basic Security
-          # ======================
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}
+
+spec:
+  selector:
+    app: {{ .Release.Name }}
+
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 80
+
+  type: ClusterIP

@@ -20,7 +20,7 @@ resource "aws_efs_access_point" "user_app" {
   tags = merge(
     var.tags,
     {
-      Name = "user-app-ap"
+      Name = "user-app-ap-${var.name_prefix}"
   })
 }
 
@@ -45,7 +45,7 @@ resource "aws_efs_access_point" "admin_app" {
   tags = merge(
     var.tags,
     {
-      Name = "user-app-ap"
+      Name = "admin-app-ap-${var.name_prefix}"
   })
 }
 
@@ -71,6 +71,6 @@ resource "aws_efs_access_point" "monitoring_app" {
   tags = merge(
     var.tags,
     {
-      Name = "user-app-ap"
+      Name = "monitoring-app-ap-${var.name_prefix}"
   })
 }

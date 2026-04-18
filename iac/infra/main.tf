@@ -20,18 +20,17 @@ data "aws_route53_zone" "main" {
 module "network" {
   source = "./modules/network"
 
-  name     = "kubapp"
+  name     = local.name_prefix
   vpc_cidr = "10.0.0.0/16"
 
   azs = ["us-east-1a", "us-east-1b"]
 
   public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
   private_subnets = ["10.0.11.0/24", "10.0.12.0/24"]
-
-  tags = {
-    Project = "kubapp"
-    Env     = "dev"
-  }
+  vpc_flow_log    = local.vpc_flow_log
+  tags = merge(local.common_tags, {
+    Name = local.name_prefix
+  })
 }
 
 ############################################
@@ -54,27 +53,21 @@ module "sg_prep" {
 
   custom_sg_definitions = {}
 
-  tags = {
-    Project = "kubapp"
-    Env     = "dev"
-  }
+  tags = local.common_tags
 }
 
 ############################################
 # SECURITY
 ############################################
-
 module "security" {
   source = "./modules/security"
 
   vpc_id         = module.network.vpc_id
   sg_definitions = module.sg_prep.sg_definitions
 
-  environment = "dev"
+  name_prefix = var.name_prefix
 
-  tags = {
-    Project = "kubapp"
-  }
+  tags = local.common_tags
 }
 
 ############################################
@@ -82,41 +75,33 @@ module "security" {
 ############################################
 module "iam_core" {
   source = "./modules/iam-core"
-
-  cluster_name = var.cluster_name
-
-  tags = {
-    Project = "kubapp"
-    Env     = "dev"
-  }
+  cluster_name = local.cluster_name
+  tags = local.common_tags
 }
 
 # Roles
 module "iam_irsa" {
   source = "./modules/iam-irsa"
 
-  cluster_name      = var.cluster_name
+  cluster_name      = local.cluster_name
   region            = var.region
   oidc_provider_arn = module.eks.oidc_provider_arn
   oidc_provider_url = module.eks.oidc_provider_url
   hosted_zone_id    = data.aws_route53_zone.main.zone_id
   account_id        = data.aws_caller_identity.current.account_id
 
-  tags = {
-    Project = "kubapp"
-    Env     = "dev"
-  }
+  tags = local.common_tags
+
   depends_on = [module.eks]
 }
 
 ############################################
 # EKS
 ############################################
-
 module "eks" {
   source = "./modules/eks"
 
-  cluster_name       = var.cluster_name
+  cluster_name       = local.cluster_name
   kubernetes_version = var.kubernetes_v
 
   vpc_id             = module.network.vpc_id
@@ -124,7 +109,6 @@ module "eks" {
 
   sg_ids = module.security.sg_ids
 
-  # IAM roles from IAM module
   cluster_role_arn = module.iam_core.eks_cluster_role_arn
   node_role_arn    = module.iam_core.node_group_role_arn
   fargate_role_arn = module.iam_core.fargate_role_arn
@@ -134,10 +118,7 @@ module "eks" {
   node_min_capacity     = 1
   node_max_capacity     = 3
 
-  tags = {
-    Project = "kubapp"
-    Env     = "dev"
-  }
+  tags = local.common_tags
 
   depends_on = [
     module.logs
@@ -150,12 +131,8 @@ module "eks" {
 
 module "logs" {
   source = "./modules/logs"
-
-  log_groups = var.log_groups
-  tags = {
-    Project = "kubapp"
-    Env     = "dev"
-  }
+  log_groups = local.app_log_groups
+  tags = local.common_tags
 }
 
 ############################################
@@ -165,22 +142,18 @@ module "efs" {
   source = "./modules/efs"
 
   vpc_id     = module.network.vpc_id
+  vpc_cidr = "10.0.0.0/16"
   subnet_ids = module.network.private_subnet_ids
-
-  tags = {
-    Project = "kubapp"
-    Env     = "dev"
-  }
+  tags = local.common_tags
 }
 
 ############################################
 # ECR
 ############################################
-module "ecr" {
-  source = "./modules/ecr"
-  tags = {
-    Project = "kubapp"
-    Env     = "dev"
-  }
-}
+#module "ecr" {
+#  source = "./modules/ecr"
+#  name_prefix = local.name_prefix
+#  repositories = ["user", "admin", "monitoring"]
+#  tags = local.common_tags
+#}
 

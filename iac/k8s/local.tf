@@ -3,9 +3,9 @@ data "terraform_remote_state" "infra" {
   backend = "s3"
 
   config = {
-    bucket = "kubapp-dev-state"
-    key    = "dev/infra/terraform.tfstate"
-    region = "us-east-1"
+    bucket = "kubapp-tf-state"
+    key    = "${var.env}/infra/terraform.tfstate"
+    region = var.region
   }
 }
 
@@ -27,6 +27,15 @@ locals {
   efs_admin_app_ap_id      = data.terraform_remote_state.infra.outputs.efs_admin_app_ap_id
   efs_monitoring_app_ap_id = data.terraform_remote_state.infra.outputs.efs_monitoring_app_ap_id
   app_logs                 = data.terraform_remote_state.infra.outputs.log_group_names["app_logs"]
+}
+
+locals {
+  name_prefix = "kubapp-${var.env}"
+
+  common_tags = {
+    Environment = var.env
+    Project     = var.project
+  }
 }
 
 #data "terraform_remote_state" "infra" {

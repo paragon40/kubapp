@@ -1,5 +1,7 @@
 resource "aws_ecr_repository" "kubapp" {
-  name = "kubapp"
+  for_each = var.repositories
+
+  name = "${var.name_prefix}-${each.value}"
 
   image_tag_mutability = "MUTABLE"
 
@@ -11,12 +13,9 @@ resource "aws_ecr_repository" "kubapp" {
     encryption_type = "AES256"
   }
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.name}-ecr"
-    }
-  )
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-${each.value}"
+  })
 }
 
 resource "aws_ecr_lifecycle_policy" "kubapp" {

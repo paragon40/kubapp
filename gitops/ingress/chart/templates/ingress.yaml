@@ -24,18 +24,12 @@ spec:
     - host: {{ .Values.host }}
       http:
         paths:
-          - path: {{ .Values.services.user.path }}
+          {{- range .Values.services }}
+          - path: {{ .path }}
             pathType: Prefix
             backend:
               service:
-                name: {{ .Values.services.user.name }}
+                name: {{ .name }}
                 port:
-                  number: {{ .Values.services.user.port }}
-
-          - path: {{ .Values.services.admin.path }}
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ .Values.services.admin.name }}
-                port:
-                  number: {{ .Values.services.admin.port }}
+                  number: {{ .port }}
+          {{- end }}

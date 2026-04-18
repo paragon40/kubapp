@@ -1,6 +1,7 @@
 provider "kubernetes" {
   host                   = local.cluster_endpoint
   cluster_ca_certificate = base64decode(local.cluster_ca_cert)
+  load_config_file       = false
 
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
@@ -16,7 +17,7 @@ provider "helm" {
   kubernetes {
     host                   = local.cluster_endpoint
     cluster_ca_certificate = base64decode(local.cluster_ca_cert)
-
+    load_config_file       = false
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
@@ -28,6 +29,6 @@ provider "helm" {
   }
 }
 
-data "aws_eks_cluster_auth" "this" {
-  name = local.cluster_name
-}
+#data "aws_eks_cluster_auth" "this" {
+#  name = local.cluster_name
+#}

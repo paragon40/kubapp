@@ -1,36 +1,57 @@
+variable "env" {
+  description = "Environment name"
+  type        = string
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.env)
+    error_message = "env must be dev, staging, or prod."
+  }
+}
+
+variable "project" {
+  description = "Project name"
+  type        = string
+  default     = "kubapp"
+}
 
 variable "region" {
-  type = string
+  description = "AWS region"
+  type        = string
 }
 
 variable "kubernetes_v" {
-  type    = string
-  default = "1.31"
+  description = "Kubernetes version"
+  type        = string
+  default     = "1.31"
 }
 
 variable "CERT_ARN" {
-  type = string
+  description = "ACM certificate ARN"
+  type        = string
 }
 
 variable "root_domain" {
-  type = string
+  description = "Base domain"
+  type        = string
 }
 
 variable "subdomain" {
-  type    = string
-  default = "kubapp"
+  description = "Service subdomain"
+  type        = string
 }
 
 variable "cluster_name" {
-  type    = string
-  default = "kubapp"
+  description = "Base cluster name (no env suffix here)"
+  type        = string
 }
 
 variable "hosted_zone_id" {
-  type = string
+  description = "Route53 hosted zone"
+  type        = string
 }
 
 variable "log_groups" {
+  description = "CloudWatch log group definitions"
   type = map(object({
     name      = string
     retention = number

@@ -3,7 +3,7 @@ locals {
 }
 
 resource "aws_iam_policy" "efs_csi_policy" {
-  name = "EFSCSIDriverPolicy"
+  name = "${var.cluster_name}-EFSCSIDriverPolicy"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -24,10 +24,12 @@ resource "aws_iam_policy" "efs_csi_policy" {
       }
     ]
   })
+  tags = var.tags
+
 }
 
 resource "aws_iam_role" "efs_csi_role" {
-  name = "efs-csi-driver-role"
+  name = "${var.cluster_name}-efs-csi-driver-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -46,6 +48,8 @@ resource "aws_iam_role" "efs_csi_role" {
       }
     ]
   })
+  tags = var.tags
+
 }
 
 resource "aws_iam_role_policy_attachment" "efs_csi_attach" {

@@ -1,9 +1,13 @@
-variable "name" {
+variable "name_prefix" {
   type    = string
-  default = "kubapp"
 }
 
 variable "tags" {
   type    = map(string)
   default = {}
+}
+
+variable "repositories" {
+  type = set(string)
+  default = ["user", "admin", "monitoring"]
 }
