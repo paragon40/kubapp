@@ -66,3 +66,15 @@ output "domain" {
 output "cert_arn" {
   value = var.CERT_ARN
 }
+
+output "env" {
+  value = var.env
+}
+
+output "name_prefix" {
+  value = local.name_prefix
+}
+
+output "full_domain" {
+  value = local.full_domain
+}
