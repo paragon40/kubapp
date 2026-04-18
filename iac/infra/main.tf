@@ -120,7 +120,7 @@ module "eks" {
 
   tags = local.common_tags
   depends_on = [
-    module.logs
+    module.logging
   ]
 }
 
@@ -128,8 +128,8 @@ module "eks" {
 # CLOUDWATCH
 ############################################
 
-module "logs" {
-  source = "./modules/logs"
+module "logging" {
+  source = "./modules/logging"
   log_groups = local.app_log_groups
   name_prefix = local.name_prefix
   tags = local.common_tags
