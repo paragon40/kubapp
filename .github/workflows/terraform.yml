@@ -34,14 +34,10 @@ jobs:
     name: Infra - Plan
     runs-on: ubuntu-latest
 
-    permissions:
-      id-token: write
-      contents: read
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Terraform + SOPS
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Install SOPS
@@ -56,7 +52,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Setup AGE
+      - name: Setup AGE key
         run: |
           mkdir -p ~/.config/sops/age
           echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
@@ -65,25 +61,31 @@ jobs:
       - name: Set ENV
         run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
 
-      - name: Terraform Init (Infra)
+      - name: Terraform Init
         working-directory: iac/infra
         run: terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
 
-      - name: Terraform validat (Infra)
+      - name: Terraform Validate
         working-directory: iac/infra
         run: terraform validate
 
-      - name: Generate tfvars (Infra)
+      - name: Load tfvars (infra)
         working-directory: iac/infra
-        run: sops -d envs/${ENV}/${ENV}.tfvars.enc > infra.tfvars
+        run: sops -d envs/${ENV}/infra.tfvars.enc > infra.tfvars
 
-      - name: Terraform Plan (Infra)
+      - name: Terraform Plan
         working-directory: iac/infra
         run: terraform plan -out=infra.plan -var-file=infra.tfvars
 
+      - name: Upload Infra Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: infra-plan-${{ github.event.inputs.env }}
+          path: iac/infra/infra.plan
+
 
 # =========================================================
-# INFRA APPROVAL
+# INFRA APPROVAL (PROD ONLY)
 # =========================================================
   infra_approve:
     if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env == 'prod' }}
@@ -93,30 +95,30 @@ jobs:
     environment: production
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download Infra Plan
+      - name: Download Plan
         uses: actions/download-artifact@v4
         with:
-          name: infra-plan
+          name: infra-plan-${{ github.event.inputs.env }}
+          path: infra-plan
 
       - name: Show Plan
-        run: terraform show infra.plan
+        run: terraform show infra-plan/infra.plan
 
 
 # =========================================================
 # INFRA APPLY
 # =========================================================
   infra_apply:
-    if: ${{ github.event.inputs.action == 'apply' }}
     name: Infra - Apply
-    needs: infra_approve
+    needs: ${{ github.event.inputs.env == 'prod' && 'infra_approve' || 'infra_plan' }}
+    if: ${{ github.event.inputs.action == 'apply' }}
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.env == 'prod' && 'production' || 'dev' }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Terraform + SOPS
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Install SOPS
@@ -131,7 +133,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Setup AGE
+      - name: Setup AGE key
         run: |
           mkdir -p ~/.config/sops/age
           echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
@@ -146,7 +148,7 @@ jobs:
 
       - name: Load tfvars
         working-directory: iac/infra
-        run: sops -d envs/${ENV}/${ENV}.tfvars.enc > infra.tfvars
+        run: sops -d envs/${ENV}/infra.tfvars.enc > infra.tfvars
 
       - name: Apply Infra
         working-directory: iac/infra
@@ -165,7 +167,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Terraform + SOPS
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Install SOPS
@@ -180,7 +182,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Setup AGE
+      - name: Setup AGE key
         run: |
           mkdir -p ~/.config/sops/age
           echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
@@ -193,21 +195,27 @@ jobs:
         working-directory: iac/k8s
         run: terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
 
-      - name: Terraform validate (k8s)
+      - name: Validate K8s
         working-directory: iac/k8s
         run: terraform validate
 
-      - name: Generate tfvars (K8s)
+      - name: Load tfvars (k8s)
         working-directory: iac/k8s
-        run: sops -d envs/${ENV}/${ENV}.tfvars.enc > k8s.tfvars
+        run: sops -d envs/${ENV}/k8s.tfvars.enc > k8s.tfvars
 
       - name: Plan K8s
         working-directory: iac/k8s
         run: terraform plan -out=k8s.plan -var-file=k8s.tfvars
 
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-plan-${{ github.event.inputs.env }}
+          path: iac/k8s/k8s.plan
+
 
 # =========================================================
-# K8S APPROVAL
+# K8S APPROVAL (PROD ONLY)
 # =========================================================
   k8s_approve:
     if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env == 'prod' }}
@@ -217,23 +225,30 @@ jobs:
     environment: production
 
     steps:
+      - name: Download Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: k8s-plan-${{ github.event.inputs.env }}
+          path: k8s-plan
+
       - name: Show Plan
-        run: terraform show k8s.plan
+        run: terraform show k8s-plan/k8s.plan
 
 
 # =========================================================
 # K8S APPLY
 # =========================================================
   k8s_apply:
-    if: ${{ github.event.inputs.action == 'apply' }}
     name: K8s - Apply
-    needs: k8s_approve
+    needs: ${{ github.event.inputs.env == 'prod' && 'k8s_approve' || 'k8s_plan' }}
+    if: ${{ github.event.inputs.action == 'apply' }}
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.env == 'prod' && 'production' || 'dev' }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Terraform + AWS
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Install SOPS
@@ -248,7 +263,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Setup AGE
+      - name: Setup AGE key
         run: |
           mkdir -p ~/.config/sops/age
           echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
@@ -263,7 +278,7 @@ jobs:
 
       - name: Load tfvars
         working-directory: iac/k8s
-        run: sops -d envs/${ENV}/${ENV}.tfvars.enc > k8s.tfvars
+        run: sops -d envs/${ENV}/k8s.tfvars.enc > k8s.tfvars
 
       - name: Apply K8s
         working-directory: iac/k8s
@@ -271,17 +286,17 @@ jobs:
 
 
 # =========================================================
-# DESTROY
+# DESTROY (K8S → INFRA)
 # =========================================================
   destroy:
     if: ${{ github.event.inputs.action == 'destroy' }}
-    name: Destroy (K8s → Infra)
+    name: Destroy
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Terraform + SOPS
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Install SOPS
@@ -296,7 +311,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Setup AGE
+      - name: Setup AGE key
         run: |
           mkdir -p ~/.config/sops/age
           echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
@@ -310,7 +325,7 @@ jobs:
         run: |
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
           terraform validate
-          sops -d envs/${ENV}/${ENV}.tfvars.enc > k8s.tfvars
+          sops -d envs/${ENV}/k8s.tfvars.enc > k8s.tfvars
           terraform destroy -auto-approve -var-file=k8s.tfvars
 
       - name: Destroy Infra
@@ -318,6 +333,6 @@ jobs:
         run: |
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
           terraform validate
-          sops -d envs/${ENV}/${ENV}.tfvars.enc > infra.tfvars
+          sops -d envs/${ENV}/infra.tfvars.enc > infra.tfvars
           terraform destroy -auto-approve -var-file=infra.tfvars
 
