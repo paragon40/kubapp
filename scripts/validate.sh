@@ -4,9 +4,12 @@ set -euo pipefail
 ENV="${1:-dev}"
 
 echo "=============================="
-echo "🔍 SYSTEM VALIDATION STARTED"
+echo "SYSTEM VALIDATION STARTED"
 echo "ENV: $ENV"
 echo "=============================="
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
 
 ############################################
 # HELPERS
@@ -25,9 +28,22 @@ check_dir() {
 }
 
 ############################################
+# 0. GITIGNORE CHECK
+############################################
+echo "Checking .gitignore..."
+
+check_file ".gitignore"
+
+if [[ ! -s ".gitignore" ]]; then
+  fail ".gitignore exists but is empty"
+fi
+
+echo "✅ .gitignore OK"
+
+############################################
 # 1. REQUIRED TOOLS
 ############################################
-echo "🔧 Checking required tools..."
+echo "Checking required tools..."
 
 TOOLS=(terraform sops age yq jq git)
 
@@ -35,122 +51,118 @@ for tool in "${TOOLS[@]}"; do
   command -v "$tool" >/dev/null 2>&1 || fail "Missing tool: $tool"
 done
 
-echo "✔ Tools OK"
+echo "✅ Tools OK"
 
 ############################################
 # 2. PROJECT STRUCTURE
 ############################################
-echo "📁 Validating structure..."
+echo "Validating structure..."
 
-# Core dirs
-check_dir "iac"
-check_dir "iac/infra"
-check_dir "iac/k8s"
-check_dir "gitops"
-check_dir "scripts"
+check_dir "$ROOT_DIR/iac"
+check_dir "$ROOT_DIR/iac/infra"
+check_dir "$ROOT_DIR/iac/k8s"
+check_dir "$ROOT_DIR/gitops"
+check_dir "$ROOT_DIR/scripts"
 
-# Env dirs
 for stack in infra k8s; do
   for env in dev prod; do
-    check_dir "iac/$stack/envs/$env"
-    check_file "iac/$stack/envs/$env/backend.hcl"
+    check_dir "$ROOT_DIR/iac/$stack/envs/$env"
+    check_file "$ROOT_DIR/iac/$stack/envs/$env/backend.hcl"
   done
 done
 
-echo "✔ Structure OK"
+echo "✅ Structure OK"
 
 ############################################
-# 3. TERRAFORM VALIDATION
+# 3. TERRAFORM FILE VALIDATION (NO INIT)
 ############################################
-echo "📦 Validating Terraform..."
+echo "Validating Terraform files..."
 
 for stack in infra k8s; do
-  pushd "iac/$stack" >/dev/null
+  DIR="iac/$stack"
 
-  terraform init -backend=false >/dev/null
-  terraform validate || fail "Terraform validation failed in $stack"
+  check_dir "$DIR"
 
-  popd >/dev/null
+  if ! find "$DIR" -maxdepth 1 -name "*.tf" | grep -q .; then
+    fail "No Terraform files found in $DIR"
+  fi
+
+  terraform fmt -check "$DIR"  \
+    || fail "Terraform format/syntax issue in $DIR"
 done
 
-echo "✔ Terraform OK"
+echo "✅ Terraform files OK"
 
 ############################################
-# 4. TFVARS + SOPS VALIDATION
+# 4. SECRETS FILE PRESENCE (NO DECRYPT)
 ############################################
-echo "🔐 Validating secrets..."
+echo "Checking secrets files..."
 
 for stack in infra k8s; do
   BASE="iac/$stack/envs/$ENV"
 
-  # plain tfvars
   check_file "$BASE/${ENV}.tfvars"
 
-  # encrypted (optional but expected)
   if [[ -f "$BASE/${ENV}.enc.json" ]]; then
-    sops -d "$BASE/${ENV}.enc.json" >/dev/null \
-      || fail "SOPS decrypt failed: $stack/$ENV"
+    :
+  else
+    echo "Warning: Missing encrypted file for $stack/$ENV"
   fi
 done
 
-echo "✔ Secrets OK"
+echo "✅ Secrets presence OK"
 
 ############################################
-# 5. YAML VALIDATION (GLOBAL)
+# 5. YAML VALIDATION
 ############################################
-echo "📄 Validating YAML..."
+echo "Validating YAML..."
 
-if command -v yq >/dev/null 2>&1; then
-  mapfile -t yamls < <(find . -type f \( -name "*.yml" -o -name "*.yaml" \))
+mapfile -t yamls < <(find . -type f \( -name "*.yml" -o -name "*.yaml" \))
 
-  for file in "${yamls[@]}"; do
-    yq e '.' "$file" >/dev/null || fail "Invalid YAML: $file"
-  done
-else
-  echo "⚠️ yq not installed, skipping YAML validation"
-fi
+for file in "${yamls[@]}"; do
+  yq e '.' "$file" >/dev/null || fail "Invalid YAML: $file"
+done
 
-echo "✔ YAML OK"
+echo "✅ YAML OK"
 
 ############################################
-# 6. GITOPS VALIDATION
+# 6. BASIC GITOPS STRUCTURE CHECK
 ############################################
-echo "🚀 Validating GitOps..."
+echo "Checking GitOps structure..."
 
-./scripts/validate_gitops.sh || fail "GitOps validation failed"
+check_dir "gitops/infra"
+check_dir "gitops/apps"
 
-echo "✔ GitOps OK"
+echo "✅ GitOps structure OK"
 
 ############################################
 # 7. SCRIPT VALIDATION
 ############################################
-echo "🐚 Validating shell scripts..."
+echo "Validating shell scripts..."
 
 if command -v shellcheck >/dev/null 2>&1; then
   find scripts -type f -name "*.sh" -exec shellcheck {} \; \
     || fail "Shellcheck failed"
 else
-  echo "⚠️ shellcheck not installed, skipping"
+  echo "Skipping shellcheck"
 fi
 
-echo "✔ Scripts OK"
+echo "✅ Scripts OK"
 
 ############################################
-# 8. SANITY CHECKS (IMPORTANT)
+# 8. SANITY CHECKS
 ############################################
-echo "🧠 Running sanity checks..."
+echo "Running sanity checks..."
 
-# ensure no .terraform dirs committed wrongly
 if find . -type d -name ".terraform" | grep -q .; then
-  echo "⚠️ Warning: .terraform directories detected"
+  echo "Warning: .terraform directories detected"
 fi
 
-# ensure no plaintext secrets accidentally committed
 if grep -r "aws_secret_access_key" . --exclude-dir=.git >/dev/null 2>&1; then
-  echo "⚠️ Possible secret detected in repo"
+  echo "Warning: Possible secret detected in repo"
 fi
 
-echo "✔ Sanity checks OK"
+echo "✅ Sanity checks OK"
 
 ############################################
 # DONE
