@@ -1,5 +1,5 @@
 variable "name_prefix" {
-  type    = string
+  type = string
 }
 
 variable "tags" {
@@ -8,6 +8,6 @@ variable "tags" {
 }
 
 variable "repositories" {
-  type = set(string)
+  type    = set(string)
   default = ["user", "admin", "monitoring"]
 }

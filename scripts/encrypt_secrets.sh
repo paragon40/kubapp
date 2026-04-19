@@ -10,9 +10,13 @@ ENV="${1:-dev}"   # dev | prod | all
 # LOAD SETUP FUNCTIONS
 # =========================
 SETUP="./setup_sops.sh"
-
+SETUP1="scripts/setup_sops.sh"
 if [[ -f "$SETUP" ]]; then
+  echo "Sourcing $SETUP"
   source "$SETUP"
+elif [[ -f "$SETUP1" ]]; then
+  echo "Sourcing $SETUP1"
+  source "$SETUP1"
 else
   echo "❌ setup_sops.sh not found"
   exit 1

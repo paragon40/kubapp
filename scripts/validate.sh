@@ -119,7 +119,14 @@ echo "Validating YAML..."
 
 mapfile -t yamls < <(find . -type f \( -name "*.yml" -o -name "*.yaml" \))
 
+#helm template gitops/ingress/chart > /tmp/rendered.yaml
+#yq e '.' /tmp/rendered.yaml >/dev/null
+
 for file in "${yamls[@]}"; do
+  if [[ "$file" == *"templates/"* ]]; then
+    echo "Skipping Helm template: $file"
+    continue
+  fi
   yq e '.' "$file" >/dev/null || fail "Invalid YAML: $file"
 done
 

@@ -119,11 +119,23 @@ jobs:
       - name: Setup Terraform + SOPS
         uses: hashicorp/setup-terraform@v3
 
+      - name: Install SOPS
+        run: |
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
+
+      - name: Setup AGE
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
 
       - name: Set ENV
         run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
@@ -156,11 +168,23 @@ jobs:
       - name: Setup Terraform + SOPS
         uses: hashicorp/setup-terraform@v3
 
+      - name: Install SOPS
+        run: |
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
+
+      - name: Setup AGE
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
 
       - name: Set ENV
         run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
@@ -212,11 +236,23 @@ jobs:
       - name: Setup Terraform + AWS
         uses: hashicorp/setup-terraform@v3
 
+      - name: Install SOPS
+        run: |
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
+
+      - name: Setup AGE
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
 
       - name: Set ENV
         run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
@@ -248,11 +284,23 @@ jobs:
       - name: Setup Terraform + SOPS
         uses: hashicorp/setup-terraform@v3
 
+      - name: Install SOPS
+        run: |
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
+
+      - name: Setup AGE
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
 
       - name: Set ENV
         run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV

@@ -17,7 +17,7 @@ resource "aws_vpc" "main" {
 resource "aws_cloudwatch_log_group" "vpc_flow" {
   name              = var.vpc_flow_log.name
   retention_in_days = var.vpc_flow_log.retention
-  tags = var.tags
+  tags              = var.tags
 }
 
 resource "aws_iam_role" "flow_logs" {
@@ -68,7 +68,7 @@ resource "aws_flow_log" "vpc" {
   log_destination_type = "cloud-watch-logs"
   log_destination      = aws_cloudwatch_log_group.vpc_flow.arn
   iam_role_arn         = aws_iam_role.flow_logs.arn
-  tags = var.tags
+  tags                 = var.tags
 }
 
 
