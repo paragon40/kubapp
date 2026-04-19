@@ -16,6 +16,10 @@ on:
         type: choice
         options: [dev, prod]
 
+permissions:
+  id-token: write
+  contents: read
+
 concurrency:
   group: terraform-${{ github.event.inputs.env }}
   cancel-in-progress: false
