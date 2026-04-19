@@ -55,7 +55,7 @@ echo "   Env:   $ENV"
 echo "   Lock:  $LOCK_ID"
 echo ""
 
-if [[ "${CI:-}" != "true" ]] || [[ -z "$GITHUB" ]]; then
+if [[ "${CI:-}" != "true" ]]; then
   read -rp "Type YES to confirm unlock: " CONFIRM
 
   if [[ "$CONFIRM" != "YES" ]]; then
