@@ -111,7 +111,7 @@ jobs:
  infra_apply_dev:
     name: Infra - Apply - Dev
     needs: infra_plan
-    if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env = 'dev' }}
+    if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env == 'dev' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -157,7 +157,7 @@ jobs:
   infra_apply_prod:
     name: Infra - Apply - Prod
     needs: infra_approve
-    if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env = 'prod' }}
+    if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env == 'prod' }}
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.env == 'prod' && 'production' || 'dev' }}
 
@@ -287,7 +287,7 @@ jobs:
   k8s_apply_dev:
     name: K8s - Apply - Dev
     needs: k8s_plan
-    if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env = 'dev' }}
+    if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env == 'dev' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -333,7 +333,7 @@ jobs:
   k8s_apply_prod:
     name: K8s - Apply - Prod
     needs: k8s_approve
-    if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env = 'prod' }}
+    if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env == 'prod' }}
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.env == 'prod' && 'production' || 'dev' }}
 
