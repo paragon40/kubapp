@@ -5,18 +5,19 @@ subdomain      = "kubapp"
 region         = "us-east-1"
 cluster_name   = "kubapp"
 hosted_zone_id = "Z1031443294L16DYR25B4"
+env = "prod"
 
 log_groups = {
   app_logs = {
-    name      = "/kubapp/app-logs"
     retention = 1
   },
   audit_logs = {
-    name      = "/kubapp/audit-logs"
     retention = 3
   },
   cluster_logs = {
-    name      = "/aws/eks/kubapp/cluster"
+    retention = 1
+  },
+  vpc_logs = {
     retention = 1
   }
 }

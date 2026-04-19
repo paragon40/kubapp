@@ -10,7 +10,7 @@ BASE_DIR="$ROOT_DIR/iac/$STACK"
 ENV_DIR="$BASE_DIR/envs/$ENV"
 
 BACKEND_FILE="$ENV_DIR/backend.hcl"
-TFVARS_FILE="$ENV_DIR/${ENV}.tfvars"
+TFVARS_FILE="$ENV_DIR/${STACK}.tfvars"
 
 echo "=============================="
 echo " Terraform Runner"
