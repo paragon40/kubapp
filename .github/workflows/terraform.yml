@@ -108,7 +108,7 @@ jobs:
 # =========================================================
 # INFRA APPLY
 # =========================================================
- infra_apply_dev:
+  infra_apply_dev:
     name: Infra - Apply - Dev
     needs: infra_plan
     if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env == 'dev' }}
