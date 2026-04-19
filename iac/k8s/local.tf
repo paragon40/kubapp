@@ -10,7 +10,7 @@ data "terraform_remote_state" "infra" {
 }
 
 locals {
-  env                      = data.terraform_remote_state.infra.outputs.env
+  env                      = try(data.terraform_remote_state.infra.outputs.env, "${var.env}")
   vpc_id                   = data.terraform_remote_state.infra.outputs.vpc_id
   cluster_name             = try(data.terraform_remote_state.infra.outputs.cluster_name, "${var.project}-${var.env}")
   cluster_endpoint         = data.terraform_remote_state.infra.outputs.cluster_endpoint
