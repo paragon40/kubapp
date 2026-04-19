@@ -111,7 +111,7 @@ jobs:
  infra_apply_dev:
     name: Infra - Apply - Dev
     needs: infra_plan
-    if: ${{ github.event.inputs.action == 'apply' && github.events.inputs.env = 'dev' }}
+    if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env = 'dev' }}
     runs-on: ubuntu-latest
 
     steps:
