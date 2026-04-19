@@ -74,9 +74,9 @@ module "security" {
 # IAM 
 ############################################
 module "iam_core" {
-  source = "./modules/iam-core"
+  source       = "./modules/iam-core"
   cluster_name = local.cluster_name
-  tags = local.common_tags
+  tags         = local.common_tags
 }
 
 # Roles
@@ -129,10 +129,10 @@ module "eks" {
 ############################################
 
 module "logging" {
-  source = "./modules/logging"
-  log_groups = local.app_log_groups
+  source      = "./modules/logging"
+  log_groups  = local.app_log_groups
   name_prefix = local.name_prefix
-  tags = local.common_tags
+  tags        = local.common_tags
 }
 
 ############################################
@@ -141,11 +141,11 @@ module "logging" {
 module "efs" {
   source = "./modules/efs"
 
-  vpc_id     = module.network.vpc_id
-  vpc_cidr = "10.0.0.0/16"
+  vpc_id      = module.network.vpc_id
+  vpc_cidr    = "10.0.0.0/16"
   name_prefix = local.name_prefix
-  subnet_ids = module.network.private_subnet_ids
-  tags = local.common_tags
+  subnet_ids  = module.network.private_subnet_ids
+  tags        = local.common_tags
 }
 
 ############################################
