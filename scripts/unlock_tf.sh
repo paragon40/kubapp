@@ -68,7 +68,7 @@ fi
 # UNLOCK
 ############################################
 echo "Unlocking state..."
-terraform force-unlock "$LOCK_ID"
+terraform force-unlock -force "$LOCK_ID"
 
 echo ""
 echo "✅ State lock released successfully"
