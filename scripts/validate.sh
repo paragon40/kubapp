@@ -101,9 +101,9 @@ echo "Checking secrets files..."
 for stack in infra k8s; do
   BASE="iac/$stack/envs/$ENV"
 
-  check_file "$BASE/${ENV}.tfvars"
+  check_file "$BASE/${stack}.tfvars"
 
-  if [[ -f "$BASE/${ENV}.enc.json" ]]; then
+  if [[ -f "$BASE/${stack}.enc.json" ]]; then
     :
   else
     echo "Warning: Missing encrypted file for $stack/$ENV"
