@@ -5,47 +5,72 @@ APP_DIR="gitops/infra/apps"
 
 echo "Validating ArgoCD Applications..."
 
+############################################
+# HELPERS
+############################################
 fail() {
   echo "❌ $1"
   exit 1
 }
 
-FILES=$(find "$APP_DIR" -name "*.yml" -o -name "*.yaml")
+check_file() {
+  [[ -f "$1" ]] || fail "❌ Missing file: $1"
+}
 
-if [ -z "$FILES" ]; then
-  echo "No ArgoCD apps found"
-  exit 1
+check_dir() {
+  [[ -d "$1" ]] || fail "❌ Missing directory: $1"
+}
+
+############################################
+# VALIDATE APP DIR
+############################################
+check_dir "$APP_DIR"
+
+############################################
+# COLLECT FILES SAFELY
+############################################
+mapfile -t FILES < <(
+  find "$APP_DIR" \( -name "*.yml" -o -name "*.yaml" \)
+)
+
+if [[ ${#FILES[@]} -eq 0 ]]; then
+  fail "❌ No ArgoCD apps found in $APP_DIR"
 fi
 
-for file in $FILES; do
+############################################
+# VALIDATION LOOP
+############################################
+for file in "${FILES[@]}"; do
   echo "Checking $file"
 
-  # validate YAML
-  yq e '.' "$file" >/dev/null || {
-    echo "❌ Invalid YAML: $file"
-    exit 1
-  }
+  # YAML validation
+  yq e '.' "$file" >/dev/null || fail "Invalid YAML: $file"
 
   KIND=$(yq e '.kind' "$file")
-
-  if [[ "$KIND" == "ApplicationSet" ]]; then
-    PATH=$(yq e '.spec.template.spec.source.path' "$file")
-  else
-    PATH=$(yq e '.spec.source.path' "$file")
-  fi
-
   NAME=$(yq e '.metadata.name' "$file")
 
+  # -----------------------------
+  # Extract source path safely
+  # -----------------------------
+  if [[ "$KIND" == "ApplicationSet" ]]; then
+    SOURCE_PATH=$(yq e '.spec.template.spec.source.path' "$file")
+  else
+    SOURCE_PATH=$(yq e '.spec.source.path' "$file")
+  fi
+
+  # -----------------------------
+  # Validations
+  # -----------------------------
   if [[ -z "$NAME" || "$NAME" == "null" ]]; then
     fail "Missing app name in $file"
   fi
 
-  if [[ -z "$PATH" || "$PATH" == "null" ]]; then
+  if [[ -z "$SOURCE_PATH" || "$SOURCE_PATH" == "null" ]]; then
     fail "Missing source path in $file"
   fi
 
-  echo "✔ $NAME -> $PATH"
+  echo "✔ $NAME -> $SOURCE_PATH"
 
 done
 
-echo "All ArgoCD applications valid"
+echo "✅ All ArgoCD applications valid"
