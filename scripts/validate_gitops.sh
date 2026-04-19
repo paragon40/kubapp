@@ -5,6 +5,11 @@ APP_DIR="gitops/infra/apps"
 
 echo "Validating ArgoCD Applications..."
 
+fail() {
+  echo "❌ $1"
+  exit 1
+}
+
 FILES=$(find "$APP_DIR" -name "*.yml" -o -name "*.yaml")
 
 if [ -z "$FILES" ]; then
@@ -21,21 +26,26 @@ for file in $FILES; do
     exit 1
   }
 
-  # check required fields
-  NAME=$(yq e '.metadata.name' "$file")
-  PATH=$(yq e '.spec.source.path' "$file")
+  KIND=$(yq e '.kind' "$file")
 
-  if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then
-    echo "❌ Missing app name in $file"
-    exit 1
+  if [[ "$KIND" == "ApplicationSet" ]]; then
+    PATH=$(yq e '.spec.template.spec.source.path' "$file")
+  else
+    PATH=$(yq e '.spec.source.path' "$file")
   fi
 
-  if [ -z "$PATH" ] || [ "$PATH" = "null" ]; then
-    echo "❌ Missing Helm path in $file"
-    exit 1
+  NAME=$(yq e '.metadata.name' "$file")
+
+  if [[ -z "$NAME" || "$NAME" == "null" ]]; then
+    fail "Missing app name in $file"
+  fi
+
+  if [[ -z "$PATH" || "$PATH" == "null" ]]; then
+    fail "Missing source path in $file"
   fi
 
   echo "✔ $NAME -> $PATH"
+
 done
 
 echo "All ArgoCD applications valid"
