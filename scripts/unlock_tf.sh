@@ -40,14 +40,14 @@ if [[ -z "$LOCK_ID" ]]; then
 fi
 
 cd "$BASE_DIR"
+echo "Initializing backend..."
+terraform init -backend-config="envs/${ENV}/backend.hcl" -input=false
 
 ############################################
 # SHOW CONTEXT (SAFETY CHECK)
 ############################################
 echo ""
 echo "Checking lock details..."
-terraform force-unlock -dry-run "$LOCK_ID" || true
-
 echo ""
 echo "⚠️ You are about to unlock:"
 echo "   Stack: $STACK"
