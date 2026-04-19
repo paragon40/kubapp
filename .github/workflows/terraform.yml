@@ -207,7 +207,7 @@ jobs:
   k8s_plan:
     if: ${{ github.event.inputs.action == 'apply' }}
     name: K8s - Plan
-    needs: infra_apply
+    needs: infra_apply_dev
     runs-on: ubuntu-latest
 
     steps:
