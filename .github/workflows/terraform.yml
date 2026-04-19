@@ -309,15 +309,15 @@ jobs:
         working-directory: iac/k8s
         run: |
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-          sops -d envs/${ENV}/${ENV}.tfvars.enc > k8s.tfvars
           terraform validate
+          sops -d envs/${ENV}/${ENV}.tfvars.enc > k8s.tfvars
           terraform destroy -auto-approve -var-file=k8s.tfvars
 
       - name: Destroy Infra
         working-directory: iac/infra
         run: |
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-          sops -d envs/${ENV}/${ENV}.tfvars.enc > infra.tfvars
           terraform validate
+          sops -d envs/${ENV}/${ENV}.tfvars.enc > infra.tfvars
           terraform destroy -auto-approve -var-file=infra.tfvars
 
