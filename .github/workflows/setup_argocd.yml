@@ -9,12 +9,15 @@ jobs:
     environment: development
 
     steps:
+      # --------------------------------
+      # 1. Checkout repo
+      # --------------------------------
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # -----------------------------
-      # 1. Configure AWS credentials
-      # -----------------------------
+      # --------------------------------
+      # 2. AWS credentials
+      # --------------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -22,25 +25,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # -----------------------------
-      # 2. Setup kubeconfig for EKS
-      # -----------------------------
+      # --------------------------------
+      # 3. Setup kubeconfig (EKS access)
+      # --------------------------------
       - name: Setup kubeconfig
         run: |
           aws eks update-kubeconfig \
             --region ${{ secrets.AWS_REGION }} \
             --name kubapp-dev
 
-      # -----------------------------
-      # 3. Create ArgoCD secret
-      # -----------------------------
-      - name: Create ArgoCD GitHub App secret
+      # --------------------------------
+      # 4. Apply ArgoCD GitHub App repo secret
+      # --------------------------------
+      - name: Apply ArgoCD GitHub App secret
         run: |
-          kubectl create secret generic github-app-repo \
-            -n argocd \
-            --from-literal=url=https://github.com/paragon40/kubapp.git \
-            --from-literal=githubAppID=3440391 \
-            --from-file=githubAppPrivateKey=<(printf "%s" "$APP_PRIVATE_KEY") \
-            --dry-run=client -o yaml | kubectl apply -f -
+          if kubectl apply -f gitops/argocd/github-repo-secret.yaml; then
+            echo "ArgoCD secret applied from file"
+          else
+            echo "File missing — generating secret"
+            python3 scripts/argo_secret.py
+            kubectl apply -f gitops/argocd/github-repo-secret.yaml
+          fi
         env:
-          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+          PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+          APP_ID: ${{ secrets.APP_ID_GITHUB }}
+          REPO_URL: "https://github.com/paragon40/kubapp.git"
+
+      # --------------------------------
+      # 5. Verify ArgoCD resources
+      # --------------------------------
+      - name: Verify ArgoCD namespace access
+        run: kubectl get ns argocd
+
+      - name: Verify secret exists
+        run: kubectl get secret -n argocd | grep github || true
