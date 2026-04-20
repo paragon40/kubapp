@@ -30,17 +30,41 @@ jobs:
       # --------------------------------
       - name: Setup kubeconfig
         run: |
+          set -e
+
           aws eks update-kubeconfig \
             --region ${{ secrets.AWS_REGION }} \
             --name kubapp-dev
+
+          export KUBECONFIG=~/.kube/config
+
+          echo "✅ kubeconfig created"
+
+          kubectl cluster-info
+
+      - name: Check
+        run: |
+          set -e
+          echo "=== kubeconfig ==="
+          cat ~/.kube/config || true
+          echo "=== auth test ==="
+          kubectl auth can-i get pods -A || true
 
       # --------------------------------
       # 4. Apply ArgoCD GitHub App repo secret
       # --------------------------------
       - name: Apply ArgoCD GitHub App secret
         run: |
-          kubectl apply --validate=false -f gitops/argocd/github-repo-secret.yaml
-          echo "ArgoCD secret applied from file"
+          set -e
+
+          if [ -f gitops/argocd/github-repo-secret.yaml ]; then
+            kubectl apply --validate=false -f gitops/argocd/github-repo-secret.yaml
+            echo "ArgoCD secret applied from file"
+          else
+            echo "Generating secret"
+            python3 scripts/argo_secret.py
+            kubectl apply --validate=false -f gitops/argocd/github-repo-secret.yaml
+          fi
 
       # --------------------------------
       # 5. Verify ArgoCD resources
