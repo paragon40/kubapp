@@ -9,6 +9,11 @@ jobs:
     environment: development
 
     steps:
+      - name: Check dir
+        run: |
+          if [[ -d gitops ]]; then
+            echo "Gitops dir exists"
+          fi
       - name: Create ArgoCD GitHub App secret
         run: |
           cat <<EOF > "$GITHUB_WORKSPACE/gitops/github-repo-secret.yaml"
