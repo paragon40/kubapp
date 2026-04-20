@@ -1,0 +1,44 @@
+name: Argocd Setup
+
+on:
+  workflow_dispatch:
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - name: Create ArgoCD GitHub App secret
+        run: |
+          cat <<EOF > gitops/github-repo-secret.yaml
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: github-app-repo
+            namespace: argocd
+            labels:
+              argocd.argoproj.io/secret-type: repository
+          stringData:
+            url: https://github.com/paragon40/kubapp.git
+            githubAppID: "${{ secrets.APP_ID_GITHUB }}"
+            githubAppPrivateKey: |
+            $(echo "${{ secrets.APP_PRIVATE_KEY_GITHUB }}" | sed 's/^/    /')
+          EOF
+
+      - name: Configure ArgoCD GitHub App
+        run: kubectl apply -f gitops/argocd/github-repo-secret.yaml
+
+      - name: Run Permisi
+        run: chmod +x scripts/setup_argocd.sh
+
+      - name: Setup Argocd ---> Github
+        run: bash scripts/setup_argocd.sh
+        env:
+          APP_ID: ${{ secrets.APP_ID_GITHUB }}
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+          INSTALLATION_ID: ${{ secrets.CLIENT_ID }}
+          REPO_URL: ${{ secrets.REPO_URL }}
+          ENV: ${{ secrets.env }}
+
+      - name: Next Coorect Step
