@@ -12,6 +12,28 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # -----------------------------
+      # 1. Configure AWS credentials
+      # -----------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # -----------------------------
+      # 2. Setup kubeconfig for EKS
+      # -----------------------------
+      - name: Setup kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ secrets.AWS_REGION }} \
+            --name kubapp-dev
+
+      # -----------------------------
+      # 3. Create ArgoCD secret
+      # -----------------------------
       - name: Create ArgoCD GitHub App secret
         run: |
           kubectl create secret generic github-app-repo \
@@ -22,18 +44,3 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
         env:
           APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
-
-      - name: Apply ArgoCD secret
-        run: kubectl apply -f gitops/argocd/github-repo-secret.yaml
-
-      - name: Make setup script executable
-        run: chmod +x scripts/setup_argocd.sh
-
-      - name: Setup ArgoCD -> GitHub integration
-        run: bash scripts/setup_argocd.sh
-        env:
-          APP_ID: ${{ secrets.APP_ID_GITHUB }}
-          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
-          INSTALLATION_ID: ${{ secrets.CLIENT_ID }}
-          REPO_URL: ${{ secrets.REPO_URL }}
-          ENV: ${{ secrets.env }}
