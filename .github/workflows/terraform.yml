@@ -40,6 +40,9 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Check Oidc issue
+        run: echo $ACTIONS_ID_TOKEN_REQUEST_TOKEN
+
       - name: Install SOPS
         run: |
           curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
