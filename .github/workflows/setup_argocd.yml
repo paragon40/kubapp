@@ -41,4 +41,3 @@ jobs:
           REPO_URL: ${{ secrets.REPO_URL }}
           ENV: ${{ secrets.env }}
 
-      - name: Next Coorect Step
