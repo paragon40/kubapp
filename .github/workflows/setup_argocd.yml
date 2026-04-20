@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Create ArgoCD GitHub App secret
         run: |
-          cat <<EOF > gitops/github-repo-secret.yaml
+          cat <<EOF > "$GITHUB_WORKSPACE/gitops/github-repo-secret.yaml"
           apiVersion: v1
           kind: Secret
           metadata:
