@@ -9,14 +9,16 @@ jobs:
     environment: development
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Check dir
         run: |
-          if [[ -d gitops ]]; then
-            echo "Gitops dir exists"
-          fi
+          mkdir secret
+
       - name: Create ArgoCD GitHub App secret
         run: |
-          cat <<EOF > "$GITHUB_WORKSPACE/gitops/github-repo-secret.yaml"
+          cat <<EOF > secret/github-repo-secret.yaml
           apiVersion: v1
           kind: Secret
           metadata:
@@ -32,7 +34,7 @@ jobs:
           EOF
 
       - name: Configure ArgoCD GitHub App
-        run: kubectl apply -f gitops/argocd/github-repo-secret.yaml
+        run: kubectl apply -f secret/github-repo-secret.yaml
 
       - name: Run Permisi
         run: chmod +x scripts/setup_argocd.sh
