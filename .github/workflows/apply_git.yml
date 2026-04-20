@@ -12,5 +12,5 @@ jobs:
     steps:
       - name: Trigger gitops
         run: |
-          ./scripts/apply_argocd.sh
+          bash scripts/apply_argocd.sh
 
