@@ -5,12 +5,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-production-env:
+  Test-Development-env:
     runs-on: ubuntu-latest
     environment: development
 
     steps:
       - name: Trigger gitops
         run: |
-          ./scripts/apply_gitops.sh
+          ./scripts/apply_argocd.sh
 
