@@ -15,7 +15,7 @@ jobs:
       - name: Checkout GitOps repo
         uses: actions/checkout@v4
         with:
-          repository: timzapone/kubapp-project
+          repository: paragon40/kubapp
           token: ${{ secrets.GITOPS_TOKEN }}
 
       - name: Install dependencies
@@ -93,18 +93,14 @@ jobs:
       - name: Rollback on failure
         if: failure()
         run: |
-          echo "Deployment failed. Rolling back..."
+          echo "Deployment failed. Roll back safely"
 
           git fetch --tags
 
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ || echo "")
 
           if [ -z "$PREVIOUS_TAG" ]; then
-            echo "No previous tag found. Cannot rollback safely."
+            echo "No previous tag found."
             exit 1
           fi
 
-          echo "Rolling back to $PREVIOUS_TAG"
-
-          git revert HEAD
-          git push origin main

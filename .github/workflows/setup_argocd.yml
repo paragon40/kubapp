@@ -39,17 +39,8 @@ jobs:
       # --------------------------------
       - name: Apply ArgoCD GitHub App secret
         run: |
-          if kubectl apply -f gitops/argocd/github-repo-secret.yaml; then
-            echo "ArgoCD secret applied from file"
-          else
-            echo "File missing — generating secret"
-            python3 scripts/argo_secret.py
-            kubectl apply -f gitops/argocd/github-repo-secret.yaml
-          fi
-        env:
-          PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
-          APP_ID: ${{ secrets.APP_ID_GITHUB }}
-          REPO_URL: "https://github.com/paragon40/kubapp.git"
+          kubectl apply --validate=false -f gitops/argocd/github-repo-secret.yaml
+          echo "ArgoCD secret applied from file"
 
       # --------------------------------
       # 5. Verify ArgoCD resources
