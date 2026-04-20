@@ -30,7 +30,7 @@ stringData:
   githubAppID: "${{ secrets.APP_ID_GITHUB }}"
   githubAppPrivateKey: |
 $(printf '%s\n' "${{ secrets.APP_PRIVATE_KEY_GITHUB }}" | sed 's/^/    /')
-EOF
+         EOF
 
       - name: Apply ArgoCD secret
         run: kubectl apply -f secret/github-repo-secret.yaml
