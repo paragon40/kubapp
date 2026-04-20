@@ -14,8 +14,9 @@ jobs:
 
       - name: Create ArgoCD GitHub App secret
         run: |
-          sed "s|PLACEHOLDER|$(echo "$APP_PRIVATE_KEY" | sed 's/^/    /')|g" \
-           gitops/argocd/github-repo-secret.yaml | kubectl apply -f -
+          INDENTED_KEY=$(printf "%s\n" "$APP_PRIVATE_KEY" | sed 's/^/    /')
+          sed "s|PLACEHOLDER|$INDENTED_KEY|g" gitops/argocd/github-repo-secret.yaml \
+            | kubectl apply -f -
         env:
           APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
 
