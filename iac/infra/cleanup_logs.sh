@@ -7,7 +7,7 @@ echo "Cleaning EKS CloudWatch log groups..."
 # ---------------------------
 # Detect environment
 # ---------------------------
-ENV=${ENV:-dev}
+ENV=${1:-dev}
 
 echo "Detected environment: $ENV"
 
