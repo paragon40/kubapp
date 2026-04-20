@@ -12,34 +12,33 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Check dir
-        run: |
-          mkdir secret
+      - name: Create secret directory
+        run: mkdir -p secret
 
       - name: Create ArgoCD GitHub App secret
         run: |
-          cat <<EOF > secret/github-repo-secret.yaml
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: github-app-repo
-            namespace: argocd
-            labels:
-              argocd.argoproj.io/secret-type: repository
-          stringData:
-            url: https://github.com/paragon40/kubapp.git
-            githubAppID: "${{ secrets.APP_ID_GITHUB }}"
-            githubAppPrivateKey: |
-            $(echo "${{ secrets.APP_PRIVATE_KEY_GITHUB }}" | sed 's/^/    /')
-          EOF
+          cat > secret/github-repo-secret.yaml <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-app-repo
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  url: https://github.com/paragon40/kubapp.git
+  githubAppID: "${{ secrets.APP_ID_GITHUB }}"
+  githubAppPrivateKey: |
+$(printf '%s\n' "${{ secrets.APP_PRIVATE_KEY_GITHUB }}" | sed 's/^/    /')
+EOF
 
-      - name: Configure ArgoCD GitHub App
+      - name: Apply ArgoCD secret
         run: kubectl apply -f secret/github-repo-secret.yaml
 
-      - name: Run Permisi
+      - name: Make setup script executable
         run: chmod +x scripts/setup_argocd.sh
 
-      - name: Setup Argocd ---> Github
+      - name: Setup ArgoCD -> GitHub integration
         run: bash scripts/setup_argocd.sh
         env:
           APP_ID: ${{ secrets.APP_ID_GITHUB }}
@@ -47,4 +46,3 @@ jobs:
           INSTALLATION_ID: ${{ secrets.CLIENT_ID }}
           REPO_URL: ${{ secrets.REPO_URL }}
           ENV: ${{ secrets.env }}
-
