@@ -18,6 +18,6 @@ echo "Checking ArgoCD readiness..."
 
 kubectl rollout status deployment argocd-server -n argocd --timeout=180s
 kubectl rollout status deployment argocd-repo-server -n argocd --timeout=180s
-kubectl rollout status deployment argocd-application-controller -n argocd --timeout=180s
+kubectl rollout status statefulset argocd-application-controller -n argocd --timeout=180s
 
 echo "✅ System is actually ready"
