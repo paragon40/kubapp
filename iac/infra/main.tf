@@ -113,6 +113,7 @@ module "eks" {
   node_role_arn    = module.iam_core.node_group_role_arn
   fargate_role_arn = module.iam_core.fargate_role_arn
   access_iam_arn   = var.access_iam_arn
+  admin_arn       = var.admin_arn
 
   node_instance_type    = "t3.medium"
   node_desired_capacity = 2
