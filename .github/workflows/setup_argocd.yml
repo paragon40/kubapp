@@ -58,19 +58,7 @@ jobs:
           kubectl auth can-i get pods -A || true
 
       - name: Check Readiness
-        run: |
-          set -e
-          STATUS=$(kubectl get configmap cluster-readiness -n kube-system -o jsonpath='{.data.status}' 2>/dev/null || echo "notready")
-
-          echo "Status says: $STATUS"
-
-          if [ "$STATUS" != "ready" ]; then
-            echo "❌ Cluster not ready"
-            exit 1
-          fi
-
-          echo "Cluster ready → proceeding with GitOps"
-
+        run: bash scripts/check_cluster.sh
 
       # --------------------------------
       # 4. Apply ArgoCD GitHub App repo secret
@@ -84,7 +72,7 @@ jobs:
             echo "ArgoCD secret applied from file"
           else
             echo "Generating secret"
-            python3 scripts/argo_secret.py
+            python3 scripts/apply_argo_secret.py
             kubectl apply --validate=false -f gitops/argocd/github-repo-secret.yaml
           fi
 
