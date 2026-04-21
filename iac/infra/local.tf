@@ -13,6 +13,9 @@ locals {
 
   # Common tags
   common_tags = {
+    cluster     = var.cluster_name
+    vpc-id      = var.vpc_id
+    managed-by  = "kubapp"
     Project     = var.project
     Environment = var.env
   }

@@ -327,24 +327,41 @@ jobs:
       - name: Destroy K8s
         working-directory: iac/k8s
         run: |
+          set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
           terraform validate
           sops -d envs/${ENV}/k8s.tfvars.enc > k8s.tfvars
           terraform destroy -auto-approve -var-file=k8s.tfvars
 
-      - name: Get subnet IDs from Terraform
-        id: tfsubnets
+      - name: Extract cluster metadata
         working-directory: iac/infra
         run: |
+          set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-          SUBNETS=$(terraform output -json private_subnet_ids | jq -r '.[]' | paste -sd "," -)
-          echo "SUBNETS=$SUBNETS" >> $GITHUB_ENV
+          echo "CLUSTER_NAME=$(terraform output -raw cluster_name)" >> $GITHUB_ENV
+          echo "ENV=$(terraform output -raw env)" >> $GITHUB_ENV
+          echo "PROJECT=$(terraform output -raw project)" >> $GITHUB_ENV
+
+      - name: Ensure Clean For k8s resources
+        run: bash scripts/delete_leftovers.sh
+        env:
+          ENV: ${{ env.ENV }}
+          CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
+          PROJECT: ${{ env.PROJECT }}
+          AWS_REGION: us-east-1
 
       - name: Destroy Infra
         working-directory: iac/infra
         run: |
+          set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
           terraform validate
           sops -d envs/${ENV}/infra.tfvars.enc > infra.tfvars
           terraform destroy -auto-approve -var-file=infra.tfvars
+
+      - name: Wipe Never-expire Logs Groups
+        run: bash scripts/cleanup_logs.sh
+
+      - name: Finally
+        run: echo "✅ $CLUSTER_NAME Terraform Workflow Passed!"
 
