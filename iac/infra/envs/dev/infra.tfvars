@@ -5,7 +5,8 @@ subdomain      = "kubapp"
 region         = "us-east-1"
 cluster_name   = "kubapp"
 hosted_zone_id = "Z1031443294L16DYR25B4"
-access_iam_arn = "arn:aws:iam::198200019771:user/admin-codest"
+#access_iam_arn = "arn:aws:iam::198200019771:user/admin-codest"
+access_iam_arn = "arn:aws:iam::198200019771:role/GitHubTerraformRole-dev"
 env            = "dev"
 
 log_groups = {
