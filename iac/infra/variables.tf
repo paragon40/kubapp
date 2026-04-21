@@ -19,6 +19,10 @@ variable "region" {
   type        = string
 }
 
+variable "access_iam_arn" {
+  type = string
+}
+
 variable "kubernetes_v" {
   description = "Kubernetes version"
   type        = string
