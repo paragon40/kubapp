@@ -85,7 +85,6 @@ for env in $(get_envs); do
 
   for stack in "${STACKS[@]}"; do
     DIR="$ROOT/$stack/envs/$env"
-    echo "Directory: $DIR"
 
     if [[ -d "$DIR" ]]; then
       echo "found"
