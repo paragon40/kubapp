@@ -3,6 +3,10 @@ name: Argocd Setup
 on:
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
@@ -19,14 +23,14 @@ jobs:
       # --------------------------------
       # 2. AWS credentials
       # --------------------------------
-      - name: Check AWS credentials
-        run: aws sts get-caller-identity
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Check AWS credentials
+        run: aws sts get-caller-identity
 
       # --------------------------------
       # 3. Setup kubeconfig (EKS access)
