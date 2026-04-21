@@ -338,7 +338,7 @@ jobs:
         run: |
           set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-          echo "CLUSTER_NAME=$(terraform output -raw cluster_name)" >> $GITHUB_ENV
+          echo "CLUSTER_NAME=$(terraform output -raw cluster_name)" >> $GITHUB_ENV ||  { echo "❌ cluster_name output is missing" && exit 1 }
           echo "ENV=$(terraform output -raw env)" >> $GITHUB_ENV
           echo "PROJECT=$(terraform output -raw project)" >> $GITHUB_ENV
 
