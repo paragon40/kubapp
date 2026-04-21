@@ -1,4 +1,5 @@
 resource "null_resource" "wait_for_active_eks" {
+  depends_on = [local.cluster_name]
   triggers = {
     cluster = local.cluster_name
   }
@@ -7,15 +8,6 @@ resource "null_resource" "wait_for_active_eks" {
     command = "aws eks wait cluster-active --name ${local.cluster_name}"
   }
 }
-
-resource "null_resource" "wait_for_nodes" {
-  depends_on = [null_resource.wait_for_active_eks]
-
-  provisioner "local-exec" {
-    command = "kubectl wait --for=condition=Ready nodes --all --timeout=10m"
-  }
-}
-
 
 resource "null_resource" "wait_for_efs_csi" {
   depends_on = [helm_release.efs_csi]
