@@ -71,6 +71,10 @@ output "env" {
   value = var.env
 }
 
+output "project" {
+  value = var.Project
+}
+
 output "name_prefix" {
   value = local.name_prefix
 }
