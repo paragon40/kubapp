@@ -6,6 +6,10 @@ variable "access_iam_arn" {
   type = string
 }
 
+variable "admin_arn" {
+  type = string
+}
+
 variable "kubernetes_version" {
   type = string
 }
