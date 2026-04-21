@@ -1,5 +1,4 @@
 resource "null_resource" "wait_for_active_eks" {
-  depends_on = [local.cluster_name]
   triggers = {
     cluster = local.cluster_name
   }
@@ -44,22 +43,28 @@ resource "kubernetes_config_map_v1" "cluster_readiness" {
 
 resource "null_resource" "mark_cluster_ready" {
   depends_on = [
-    helm_release.argocd
+    helm_release.argocd,
+    kubernetes_config_map_v1.cluster_readiness
   ]
+
+  triggers = {
+    always_run = timestamp()
+  }
 
   provisioner "local-exec" {
     command = <<EOT
+set -e
+
+echo "Updating kubeconfig..."
 aws eks update-kubeconfig --name ${local.cluster_name} --region ${var.region}
+
+echo "Marking cluster as ready..."
+
 kubectl patch configmap cluster-readiness -n kube-system \
   --type merge \
-  -p '{
-    "data": {
-      "status": "ready",
-      "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
-    }
-  }'
+  -p "{\"data\":{\"status\":\"ready\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}"
+
+echo "Cluster marked as READY"
 EOT
   }
 }
-
-
