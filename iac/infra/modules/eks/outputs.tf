@@ -25,3 +25,8 @@ output "oidc_provider_arn" {
 output "oidc_provider_url" {
   value = aws_iam_openid_connect_provider.this.url
 }
+
+output "admin_role_arn" {
+  value = aws_eks_access_entry.admin_access
+}
+

@@ -2,6 +2,10 @@ variable "cluster_name" {
   type = string
 }
 
+variable "access_iam_arn" {
+  type = string
+}
+
 variable "kubernetes_version" {
   type = string
 }

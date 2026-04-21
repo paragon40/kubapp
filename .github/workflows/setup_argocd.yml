@@ -25,6 +25,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Configure AWS credentials
+        run: |
+          set -e
+          STATUS=$(kubectl get configmap cluster-readiness -n kube-system -o jsonpath='{.data.status}' 2>/dev/null || echo "notready")
+
+          if [ "$STATUS" != "ready" ]; then
+            echo "❌ Cluster not ready"
+            exit 1
+          fi
+
+          echo "Cluster ready → proceeding with GitOps"
+
       # --------------------------------
       # 3. Setup kubeconfig (EKS access)
       # --------------------------------

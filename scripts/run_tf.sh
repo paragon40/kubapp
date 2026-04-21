@@ -52,8 +52,10 @@ echo "=============================="
 echo "Initializing Terraform"
 echo "=============================="
 
-terraform init \
+terraform init -upgrade \
   -backend-config="$BACKEND_FILE"
+terraform fmt
+terraform validate
 
 # -----------------------------
 # ACTION HANDLER

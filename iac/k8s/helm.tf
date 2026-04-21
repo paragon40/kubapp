@@ -1,4 +1,3 @@
-
 resource "helm_release" "lb_controller" {
   name       = "aws-load-balancer-controller"
   namespace  = "kube-system"
@@ -25,6 +24,7 @@ resource "helm_release" "lb_controller" {
   cleanup_on_fail = true
 
   depends_on = [
+    null_resource.wait_for_nodes,
     kubernetes_service_account_v1.lb_controller
   ]
 }

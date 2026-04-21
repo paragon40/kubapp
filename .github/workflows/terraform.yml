@@ -332,6 +332,14 @@ jobs:
           sops -d envs/${ENV}/k8s.tfvars.enc > k8s.tfvars
           terraform destroy -auto-approve -var-file=k8s.tfvars
 
+      - name: Get subnet IDs from Terraform
+        id: tfsubnets
+        working-directory: iac/infra
+        run: |
+          terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
+          SUBNETS=$(terraform output -json private_subnet_ids | jq -r '.[]' | paste -sd "," -)
+          echo "SUBNETS=$SUBNETS" >> $GITHUB_ENV
+
       - name: Destroy Infra
         working-directory: iac/infra
         run: |
