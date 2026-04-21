@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="../iac"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../iac" && pwd)"
 STACKS=("infra" "k8s")
 
 ENV="${1:-dev}"   # dev | prod | all
+
+echo "Root is $ROOT"
 
 # =========================
 # LOAD SETUP FUNCTIONS
@@ -83,13 +85,19 @@ for env in $(get_envs); do
 
   for stack in "${STACKS[@]}"; do
     DIR="$ROOT/$stack/envs/$env"
+    echo "Directory: $DIR"
 
-    [[ -d "$DIR" ]] || continue
+    if [[ -d "$DIR" ]]; then
+      echo "found"
+    else
+      echo "Not Found"
+      continue
+    fi
 
     echo "   → Stack: $stack"
 
     for tfvars in "$DIR"/*.tfvars; do
-      [[ -f "$tfvars" ]] || continue
+      [[ -f "$tfvars" ]] ||  continue
       encrypt_tfvars "$tfvars"
     done
   done

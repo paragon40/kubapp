@@ -22,7 +22,7 @@ echo "Running preflight scripts..."
 ./scripts/validate_gitops.sh
 
 ############################################
-# 3. GIT PUSH (ONLY IF USER CONFIRMS)
+# 3. GIT PUSH
 ############################################
 read -rp "Push to GitHub? (yes/no): " CONFIRM
 
