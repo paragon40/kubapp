@@ -30,15 +30,3 @@ EOT
   }
 }
 
-resource "null_resource" "wait_for_efs_csi" {
-  depends_on = [helm_release.efs_csi]
-
-  provisioner "local-exec" {
-    command = <<EOT
-kubectl wait --for=condition=Available deployment efs-csi-controller -n kube-system --timeout=300s
-EOT
-  }
-}
-
-
-
