@@ -49,6 +49,7 @@ resource "null_resource" "mark_cluster_ready" {
 
   provisioner "local-exec" {
     command = <<EOT
+aws eks update-kubeconfig --name ${local.cluster_name} --region ${var.region}
 kubectl patch configmap cluster-readiness -n kube-system \
   --type merge \
   -p '{
