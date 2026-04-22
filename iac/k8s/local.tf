@@ -28,14 +28,56 @@ locals {
   efs_admin_app_ap_id      = data.terraform_remote_state.infra.outputs.efs_admin_app_ap_id
   efs_monitoring_app_ap_id = data.terraform_remote_state.infra.outputs.efs_monitoring_app_ap_id
   app_logs                 = data.terraform_remote_state.infra.outputs.log_group_names["app_logs"]
-}
 
-locals {
   name_prefix = "kubapp-${var.env}"
+  k8s_labels = {
+    cluster_name  = local.cluster_name
+    resource-type = "kubernetes"
+    env           = var.env
+    project       = var.project
+    plane         = "k8s"
+    runtime       = "helm"
+    trace-id      = "${local.cluster_name}-kubernetes"
+  }
 
-  common_tags = 
-    Environment = local.env
-    Project     = data.terraform_remote_state.infra.outputs.project
+  monitoring_labels = merge(local.k8s_labels, {
+    component = "monitoring"
+    workload  = "observability"
+    telemetry = "metrics"
+  })
+
+  logs_labels = merge(local.k8s_labels, {
+    component = "logging"
+    workload  = "observability"
+    telemetry = "logs"
+  })
+
+  namespaces = {
+    argocd = {
+      component = "gitops"
+      workload  = "control-plane"
+    }
+
+    ingress = {
+      component = "networking"
+      workload  = "ingress"
+    }
+
+    monitoring = {
+      component = "observability"
+      workload  = "monitoring"
+      telemetry = "metrics"
+    }
+
+    users = {
+      component = "application"
+      workload  = "users"
+    }
+
+    admin = {
+      component = "application"
+      workload  = "admin"
+    }
   }
 }
 

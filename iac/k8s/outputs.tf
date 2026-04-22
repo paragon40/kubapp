@@ -1,6 +1,6 @@
 
 output "user_namespace" {
-  value = kubernetes_namespace_v1.users.metadata[0].name
+  value = kubernetes_namespace_v1.this["users"].metadata[0].name
 }
 
 output "cluster_name" {

@@ -16,6 +16,7 @@ resource "helm_release" "lb_controller" {
       region      = var.region
       vpcId       = local.vpc_id
       installCRDs = true
+      podLabels   = local.k8s_labels
     })
   ]
 
@@ -70,9 +71,25 @@ resource "helm_release" "external_dns" {
     name  = "serviceAccount.create"
     value = "false"
   }
+
   set {
     name  = "serviceAccount.name"
     value = kubernetes_service_account_v1.external_dns.metadata[0].name
+  }
+
+  set {
+    name  = "podLabels.plane"
+    value = "k8s"
+  }
+
+  set {
+    name  = "podLabels.project"
+    value = var.project
+  }
+
+  set {
+    name  = "podLabels.env"
+    value = local.env
   }
 
   depends_on = [
@@ -83,7 +100,7 @@ resource "helm_release" "external_dns" {
 
 resource "helm_release" "argocd" {
   name      = "argocd"
-  namespace = kubernetes_namespace_v1.argocd.metadata[0].name
+  namespace = kubernetes_namespace_v1.this["argocd"].metadata[0].name
 
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
@@ -93,6 +110,10 @@ resource "helm_release" "argocd" {
 
   values = [
     yamlencode({
+      global = {
+        podLabels = local.k8s_labels
+      }
+
       server = {
         service = {
           type = "ClusterIP"
@@ -106,7 +127,7 @@ resource "helm_release" "argocd" {
   cleanup_on_fail = true
 
   depends_on = [
-    kubernetes_namespace_v1.argocd,
+    kubernetes_namespace_v1.this["argocd"],
     helm_release.lb_controller,
     helm_release.fluentbit
   ]
@@ -142,6 +163,10 @@ resource "helm_release" "efs_csi" {
         nodeSelector = {
           "eks.amazonaws.com/compute-type" = "ec2"
         }
+        podLabels = local.k8s_labels
+      }
+      controller = {
+        podLabels = local.k8s_labels
       }
     })
   ]
@@ -179,7 +204,8 @@ resource "helm_release" "fluentbit" {
       },
       nodeSelector = {
         "eks.amazonaws.com/compute-type" = "ec2"
-      }
+      },
+      podLabels = local.logs_labels
     })
   ]
 
@@ -191,7 +217,7 @@ resource "helm_release" "fluentbit" {
 
 #resource "helm_release" "kube_prometheus_stack" {
 #  name      = "kube-prometheus-stack"
-#  namespace = kubernetes_namespace_v1.monitoring.metadata[0].name
+#  namespace = kubernetes_namespace_v1.this["monitoring"].metadata[0].name
 
 #  repository = "https://prometheus-community.github.io/helm-charts"
 #  chart      = "kube-prometheus-stack"
@@ -203,11 +229,30 @@ resource "helm_release" "fluentbit" {
 
 #  values = [
 #    yamlencode({
+#      global = {
+#        podLabels = local.monitoring_labels
+#      }
 #      grafana = {
 #        service = {
 #          type = "LoadBalancer"
 #        }
-#      },
+#        podLabels = local.monitoring_labels
+#      }
+#      prometheus = {
+#        prometheusSpec = {
+#          podMetadata = {
+#            labels = local.monitoring_labels
+#          }
+#        }
+#      }
+
+#      alertmanager = {
+#        alertmanagerSpec = {
+#          podMetadata = {
+#            labels = local.monitoring_labels
+#          }
+#        }
+#      }
 #      nodeSelector = {
 #        "eks.amazonaws.com/compute-type" = "ec2"
 #      }
