@@ -32,6 +32,9 @@ CANDIDATES=$(aws logs describe-log-groups \
 ########################################
 # STEP 2: FILTER ONLY ORPHANS
 ########################################
+if [[ -z "$CANDIDATES" ]]; then
+  echo "No Log Group Found"
+fi
 
 for lg in $CANDIDATES; do
 

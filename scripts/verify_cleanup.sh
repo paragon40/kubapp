@@ -48,9 +48,9 @@ check "EFS" \
  --output text"
 
 if [[ "$fail" -eq 1 ]]; then
-  echo "❌ Cluster not clean — aborting infra destroy"
+  echo "❌ Cluster not clean — check leftover resources"
   exit 1
 fi
 
-echo "✅ Cluster fully clean — safe for infra destroy"
+echo "✅ Cluster fully clean"
 

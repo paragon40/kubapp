@@ -13,7 +13,7 @@ resource "aws_vpc" "main" {
       network-scope = "core"
       eni-cluster = var.cluster_name
       eni-domain  = "network"
-      name = "${var.name}-vpc"
+      Name = "${var.name}-vpc"
     }
   )
 }
@@ -82,7 +82,7 @@ resource "aws_flow_log" "vpc" {
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
   tags = merge(var.tags, {
-    name          = "${var.name}-igw"
+    Name          = "${var.name}-igw"
     resource-type = "internet-gateway"
     network-role  = "egress"
   })
@@ -98,7 +98,7 @@ resource "aws_subnet" "public" {
   availability_zone       = var.azs[count.index]
   map_public_ip_on_launch = true
   tags = merge(var.tags, {
-    name = "${var.name}-public-${count.index}"
+    Name = "${var.name}-public-${count.index}"
     resource-type = "subnet"
     subnet-type   = "public"
     az            = var.azs[count.index]
@@ -119,7 +119,7 @@ resource "aws_subnet" "private" {
   cidr_block        = var.private_subnets[count.index]
   availability_zone = var.azs[count.index]
   tags = merge(var.tags, {
-    name = "${var.name}-private-${count.index}"
+    Name = "${var.name}-private-${count.index}"
     resource-type = "subnet"
     subnet-type   = "private"
     az            = var.azs[count.index]
@@ -135,7 +135,7 @@ resource "aws_subnet" "private" {
 resource "aws_eip" "nat" {
   domain = "vpc"
   tags = merge(var.tags, {
-    name = "${var.name}-nat-eip"
+    Name = "${var.name}-nat-eip"
     resource-type = "eip"
     attached-to   = "nat-gateway"
   })
@@ -148,7 +148,7 @@ resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public[0].id
   tags = merge(var.tags, {
-    name = "${var.name}-nat"
+    Name = "${var.name}-nat"
     resource-type = "nat-gateway"
     subnet-type   = "public"
   })
@@ -166,7 +166,7 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.igw.id
   }
   tags = merge(var.tags, {
-    name = "${var.name}-public-rt"
+    Name = "${var.name}-public-rt"
     resource-type = "route-table"
     subnet-type   = "public"
   })
@@ -193,7 +193,7 @@ resource "aws_route_table" "private" {
   }
 
   tags = merge(var.tags, {
-    name = "${var.name}-private-rt"
+    Name = "${var.name}-private-rt"
     resource-type = "route-table"
     subnet-type   = "private"
   })

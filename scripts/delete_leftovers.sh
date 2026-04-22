@@ -25,7 +25,7 @@ fi
 echo "Checking ENIs..."
 
 # -------------------------
-# Tier 1: EKS-native tags (BEST SOURCE OF TRUTH)
+# Tier 1: EKS-native tags (Better tags)
 # -------------------------
 ENIS=$(aws ec2 describe-network-interfaces \
   --region "$REGION" \
@@ -40,7 +40,7 @@ ENIS=$(aws ec2 describe-network-interfaces \
 # Tier 2: fallback (node-based identity)
 # -------------------------
 if [[ -z "${ENIS// }" ]]; then
-  echo "Tier-1 ENI match failed, using node-instance fallback..."
+  echo "[First try] ENI matched NONE, using node-instance fallback to also check..."
 
   # get instance IDs from cluster nodes
   INSTANCE_IDS=$(aws ec2 describe-instances \
