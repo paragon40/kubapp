@@ -16,7 +16,7 @@ locals {
     cluster = local.cluster_name
 
     trace-id = local.trace_id
-
+    plane    = "infra"
     owner      = "platform"
     managed-by = "terraform"
   }
