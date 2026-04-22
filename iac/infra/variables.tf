@@ -66,10 +66,3 @@ variable "log_groups" {
   }))
 }
 
-variable "efs_access_points" {
-  type = map(object({
-    path = string
-    uid  = number
-    gid  = number
-  }))
-}

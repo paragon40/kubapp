@@ -40,25 +40,24 @@ locals {
       log_type  = "security"
       scope     = "system"
     }
-  }
 
-  # ----------------------------
-  # EKS system log group
-  # ----------------------------
-  eks_cluster_log_group = {
-    name      = "/aws/eks/${local.cluster_name}/cluster"
-    retention = var.log_groups.cluster_logs.retention
-    log_type  = "eks"
-    scope     = "cluster"
-  }
+    # ----------------------------
+    # EKS system log group
+    # ----------------------------
+    eks_cluster_log_group = {
+      name      = "/aws/eks/${local.cluster_name}/cluster"
+      retention = var.log_groups.cluster_logs.retention
+      log_type  = "eks"
+      scope     = "cluster"
+    }
 
-  vpc_flow_log = {
-    name      = "/aws/vpc/${local.cluster_name}-flowlogs"
-    retention = var.log_groups.vpc_logs.retention
-    log_type  = "network"
-    scope     = "network"
+    vpc_flow_log = {
+      name      = "/aws/vpc/${local.cluster_name}-flowlogs"
+      retention = var.log_groups.vpc_logs.retention
+      log_type  = "network"
+      scope     = "network"
+    }
   }
-
   efs_access_points = {
     user = {
       path = "/user-app"
