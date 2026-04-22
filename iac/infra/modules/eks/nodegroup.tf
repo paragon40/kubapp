@@ -29,7 +29,7 @@ resource "aws_eks_node_group" "ec2_nodes" {
   ]
 
   tags = merge(var.tags, {
-    name = "${var.cluster_name}-ec2-node"
+    Name = "${var.cluster_name}-ec2-node"
     resource-type = "eks-node-group"
     eks-scope     = "node-group"
     node-type     = "ec2"
