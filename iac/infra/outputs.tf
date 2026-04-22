@@ -72,7 +72,7 @@ output "env" {
 }
 
 output "project" {
-  value = var.Project
+  value = var.project
 }
 
 output "name_prefix" {
