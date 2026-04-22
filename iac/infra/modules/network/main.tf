@@ -9,15 +9,13 @@ resource "aws_vpc" "main" {
   tags = merge(
     var.tags,
     {
-      Name = "${var.name}-vpc"
+      resource-type = "vpc"
+      network-scope = "core"
+      eni-cluster = var.cluster_name
+      eni-domain  = "network"
+      name = "${var.name}-vpc"
     }
   )
-}
-
-resource "aws_cloudwatch_log_group" "vpc_flow" {
-  name              = var.vpc_flow_log.name
-  retention_in_days = var.vpc_flow_log.retention
-  tags              = var.tags
 }
 
 resource "aws_iam_role" "flow_logs" {
@@ -36,7 +34,11 @@ resource "aws_iam_role" "flow_logs" {
     ]
   })
 
-  tags = var.tags
+  tags = merge(var.tags, {
+    resource-type = "iam-role"
+    layer         = "identity"
+    iam-purpose   = "vpc-flow-logs"
+  })
 }
 
 resource "aws_iam_role_policy" "flow_logs" {
@@ -62,13 +64,15 @@ resource "aws_iam_role_policy" "flow_logs" {
 
 resource "aws_flow_log" "vpc" {
   vpc_id = aws_vpc.main.id
-
   traffic_type = "ALL"
-
   log_destination_type = "cloud-watch-logs"
-  log_destination      = aws_cloudwatch_log_group.vpc_flow.arn
+  log_destination      = var.vpc_flow_log_arn
   iam_role_arn         = aws_iam_role.flow_logs.arn
-  tags                 = var.tags
+  tags = merge(var.tags, {
+    resource-type = "vpc-flow-log"
+    layer         = "observability"
+    log-type      = "vpc-flow"
+  })
 }
 
 
@@ -77,13 +81,11 @@ resource "aws_flow_log" "vpc" {
 ############################################
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.name}-igw"
-    }
-  )
+  tags = merge(var.tags, {
+    name          = "${var.name}-igw"
+    resource-type = "internet-gateway"
+    network-role  = "egress"
+  })
 }
 
 ############################################
@@ -95,16 +97,17 @@ resource "aws_subnet" "public" {
   cidr_block              = var.public_subnets[count.index]
   availability_zone       = var.azs[count.index]
   map_public_ip_on_launch = true
+  tags = merge(var.tags, {
+    name = "${var.name}-public-${count.index}"
+    resource-type = "subnet"
+    subnet-type   = "public"
+    az            = var.azs[count.index]
+    routing       = "internet-facing"
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.name}-public-${count.index}"
-
-      "kubernetes.io/cluster/${var.name}" = "shared"
-      "kubernetes.io/role/elb"            = "1"
-    }
-  )
+    # EKS REQUIRED
+    "kubernetes.io/cluster/${var.name}" = "shared"
+    "kubernetes.io/role/elb"            = "1"
+  })
 }
 
 ############################################
@@ -115,16 +118,15 @@ resource "aws_subnet" "private" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = var.private_subnets[count.index]
   availability_zone = var.azs[count.index]
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.name}-private-${count.index}"
-
-      "kubernetes.io/cluster/${var.name}" = "shared"
-      "kubernetes.io/role/internal-elb"   = "1"
-    }
-  )
+  tags = merge(var.tags, {
+    name = "${var.name}-private-${count.index}"
+    resource-type = "subnet"
+    subnet-type   = "private"
+    az            = var.azs[count.index]
+    routing       = "nat"
+    "kubernetes.io/cluster/${var.name}" = "shared"
+    "kubernetes.io/role/internal-elb"   = "1"
+  })
 }
 
 ############################################
@@ -132,29 +134,24 @@ resource "aws_subnet" "private" {
 ############################################
 resource "aws_eip" "nat" {
   domain = "vpc"
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.name}-nat-eip"
-    }
-  )
+  tags = merge(var.tags, {
+    name = "${var.name}-nat-eip"
+    resource-type = "eip"
+    attached-to   = "nat-gateway"
+  })
 }
 
 ############################################
-# NAT Gateway (Single NAT - per your design)
+# NAT Gateway (Single NAT - per design)
 ############################################
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public[0].id
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.name}-nat"
-    }
-  )
-
+  tags = merge(var.tags, {
+    name = "${var.name}-nat"
+    resource-type = "nat-gateway"
+    subnet-type   = "public"
+  })
   depends_on = [aws_internet_gateway.igw]
 }
 
@@ -168,13 +165,11 @@ resource "aws_route_table" "public" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
   }
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.name}-public-rt"
-    }
-  )
+  tags = merge(var.tags, {
+    name = "${var.name}-public-rt"
+    resource-type = "route-table"
+    subnet-type   = "public"
+  })
 }
 
 ############################################
@@ -197,12 +192,11 @@ resource "aws_route_table" "private" {
     nat_gateway_id = aws_nat_gateway.nat.id
   }
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.name}-private-rt"
-    }
-  )
+  tags = merge(var.tags, {
+    name = "${var.name}-private-rt"
+    resource-type = "route-table"
+    subnet-type   = "private"
+  })
 }
 
 ############################################

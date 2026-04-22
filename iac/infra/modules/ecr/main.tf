@@ -14,12 +14,20 @@ resource "aws_ecr_repository" "kubapp" {
   }
 
   tags = merge(var.tags, {
-    Name = "${var.name_prefix}-${each.value}"
+    name = "${var.name_prefix}-${each.value}"
+    resource-type = "ecr-repository"
+    layer         = "artifact-registry"
+    cluster       = var.cluster_name
+    eni-cluster   = var.cluster_name
+    repo-name     = each.value
+    workload-type = each.value
   })
 }
 
 resource "aws_ecr_lifecycle_policy" "kubapp" {
-  repository = aws_ecr_repository.kubapp.name
+  for_each = aws_ecr_repository.kubapp
+
+  repository = each.value.name
 
   policy = jsonencode({
     rules = [
@@ -38,5 +46,4 @@ resource "aws_ecr_lifecycle_policy" "kubapp" {
     ]
   })
 }
-
 

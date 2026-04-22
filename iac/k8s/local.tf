@@ -33,9 +33,9 @@ locals {
 locals {
   name_prefix = "kubapp-${var.env}"
 
-  common_tags = {
-    Environment = var.env
-    Project     = var.project
+  common_tags = 
+    Environment = local.env
+    Project     = data.terraform_remote_state.infra.outputs.project
   }
 }
 
