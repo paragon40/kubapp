@@ -338,9 +338,17 @@ jobs:
         run: |
           set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-          echo "CLUSTER_NAME=$(terraform output -raw cluster_name)" >> $GITHUB_ENV ||  { echo "❌ cluster_name output is missing" && exit 1 }
-          echo "ENV=$(terraform output -raw env)" >> $GITHUB_ENV
-          echo "PROJECT=$(terraform output -raw project)" >> $GITHUB_ENV
+          CLUSTER_NAME=$(terraform output -raw cluster_name)
+          ENV_NAME=$(terraform output -raw env)
+          PROJECT_NAME=$(terraform output -raw project)
+
+          if [ -z "$CLUSTER_NAME" ]; then
+            echo "❌ cluster_name output is missing"
+            exit 1
+          fi
+          echo "CLUSTER_NAME=$CLUSTER_NAME" >> $GITHUB_ENV
+          echo "ENV=$ENV_NAME" >> $GITHUB_ENV
+          echo "PROJECT=$PROJECT_NAME" >> $GITHUB_ENV
 
       - name: Ensure Clean For k8s resources
         run: bash scripts/delete_leftovers.sh
