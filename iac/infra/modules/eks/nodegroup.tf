@@ -29,6 +29,15 @@ resource "aws_eks_node_group" "ec2_nodes" {
   ]
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-ec2-node"
+    name = "${var.cluster_name}-ec2-node"
+    resource-type = "eks-node-group"
+    eks-scope     = "node-group"
+    node-type     = "ec2"
+    node-group    = "primary"
+    node-role     = "worker"
+    workload     = "admin"
+    eni-cluster = var.cluster_name
+    eni-domain    = "compute"
+    capacity-type = "on-demand"
   })
 }

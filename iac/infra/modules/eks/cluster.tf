@@ -30,7 +30,12 @@ resource "aws_eks_cluster" "this" {
   ]
 
   tags = merge(var.tags, {
-    Name = var.cluster_name
+    name = var.cluster_name
+    resource-type = "eks-cluster"
+
+    cluster-role  = "control-plane"
+    eks-scope     = "cluster"
+    networking-mode = "vpc-native"
   })
 }
 
@@ -51,7 +56,11 @@ resource "aws_iam_openid_connect_provider" "this" {
     data.tls_certificate.eks.certificates[0].sha1_fingerprint
   ]
 
-  tags = var.tags
+  tags = merge(var.tags, {
+    resource-type = "iam-oidc-provider"
+    layer         = "identity"
+    eks-related   = "true"
+  })
 }
 
 

@@ -24,15 +24,21 @@ output "efs_security_group_id" {
 }
 
 output "efs_user_app_ap_id" {
-  value = module.efs.efs_user_app_ap_id
+  value = module.efs.efs_access_points["user"].id
 }
 
 output "efs_admin_app_ap_id" {
-  value = module.efs.efs_admin_app_ap_id
+  value = module.efs.efs_access_points["admin"].id
 }
 
 output "efs_monitoring_app_ap_id" {
-  value = module.efs.efs_monitoring_app_ap_id
+  value = module.efs.efs_access_points["monitoring"].id
+}
+
+output "efs_access_point_arns" {
+  value = {
+    for k, v in module.efs.efs_access_points : k => v.arn
+  }
 }
 
 output "vpc_id" {
@@ -79,6 +85,10 @@ output "name_prefix" {
   value = local.name_prefix
 }
 
+output "common_tags" {
+  value = local.common_tags
+}
+
 output "full_domain" {
   value = local.full_domain
 }
@@ -86,3 +96,4 @@ output "full_domain" {
 output "eks_admin_access_data" {
   value = module.eks.admin_role_arn
 }
+
