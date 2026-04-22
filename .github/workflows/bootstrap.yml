@@ -9,6 +9,9 @@ jobs:
     environment: development
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Debug Script Dir Files
         run: ls scripts
 
