@@ -87,7 +87,7 @@ for stack in infra k8s; do
     fail "No Terraform files found in $DIR"
   fi
 
-  terraform fmt
+  terraform fmt "$DIR"
 
   terraform fmt -check "$DIR"  \
     || fail "Terraform format/syntax issue in $DIR"

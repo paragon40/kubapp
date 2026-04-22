@@ -93,7 +93,3 @@ output "full_domain" {
   value = local.full_domain
 }
 
-output "eks_admin_access_data" {
-  value = module.eks.admin_role_arn
-}
-
