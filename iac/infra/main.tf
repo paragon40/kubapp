@@ -27,7 +27,7 @@ module "network" {
 
   public_subnets   = ["10.0.1.0/24", "10.0.2.0/24"]
   private_subnets  = ["10.0.11.0/24", "10.0.12.0/24"]
-  vpc_flow_log_arn = module.logging.log_group_arns["vpc_flow"]
+  vpc_flow_log_arn = module.logging.log_group_arns["vpc_flow_log"]
   tags = merge(local.common_tags, {
     layer = "network"
     name  = local.name_prefix
