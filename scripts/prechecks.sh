@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "Running Prechecks..."
 
 kubectl cluster-info >/dev/null || {
@@ -13,7 +15,7 @@ kubectl get ns argocd >/dev/null || {
   exit 1
 }
 
-test -f gitops/infra/root-app.yml || {
+test -f "$ROOT/gitops/infra/root-app.yml" || {
   echo "❌ root-app.yml missing"
   exit 1
 }
