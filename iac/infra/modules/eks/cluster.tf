@@ -30,7 +30,7 @@ resource "aws_eks_cluster" "this" {
   ]
 
   tags = merge(var.tags, {
-    name = var.cluster_name
+    Name = var.cluster_name
     resource-type = "eks-cluster"
 
     cluster-role  = "control-plane"

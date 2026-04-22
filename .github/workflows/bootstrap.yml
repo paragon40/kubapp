@@ -9,8 +9,12 @@ jobs:
     environment: development
 
     steps:
+      - name: Debug Script Dir Files
+        run: ls scripts
+
       - name: Run Prechecks
-        run: bash scripts/prechecks.sh
+        working-directory: scripts
+        run: bash prechecks.sh
 
       - name: Generate GitHub App token
         id: app-token
