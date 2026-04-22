@@ -20,12 +20,14 @@ variable "region" {
 }
 
 variable "access_iam_arn" {
-  type = string
+  type      = string
+  sensitive = true
 }
 
 
 variable "admin_arn" {
-  type = string
+  type      = string
+  sensitive = true
 }
 
 variable "kubernetes_v" {
