@@ -68,12 +68,12 @@ jobs:
           set -e
 
           if [ -f gitops/argocd/github-repo-secret.yaml ]; then
-            kubectl apply --validate=false -f gitops/argocd/github-repo-secret.yaml
+            kubectl apply --validate=false -f gitops/secrets/github-repo-secret.yaml
             echo "ArgoCD secret applied from file"
           else
             echo "Generating secret"
             python3 scripts/apply_argo_secret.py
-            kubectl apply --validate=false -f gitops/argocd/github-repo-secret.yaml
+            kubectl apply --validate=false -f gitops/secrets/github-repo-secret.yaml
           fi
 
       # --------------------------------
