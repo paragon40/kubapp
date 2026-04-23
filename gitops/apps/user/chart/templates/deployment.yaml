@@ -73,18 +73,3 @@ spec:
               drop:
                 - ALL
 
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Values.service.name }}
-
-spec:
-  selector:
-    app: {{ .Release.Name }}
-
-  ports:
-    - port: {{ .Values.service.port }}
-      targetPort: 80
-
-  type: ClusterIP

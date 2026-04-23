@@ -6,21 +6,20 @@ metadata:
 
 spec:
   generators:
-    - matrix:
-        generators:
-          - list:
-              elements:
-                - name: user
-                - name: admin
+    - git:
+        repoURL: https://github.com/paragon40/kubapp.git
+        revision: main
+        directories:
+          - path: gitops/apps/*/chart
 
-          - list:
-              elements:
-                - env: dev
-                - env: prod
+    - list:
+        elements:
+          - env: dev
+          - env: prod
 
   template:
     metadata:
-      name: "{{name}}-{{env}}"
+      name: "{{path.basename}}-{{env}}"
 
     spec:
       project: default
@@ -28,15 +27,15 @@ spec:
       source:
         repoURL: https://github.com/paragon40/kubapp.git
         targetRevision: main
-        path: "gitops/apps/{{name}}/chart"
+        path: "{{path}}"
 
         helm:
           valueFiles:
-            - ../../envs/{{env}}/{{name}}.yaml
+            - ../../envs/{{env}}/{{path.basename}}.yaml
 
       destination:
         server: https://kubernetes.default.svc
-        namespace: "{{ name }}"
+        namespace: "{{path.basename}}"
 
       syncPolicy:
         automated:
@@ -44,4 +43,3 @@ spec:
           selfHeal: true
         syncOptions:
           - CreateNamespace=true
-

@@ -2,11 +2,14 @@ replicas: 2
 
 image:
   repository: nginx
-  tag: "latest"
+  tag: latest
   pullPolicy: IfNotPresent
 
+ingress:
+  enabled: true
+  path: /user
+
 service:
-  name: user-service
   port: 80
 
 strategy:
