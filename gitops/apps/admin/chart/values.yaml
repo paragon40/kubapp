@@ -2,13 +2,14 @@ replicas: 2
 
 image:
   repository: codest40/java_dir
-  tag: "1773749177"
+  tag: latest
   pullPolicy: IfNotPresent
 
-imagePullSecret: dockerhub-secret
+ingress:
+  enabled: true
+  path: /admin
 
 service:
-  name: admin-service
   port: 80
 
 strategy:
@@ -17,11 +18,11 @@ strategy:
 
 resources:
   requests:
-    cpu: "100m"
-    memory: "128Mi"
-  limits:
-    cpu: "300m"
+    cpu: "150m"
     memory: "256Mi"
+  limits:
+    cpu: "400m"
+    memory: "512Mi"
 
 health:
   path: /transaction

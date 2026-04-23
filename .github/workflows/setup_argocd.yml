@@ -1,4 +1,4 @@
-name: Argocd Setup
+name: Argocd And Gitops Bootstrap
 
 on:
   workflow_dispatch:
@@ -88,10 +88,6 @@ jobs:
       # --------------------------------
       # 5. Apply ArgoCD resources
       # --------------------------------
-      - name: Run Prechecks
-        working-directory: scripts
-        run: bash prechecks.sh
-
       - name: Generate GitHub App token
         id: app-token
         uses: tibdex/github-app-token@v2

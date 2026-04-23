@@ -74,7 +74,7 @@ locals {
       workload  = "users"
     }
 
-    admin = {
+    admins = {
       component = "application"
       workload  = "admin"
     }
