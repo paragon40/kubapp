@@ -1,4 +1,4 @@
-name: Terraform Provision
+name: Test Terrafom
 
 on:
   workflow_dispatch:
