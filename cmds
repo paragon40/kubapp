@@ -2,3 +2,20 @@
 kubectl port-forward svc/nginx -n nginx 8080:80
  kubectl get applications -n argocd
 
+
+
+# Get All LB (created by both eks and normal lb)
+
+# Normal lb
+aws elbv2 describe-load-balancers \
+  --query "LoadBalancers[*].[LoadBalancerName,State.Code,Type,DNSName]" \
+  --output table
+
+# Created by eks
+aws elb describe-load-balancers
+
+# See all eni data created by eks
+aws ec2 describe-network-interfaces \
+  --filters Name=group-id,Values=sg-xxx \
+  --output table
+

@@ -81,6 +81,10 @@ output "project" {
   value = var.project
 }
 
+output "region" {
+  value = var.region
+}
+
 output "name_prefix" {
   value = local.name_prefix
 }
