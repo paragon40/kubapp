@@ -69,7 +69,7 @@ locals {
       telemetry = "metrics"
     }
 
-    user = {
+    users = {
       component = "application"
       workload  = "users"
     }
