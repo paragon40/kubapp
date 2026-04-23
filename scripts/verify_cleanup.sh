@@ -34,8 +34,8 @@ check "ENIs" \
  --output text"
 
 # Load balancers
-check "LoadBalancers" \
-"aws elbv2 describe-load-balancers \
+check "Classic LoadBalancers" \
+"aws elb describe-load-balancers \
  --region $REGION \
  --query \"LoadBalancers[?contains(LoadBalancerName, '$CLUSTER_NAME')].LoadBalancerArn\" \
  --output text"
