@@ -6,7 +6,7 @@ resource "aws_security_group" "sg" {
   description = each.value.description
   vpc_id      = var.vpc_id
   tags = merge(var.tags, {
-    name = "${each.key}-${var.name_prefix}"
+    Name = "${each.key}-${var.name_prefix}"
     resource-type = "security-group"
     cluster       = var.cluster_name
     eni-cluster   = var.cluster_name
