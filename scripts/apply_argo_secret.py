@@ -3,7 +3,7 @@ import yaml
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-FILE = BASE_DIR / "gitops/argocd/github-repo-secret.yaml"
+FILE = BASE_DIR / "gitops/secrets/github-repo-secret.yaml"
 
 private_key = os.getenv("PRIVATE_KEY")
 app_id = os.getenv("APP_ID")

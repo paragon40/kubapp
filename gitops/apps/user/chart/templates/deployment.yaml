@@ -24,12 +24,15 @@ spec:
         app.kubernetes.io/name: {{ .Chart.Name }}
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/version: {{ .Chart.AppVersion }}
-        app.kubernetes.io/component: backend
+        app.kubernetes.io/component: frontend
         app.kubernetes.io/part-of: kubapp
 
     spec:
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecret }}
+
       containers:
-        - name: user
+        - name: admin
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
 
@@ -72,4 +75,5 @@ spec:
             capabilities:
               drop:
                 - ALL
+
 
