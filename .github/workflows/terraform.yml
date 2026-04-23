@@ -339,6 +339,7 @@ jobs:
           set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
           CLUSTER_NAME=$(terraform output -raw cluster_name)
+          echo "successful for Cluster"
           ENV_NAME=$(terraform output -raw env)
           PROJECT_NAME=$(terraform output -raw project)
 
