@@ -10,9 +10,7 @@ metadata:
     alb.ingress.kubernetes.io/target-type: {{ .Values.targetType }}
 
     alb.ingress.kubernetes.io/listen-ports: '{{ toJson .Values.listenPorts }}'
-
     alb.ingress.kubernetes.io/ssl-redirect: "{{ .Values.sslRedirect }}"
-
     alb.ingress.kubernetes.io/certificate-arn: {{ .Values.acmArn }}
 
 spec:
@@ -21,5 +19,13 @@ spec:
   rules:
     - host: {{ .Values.host }}
       http:
-        paths: []
-
+        paths:
+          {{- range .Values.services }}
+          - path: {{ .path }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .name }}
+                port:
+                  number: {{ .port }}
+          {{- end }}
