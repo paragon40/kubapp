@@ -1,0 +1,4 @@
+
+kubectl port-forward svc/nginx -n nginx 8080:80
+ kubectl get applications -n argocd
+
