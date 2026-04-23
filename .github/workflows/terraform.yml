@@ -338,15 +338,15 @@ jobs:
         run: |
           set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-          CLUSTER_NAME=$(terraform output -raw cluster_name)
-          echo "successful for Cluster"
-          ENV_NAME=$(terraform output -raw env)
-          PROJECT_NAME=$(terraform output -raw project)
+          CLUSTER_NAME=$(terraform output -raw cluster_name 2>/dev/null || true)
+          ENV_NAME=$(terraform output -raw env 2>/dev/null || true)
+          PROJECT_NAME=$(terraform output -raw project 2>/dev/null || true)
 
-          if [ -z "$CLUSTER_NAME" ]; then
+          if [ -z "$CLUSTER_NAME" ]]  || [[ "$CLUSTER_NAME" == *"Error:"* ]]; then
             echo "❌ cluster_name output is missing"
             exit 1
           fi
+
           echo "CLUSTER_NAME=$CLUSTER_NAME" >> $GITHUB_ENV
           echo "ENV=$ENV_NAME" >> $GITHUB_ENV
           echo "PROJECT=$PROJECT_NAME" >> $GITHUB_ENV
