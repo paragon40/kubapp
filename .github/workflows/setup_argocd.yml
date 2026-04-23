@@ -67,7 +67,7 @@ jobs:
         run: |
           set -e
 
-          if [ -f gitops/argocd/github-repo-secret.yaml ]; then
+          if [ -f gitops/secrets/github-repo-secret.yaml ]; then
             kubectl apply --validate=false -f gitops/secrets/github-repo-secret.yaml
             echo "ArgoCD secret applied from file"
           else
@@ -75,6 +75,8 @@ jobs:
             python3 scripts/apply_argo_secret.py
             kubectl apply --validate=false -f gitops/secrets/github-repo-secret.yaml
           fi
+        #env:
+        #PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
 
       # --------------------------------
       # 5. Verify ArgoCD resources
