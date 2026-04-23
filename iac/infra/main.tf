@@ -138,7 +138,8 @@ module "eks" {
   })
 
   depends_on = [
-    module.logging
+    module.logging,
+    module.network
   ]
 }
 
