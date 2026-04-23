@@ -119,7 +119,7 @@ if [[ -n "${CLASSIC_LBS// }" ]]; then
     fi
   done
   log "Waiting for AWS to release ENIs from deleted LBs..."
-  sleep 20
+  sleep 40
 else
   log "No Classic ELBs found"
 fi
