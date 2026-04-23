@@ -50,7 +50,7 @@ for lg in $CANDIDATES; do
     continue
   fi
 
-  # focus on never-expiring logs ONLY
+  # never-expiring logs ONLY
   if [[ "$RETENTION" != "None" && "$RETENTION" != "never-expiring" && "$RETENTION" != "infinite" ]]; then
     echo "Skipping retained log group: $lg (retention=$RETENTION)"
     continue
