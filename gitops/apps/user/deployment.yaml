@@ -19,4 +19,4 @@ spec:
           args:
             - "-text=USER Service"
           ports:
-            - containerPort: 80
+            - containerPort: 5678
