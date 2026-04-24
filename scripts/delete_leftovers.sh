@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-# v3.3 ENI + Classic ELB decision engine (strict chain)
+# ENI + Classic ELB decision engine (strict chain)
 # ============================================================
 # FLOW:
 # 1. list ENIs
@@ -32,16 +32,38 @@ run(){
 
 [[ "$ENV" == "prod" ]] && { log "BLOCKED PROD"; exit 1; }
 
+# ============================================================
+# STEP 1: LIST ENIs (VERIFIED)
+# ============================================================
+
 log "STEP 1: LIST ENIs"
+log "VPC=$VPC_ID REGION=$REGION CLUSTER=$CLUSTER_NAME"
+
 enis=$(awsq ec2 describe-network-interfaces \
   --region "$REGION" \
   --filters Name=vpc-id,Values="$VPC_ID" \
   --query "NetworkInterfaces[].NetworkInterfaceId" \
   --output text)
 
+log "RAW ENI OUTPUT=${enis:-EMPTY}"
+
+if [[ -z "$enis" ]]; then
+  log "NO ENIs FOUND - CHECK VPC/REGION/ACCOUNT"
+  exit 0
+fi
+
+log "ENIs FOUND:"
+for eni in $enis; do
+  log "FOUND ENI: $eni"
+done
+
+# ============================================================
+# STEP 2: PROCESS ENIs
+# ============================================================
+
 for eni in $enis; do
 
-  log "---- ENI: $eni ----"
+  log "---- ENI START: $eni ----"
 
   desc=$(awsq ec2 describe-network-interfaces \
     --region "$REGION" \
@@ -58,27 +80,26 @@ for eni in $enis; do
   log "DESC=$desc"
   log "REQUESTER=$requester"
 
-  # --------------------------------------------------------
-  # SAFE EXITS
-  # --------------------------------------------------------
+  if [[ "$desc" == *"NAT Gateway"* ]]; then
+    log "SKIP NAT"
+    continue
+  fi
 
-  LIST=("NAT Gateway" "efs" "EFS" "amazon-vpc")
-  for list in "$LIST"; do
-    if [[ "$desc" == *"$list"* ]]; then
-      log "SKIP NAT"
-      continue
-    fi
-  done
+  if [[ "$desc" == *"efs"* || "$desc" == *"EFS"* ]]; then
+    log "SKIP EFS"
+    continue
+  fi
 
-  # --------------------------------------------------------
-  # CLASSIC ELB DETECTION
-  # --------------------------------------------------------
+  if [[ "$requester" == "amazon-vpc" ]]; then
+    log "SKIP CORE VPC"
+    continue
+  fi
 
   if [[ "$desc" == *"ELB"* ]]; then
 
     lb_name=$(echo "$desc" | grep -oE 'k8s-[a-zA-Z0-9-]+' || true)
 
-    log "SUSPECT ELB LINK: $lb_name"
+    log "ELB CANDIDATE=$lb_name"
 
     if [[ -n "$lb_name" ]]; then
 
@@ -88,33 +109,30 @@ for eni in $enis; do
         --query "LoadBalancerDescriptions[0].Instances" \
         --output text)
 
+      log "ELB STATE=$state"
+
       if [[ "$state" == "None" || "$state" == "" ]]; then
         log "ORPHAN ELB CONFIRMED"
 
-        log "DELETE ELB $lb_name"
         run aws elb delete-load-balancer \
           --region "$REGION" \
           --load-balancer-name "$lb_name"
 
-        log "DELETE ENI $eni"
         run aws ec2 delete-network-interface \
           --region "$REGION" \
           --network-interface-id "$eni"
 
       else
-        log "ELB STILL ACTIVE -> SKIP"
+        log "ELB ACTIVE -> SKIP"
       fi
     fi
 
     continue
   fi
 
-  # --------------------------------------------------------
-  # DEFAULT SAFE SKIP
-  # --------------------------------------------------------
-
-  log "NO RULE MATCH -> SKIP $eni"
+  log "NO MATCH -> SKIP $eni"
+  log "---- ENI END: $eni ----"
 
 done
 
-log "DONE ENGINE v3.3"
+log "ENGINE COMPLETE"
