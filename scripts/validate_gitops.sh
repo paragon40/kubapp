@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="gitops/infra/apps"
+APP_DIR="gitops/argocd"
 
 echo "Validating ArgoCD Applications..."
 
