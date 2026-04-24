@@ -53,6 +53,14 @@ for ns in $ALL_NS; do
 
   echo ">> Cleaning namespace: $ns"
 
+  if [[ "$ns" == "ingress" ]]; then
+    echo "Ensure ingress particularly is deleted to avoid lb madness"
+    kubectl delete ns "$n"
+    kubectl get ingress -A > ingress.txt
+    echo "Show Result"
+    cat ingress.txt
+  fi
+
   kubectl delete all --all -n "$ns" --ignore-not-found || true
   kubectl delete ingress --all -n "$ns" --ignore-not-found || true
   kubectl delete pvc --all -n "$ns" --ignore-not-found || true
@@ -72,7 +80,7 @@ for ns in $ALL_NS; do
   STATUS=$(kubectl get ns "$ns" -o jsonpath='{.status.phase}' 2>/dev/null || true)
 
   if [[ "$STATUS" == "Terminating" ]]; then
-    echo "⚠️ Force finalizer cleanup: $ns"
+    echo "Force finalizer cleanup: $ns"
 
     kubectl patch ns "$ns" \
       -p '{"spec":{"finalizers":[]}}' --type=merge || true

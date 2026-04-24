@@ -326,7 +326,7 @@ jobs:
       - name: Set ENV
         run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
 
-      - name: Extract cluster metadata
+      - name: Extract metadata from infra
         working-directory: iac/infra
         run: |
           set -euo pipefail
@@ -381,7 +381,7 @@ jobs:
           sops -d envs/${ENV}/k8s.tfvars.enc > k8s.tfvars
           terraform destroy -auto-approve -var-file=k8s.tfvars
 
-      - name: Ensure Clean For k8s resources
+      - name: Ensure No Leftovers From k8s
         run: bash scripts/delete_leftovers.sh
         env:
           ENV: ${{ env.ENV }}
@@ -399,10 +399,10 @@ jobs:
           sops -d envs/${ENV}/infra.tfvars.enc > infra.tfvars
           terraform destroy -auto-approve -var-file=infra.tfvars
 
-      - name: Wipe Never-expire Logs Groups
+      - name: Wipe Away Never-expire Logs Groups
         run: bash scripts/cleanup_logs.sh
 
-      - name: Verify Cleanup
+      - name: Verify Cleanups
         run: bash scripts/verify_cleanup.sh
 
       - name: Finally

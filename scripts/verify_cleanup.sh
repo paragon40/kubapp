@@ -13,7 +13,7 @@ set -euo pipefail
 #
 # Behavior:
 #   - Auto-resolves VPC from EKS OR uses provided VPC_ID
-#   - Pulls full AWS inventory (no blind filtering first)
+#   - Pulls full AWS inventory
 #   - Correlates resources by relationships
 #   - Flags orphaned + cost-incurring resources
 # ============================================================
@@ -181,7 +181,7 @@ mark "EBS VOLUMES (COST RISK)"
 echo "$EBS" | jq -r '
 .Volumes[]
 | select(.State == "available")
-| "💰 Volume: \(.VolumeId) | Size: \(.Size)GB | State: \(.State)"
+| "Volume: \(.VolumeId) | Size: \(.Size)GB | State: \(.State)"
 ' || true
 
 # ============================================================
@@ -192,7 +192,7 @@ mark "EFS FILE SYSTEMS (COST RISK)"
 
 echo "$EFS" | jq -r '
 .FileSystems[]
-| "💰 EFS: \(.FileSystemId) | State: \(.LifeCycleState)"
+| " EFS: \(.FileSystemId) | State: \(.LifeCycleState)"
 ' || true
 
 # ============================================================
@@ -204,7 +204,7 @@ mark "NAT GATEWAYS (HIGH COST)"
 echo "$NAT_GWS" | jq -r '
 .NatGateways[]
 | select(.State != "deleted")
-| "💰 NAT GW: \(.NatGatewayId) | State: \(.State) | VPC: \(.VpcId)"
+| "NAT GW: \(.NatGatewayId) | State: \(.State) | VPC: \(.VpcId)"
 ' || true
 
 # ============================================================
@@ -212,12 +212,8 @@ echo "$NAT_GWS" | jq -r '
 # ============================================================
 
 echo ""
+echo "- Reviewd ENIs, LBs, NAT GW, EFS, EBS carefully"
 echo "=================================================="
 echo "CLEANUP AUDIT COMPLETE"
 echo "=================================================="
 
-echo "NOTE:"
-echo "- This tool does NOT delete anything"
-echo "- Review ENIs, LBs, NAT GW, EFS, EBS carefully"
-echo "- Focus especially on COST flagged resources"
-echo ""
