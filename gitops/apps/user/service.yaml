@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: user-service
-  namespace: user
+  namespace: ingress
 spec:
   selector:
     app: user
