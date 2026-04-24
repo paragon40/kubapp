@@ -17,5 +17,8 @@ spec:
         - name: user
           image: codest40/edgeapp:latest-green
           imagePullPolicy: Always
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://test:test@dummy:5432/testdb"
           ports:
             - containerPort: 8080

@@ -1,0 +1,39 @@
+name: Run Argocd
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      # --------------------------------
+      # 1. Checkout repo
+      # --------------------------------
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+
+      # --------------------------------
+      # 2. AWS credentials
+      # --------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Check AWS credentials
+        run: aws sts get-caller-identity
+
+      - name: Make script executable
+        run: chmod +x scripts/bootstrap_gitops.sh
+
+      - name: Run GitOps bootstrap
+        run: bash scripts/bootstrap_gitops.sh
