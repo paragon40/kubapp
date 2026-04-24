@@ -2,7 +2,8 @@
 set -euo pipefail
 
 REGION="${AWS_REGION:-us-east-1}"
-TF_CREATED_NS="${TF_CREATED_NS:-}"
+TF_CREATED_NS=${TF_CREATED_NS:-()}
+eval "TF_CREATED_NS=$TF_CREATED_NS"
 
 echo "======================================"
 echo " Kubernetes SAFE CLEANUP START"
@@ -44,7 +45,7 @@ for ns in $ALL_NS; do
   esac
 
   # skip terraform-managed namespaces
-  for tf_ns in $TF_CREATED_NS; do
+  for tf_ns in "${TF_CREATED_NS[@]}"; do
     if [[ "$ns" == "$tf_ns" ]]; then
       continue 2
     fi

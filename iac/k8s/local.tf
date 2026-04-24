@@ -69,12 +69,12 @@ locals {
       telemetry = "metrics"
     }
 
-    users = {
+    user = {
       component = "application"
       workload  = "users"
     }
 
-    admins = {
+    admin = {
       component = "application"
       workload  = "admin"
     }
