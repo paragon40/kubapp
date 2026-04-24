@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: user
-          image: codest40/edgeapp:latest-green
+          image: codest40/edgeapp:Bv-1774266373-92dfe6-R142-green
           imagePullPolicy: Always
           env:
             - name: DATABASE_URL
