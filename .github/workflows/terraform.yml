@@ -333,9 +333,9 @@ jobs:
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
 
           NAMESPACES=$(terraform output -json namespaces \
-            | jq -r 'keys[]' \
-            | awk '{print "\"" $0 "\""}' \
-            | tr '\n' ' ')
+            | jq -r '.[]' \
+            | awk '{printf "\"%s\" ", $0}')
+
           ARRAY="($NAMESPACES)"
           echo "NAMESPACES=$ARRAY" >> $GITHUB_ENV
 
