@@ -58,11 +58,6 @@ locals {
       workload  = "control-plane"
     }
 
-    ingress = {
-      component = "networking"
-      workload  = "ingress"
-    }
-
     monitoring = {
       component = "observability"
       workload  = "monitoring"
