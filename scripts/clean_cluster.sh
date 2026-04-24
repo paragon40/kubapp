@@ -56,6 +56,7 @@ for ns in $ALL_NS; do
   kubectl delete all --all -n "$ns" --ignore-not-found || true
   kubectl delete ingress --all -n "$ns" --ignore-not-found || true
   kubectl delete pvc --all -n "$ns" --ignore-not-found || true
+  kubectl delete ns "$ns" || true
 done
 
 ########################################
