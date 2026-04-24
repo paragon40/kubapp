@@ -15,8 +15,7 @@ spec:
     spec:
       containers:
         - name: user
-          image: hashicorp/http-echo
-          args:
-            - "-text=USER Service"
+          image: codest40/edgeapp
+          imagePullPolicy: Always
           ports:
-            - containerPort: 5678
+            - containerPort: 8080
