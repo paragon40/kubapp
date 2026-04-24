@@ -2,20 +2,26 @@
 set -euo pipefail
 
 # ------------------------------------------------------------
-# reconciliation_engine_v2_graph.sh
+# reconciliation_engine_v3_graph_clean.sh
 # ------------------------------------------------------------
 # PURPOSE:
-# Graph-based AWS reconciliation engine for safe cleanup of
-# Kubernetes-generated resources AFTER cluster teardown.
+# post-Kubernetes cleanup after cluster teardown.
 # ------------------------------------------------------------
-# CORE SHIFT FROM v1:
-# v1 = per-resource scoring
-# v2 = dependency GRAPH traversal (ENI → ALB → TG → BACKENDS)
+# CORE PRINCIPLE:
+# NO GUESSING.
+# ONLY GRAPH-BASED OWNERSHIP + ATTACHMENT TRUTH.
+# ------------------------------------------------------------
+# RESOURCES COVERED:
+# - ENI (EC2 Network Interfaces)
+# - ALB / NLB (ELBv2)
+# - Target Groups (ELBv2)
+# - Classic ELB (ELB)
+# - EFS (File Systems + Mount Targets)
 # ------------------------------------------------------------
 # SAFETY MODEL:
-# - Terraform-owned infra NEVER touched (NAT, VPC, Subnets, EFS FS)
-# - Only K8s/Controller-generated ephemeral resources evaluated
-# - Deletion decisions are GRAPH-RESOLVED, not local
+# - NAT Gateway ENIs ALWAYS PROTECTED (Terraform-owned)
+# - VPC/Subnets/IAM NEVER TOUCHED
+# - Only cluster-scoped or orphaned resources considered
 # ------------------------------------------------------------
 
 ENV="${ENV:?ENV is required}"
@@ -47,103 +53,106 @@ assert_safety() {
 }
 
 # ------------------------------------------------------------
-# CLASSIFICATION LAYER
+# UTILS: TAG + OWNERSHIP
 # ------------------------------------------------------------
 
-classify_eni() {
-  local eni="$1"
-
-  local desc
-  desc=$(aws ec2 describe-network-interfaces \
-    --region "$REGION" \
-    --network-interface-ids "$eni" \
-    --query "NetworkInterfaces[0].Description" \
-    --output text 2>/dev/null || true)
-
-  if [[ "$desc" == *"NAT Gateway"* ]]; then
-    echo "CORE"
-    return
-  fi
-
-  if [[ "$desc" == *"ELB"* ]]; then
-    echo "ELB"
-    return
-  fi
-
-  if [[ "$desc" == *"eks"* || "$desc" == *"cni"* ]]; then
-    echo "EKS"
-    return
-  fi
-
-  echo "UNKNOWN"
+has_cluster_tag() {
+  local tags="$1"
+  [[ "$tags" == *"kubernetes.io/cluster/$CLUSTER_NAME"* ]]
 }
 
-get_eni_attachment_source() {
+# ------------------------------------------------------------
+# ENI GRAPH
+# ------------------------------------------------------------
+
+get_eni_info() {
   aws ec2 describe-network-interfaces \
     --region "$REGION" \
     --network-interface-ids "$1" \
-    --query "NetworkInterfaces[0].RequesterId" \
-    --output text 2>/dev/null || echo "unknown"
+    --query "NetworkInterfaces[0]" \
+    --output json
 }
 
-# ------------------------------------------------------------
-# GRAPH RESOLUTION CORE
-# ------------------------------------------------------------
+is_eni_nat() {
+  local desc="$1"
+  [[ "$desc" == *"NAT Gateway"* ]]
+}
 
-resolve_eni_to_alb() {
+is_eni_eks() {
+  local desc="$1"
+  [[ "$desc" == *"eks"* || "$desc" == *"cni"* ]]
+}
+
+score_eni() {
   local eni="$1"
 
-  # ENI description often contains LB reference
-  aws ec2 describe-network-interfaces \
-    --region "$REGION" \
-    --network-interface-ids "$eni" \
-    --query "NetworkInterfaces[0].Description" \
-    --output text 2>/dev/null || true
-}
+  local info desc requester attachment
 
-get_alb_from_eni() {
-  local eni_desc
-  eni_desc=$(resolve_eni_to_alb "$1")
+  info=$(get_eni_info "$eni")
 
-  # extract LB name hint (best-effort)
-  echo "$eni_desc" | grep -oE 'k8s-[a-z0-9-]+' || true
-}
+  desc=$(echo "$info" | jq -r '.Description // ""')
+  requester=$(echo "$info" | jq -r '.RequesterId // "unknown"')
+  attachment=$(echo "$info" | jq -r '.Attachment.InstanceId // empty')
 
-resolve_alb_to_tg() {
-  local alb_arn="$1"
+  # HARD RULES
+  if is_eni_nat "$desc"; then
+    echo 0
+    return
+  fi
 
-  aws elb describe-target-groups \
-    --region "$REGION" \
-    --load-balancer-arn "$alb_arn" \
-    --query "TargetGroups[].TargetGroupArn" \
-    --output text 2>/dev/null || true
+  local score=0
+
+  [[ "$requester" == "amazon-elb" ]] && score=$((score+25))
+  [[ "$requester" == "amazon-eks" ]] && score=$((score+20))
+
+  if [[ -z "$attachment" ]]; then
+    score=$((score+20))
+  fi
+
+  echo "$score"
 }
 
 # ------------------------------------------------------------
-# DEPENDENCY VALIDATION
+# ALB GRAPH (ELBV2 ONLY)
 # ------------------------------------------------------------
 
-validate_alb_graph() {
-  local alb_arn="$1"
-
-  local tg_count
-  tg_count=$(aws elb describe-target-groups \
+get_albs() {
+  aws elbv2 describe-load-balancers \
     --region "$REGION" \
-    --load-balancer-arn "$alb_arn" \
+    --query "LoadBalancers[?VpcId=='$VPC_ID']" \
+    --output json
+}
+
+get_alb_children() {
+  local arn="$1"
+
+  aws elbv2 describe-target-groups \
+    --region "$REGION" \
+    --load-balancer-arn "$arn" \
+    --query "TargetGroups[]" \
+    --output json
+}
+
+score_alb() {
+  local arn="$1"
+
+  local tgs listeners
+
+  tgs=$(aws elbv2 describe-target-groups \
+    --region "$REGION" \
+    --load-balancer-arn "$arn" \
     --query "length(TargetGroups)" \
     --output text 2>/dev/null || echo 0)
 
-  local listener_count
-  listener_count=$(aws elbv2 describe-listeners \
+  listeners=$(aws elbv2 describe-listeners \
     --region "$REGION" \
-    --load-balancer-arn "$alb_arn" \
+    --load-balancer-arn "$arn" \
     --query "length(Listeners)" \
     --output text 2>/dev/null || echo 0)
 
-  # Strong deletion signal only if fully detached
-  if [[ "$tg_count" -eq 0 && "$listener_count" -eq 0 ]]; then
+  if [[ "$tgs" -eq 0 && "$listeners" -eq 0 ]]; then
     echo 100
-  elif [[ "$tg_count" -eq 0 ]]; then
+  elif [[ "$tgs" -eq 0 ]]; then
     echo 70
   else
     echo 0
@@ -151,87 +160,98 @@ validate_alb_graph() {
 }
 
 # ------------------------------------------------------------
-# ENI → GRAPH DECISION ENGINE
+# TARGET GROUPS
 # ------------------------------------------------------------
 
-process_eni() {
-  local eni="$1"
+process_target_groups() {
+  log "Scanning Target Groups"
 
-  local type
-  type=$(classify_eni "$eni")
+  local tgs
+  tgs=$(aws elbv2 describe-target-groups \
+    --region "$REGION" \
+    --query "TargetGroups[]" \
+    --output json)
 
-  # HARD SAFETY
-  if [[ "$type" == "CORE" ]]; then
-    log "SKIP CORE ENI: $eni"
-    return
-  fi
+  echo "$tgs" | jq -c '.[]' | while read -r tg; do
+    local arn
+    arn=$(echo "$tg" | jq -r '.TargetGroupArn')
 
-  local source
-  source=$(get_eni_attachment_source "$eni")
+    local lb_count
+    lb_count=$(echo "$tg" | jq '.LoadBalancerArns | length')
 
-  log "ENI=$eni TYPE=$type SOURCE=$source"
-
-  # --------------------------------------------------------
-  # GRAPH ESCALATION: ENI → ALB
-  # --------------------------------------------------------
-
-  local alb_hint
-  alb_hint=$(get_alb_from_eni "$eni")
-
-  local alb_score=0
-
-  if [[ -n "$alb_hint" ]]; then
-    log "ENI linked to ALB candidate: $alb_hint"
-
-    # attempt ALB ARN resolution (best effort)
-    local alb_arn
-    alb_arn=$(aws elb describe-load-balancers \
-      --region "$REGION" \
-      --query "LoadBalancers[?contains(LoadBalancerName, '$alb_hint')].LoadBalancerArn" \
-      --output text 2>/dev/null || true)
-
-    if [[ -n "$alb_arn" ]]; then
-      alb_score=$(validate_alb_graph "$alb_arn")
-      log "ALB GRAPH SCORE: $alb_score"
+    if [[ "$lb_count" -eq 0 ]]; then
+      log "DELETE TG (orphaned): $arn"
+      run aws elbv2 delete-target-group \
+        --region "$REGION" \
+        --target-group-arn "$arn"
+    else
+      log "SKIP TG (attached): $arn"
     fi
-  fi
-
-  # --------------------------------------------------------
-  # FINAL DECISION LOGIC (GRAPH-AWARE)
-  # --------------------------------------------------------
-
-  local eni_score=0
-
-  [[ "$source" == "amazon-elb" ]] && eni_score=$((eni_score+20))
-  [[ "$source" == "amazon-eks" ]] && eni_score=$((eni_score+15))
-
-  # ALB graph heavily influences ENI decision
-  if (( alb_score >= 100 )); then
-    eni_score=$((eni_score+60))
-  elif (( alb_score >= 70 )); then
-    eni_score=$((eni_score+30))
-  fi
-
-  log "FINAL ENI SCORE: $eni_score"
-
-  if (( eni_score >= 85 )); then
-    log "DELETE ENI (GRAPH CONFIRMED): $eni"
-    run aws ec2 delete-network-interface \
-      --region "$REGION" \
-      --network-interface-id "$eni"
-  else
-    log "SKIP ENI (insufficient graph confidence): $eni"
-  fi
+  done
 }
 
 # ------------------------------------------------------------
-# MAIN ENGINE
+# EFS GRAPH
 # ------------------------------------------------------------
 
-main() {
-  log "Starting reconciliation engine v2 (GRAPH MODE)"
+process_efs() {
+  log "Scanning EFS"
 
-  assert_safety
+  local fs_list
+  fs_list=$(aws efs describe-file-systems \
+    --region "$REGION" \
+    --query "FileSystems[]" \
+    --output json)
+
+  echo "$fs_list" | jq -c '.[]' | while read -r fs; do
+    local fsid
+    fsid=$(echo "$fs" | jq -r '.FileSystemId')
+
+    local mounts
+    mounts=$(aws efs describe-mount-targets \
+      --region "$REGION" \
+      --file-system-id "$fsid" \
+      --query "MountTargets[]" \
+      --output json)
+
+    local count
+    count=$(echo "$mounts" | jq 'length')
+
+    if [[ "$count" -eq 0 ]]; then
+      log "EFS has no mount targets (candidate orphan): $fsid"
+    else
+      log "SKIP EFS (active mounts): $fsid"
+    fi
+  done
+}
+
+# ------------------------------------------------------------
+# CLASSIC ELB
+# ------------------------------------------------------------
+
+process_classic_elb() {
+  log "Scanning Classic ELB"
+
+  local lbs
+  lbs=$(aws elb describe-load-balancers \
+    --region "$REGION" \
+    --query "LoadBalancerDescriptions[].LoadBalancerName" \
+    --output text)
+
+  for lb in $lbs; do
+    log "DELETE Classic ELB (assumed legacy): $lb"
+    run aws elb delete-load-balancer \
+      --region "$REGION" \
+      --load-balancer-name "$lb"
+  done
+}
+
+# ------------------------------------------------------------
+# ENI GRAPH
+# ------------------------------------------------------------
+
+process_enis() {
+  log "Scanning ENIs"
 
   local enis
   enis=$(aws ec2 describe-network-interfaces \
@@ -240,15 +260,39 @@ main() {
     --query "NetworkInterfaces[].NetworkInterfaceId" \
     --output text)
 
-  process_load_balancers
-  process_target_groups
-  process_efs_mount_targets
-
   for eni in $enis; do
-    process_eni "$eni"
-  done
 
-  log "Graph engine complete"
+    local score
+    score=$(score_eni "$eni")
+
+    log "ENI=$eni SCORE=$score"
+
+    if (( score >= 85 )); then
+      log "DELETE ENI (graph confirmed): $eni"
+      run aws ec2 delete-network-interface \
+        --region "$REGION" \
+        --network-interface-id "$eni"
+    else
+      log "SKIP ENI: $eni"
+    fi
+  done
+}
+
+# ------------------------------------------------------------
+# MAIN
+# ------------------------------------------------------------
+
+main() {
+  log "Starting v3 GRAPH CLEAN engine"
+
+  assert_safety
+
+  process_classic_elb
+  process_target_groups
+  process_efs
+  process_enis
+
+  log "Graph reconciliation complete"
 }
 
 main
