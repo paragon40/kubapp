@@ -2,22 +2,20 @@
 set -euo pipefail
 
 # ------------------------------------------------------------
-# reconciliation_engine_v1.sh
+# reconciliation_engine_v2_graph.sh
 # ------------------------------------------------------------
 # PURPOSE:
-# Post-Kubernetes cleanup reconciliation engine that ensures
-# AWS resources created by K8s controllers do not block Terraform destroy.
+# Graph-based AWS reconciliation engine for safe cleanup of
+# Kubernetes-generated resources AFTER cluster teardown.
 # ------------------------------------------------------------
-# CORE PRINCIPLE:
-# DELETE ONLY BASED ON PROOF + DEPENDENCY RESOLUTION
-# NOT NAMES. NOT GUESSING.
+# CORE SHIFT FROM v1:
+# v1 = per-resource scoring
+# v2 = dependency GRAPH traversal (ENI → ALB → TG → BACKENDS)
 # ------------------------------------------------------------
-# ARCHITECTURE:
-# 1. Classify resource (CORE / EPHEMERAL / UNKNOWN)
-# 2. Extract attachment_source (truth signal)
-# 3. Build dependency chain (ENI → ALB → TG)
-# 4. Compute confidence score
-# 5. Decide action
+# SAFETY MODEL:
+# - Terraform-owned infra NEVER touched (NAT, VPC, Subnets, EFS FS)
+# - Only K8s/Controller-generated ephemeral resources evaluated
+# - Deletion decisions are GRAPH-RESOLVED, not local
 # ------------------------------------------------------------
 
 ENV="${ENV:?ENV is required}"
@@ -80,122 +78,160 @@ classify_eni() {
   echo "UNKNOWN"
 }
 
-get_attachment_source() {
-  local eni="$1"
-
+get_eni_attachment_source() {
   aws ec2 describe-network-interfaces \
     --region "$REGION" \
-    --network-interface-ids "$eni" \
+    --network-interface-ids "$1" \
     --query "NetworkInterfaces[0].RequesterId" \
     --output text 2>/dev/null || echo "unknown"
 }
 
-eni_age_hours() {
+# ------------------------------------------------------------
+# GRAPH RESOLUTION CORE
+# ------------------------------------------------------------
+
+resolve_eni_to_alb() {
   local eni="$1"
 
-  local attach_time
-  attach_time=$(aws ec2 describe-network-interfaces \
+  # ENI description often contains LB reference
+  aws ec2 describe-network-interfaces \
     --region "$REGION" \
     --network-interface-ids "$eni" \
-    --query "NetworkInterfaces[0].Attachment.AttachTime" \
-    --output text 2>/dev/null || echo "")
+    --query "NetworkInterfaces[0].Description" \
+    --output text 2>/dev/null || true
+}
 
-  if [[ -z "$attach_time" || "$attach_time" == "None" ]]; then
-    echo 9999
-    return
-  fi
+get_alb_from_eni() {
+  local eni_desc
+  eni_desc=$(resolve_eni_to_alb "$1")
 
-  local now
-  now=$(date +%s)
-  local ts
-  ts=$(date -d "$attach_time" +%s 2>/dev/null || echo 0)
+  # extract LB name hint (best-effort)
+  echo "$eni_desc" | grep -oE 'k8s-[a-z0-9-]+' || true
+}
 
-  echo $(( (now - ts) / 3600 ))
+resolve_alb_to_tg() {
+  local alb_arn="$1"
+
+  aws elb describe-target-groups \
+    --region "$REGION" \
+    --load-balancer-arn "$alb_arn" \
+    --query "TargetGroups[].TargetGroupArn" \
+    --output text 2>/dev/null || true
 }
 
 # ------------------------------------------------------------
-# SCORING ENGINE
+# DEPENDENCY VALIDATION
 # ------------------------------------------------------------
 
-score_eni() {
+validate_alb_graph() {
+  local alb_arn="$1"
+
+  local tg_count
+  tg_count=$(aws elb describe-target-groups \
+    --region "$REGION" \
+    --load-balancer-arn "$alb_arn" \
+    --query "length(TargetGroups)" \
+    --output text 2>/dev/null || echo 0)
+
+  local listener_count
+  listener_count=$(aws elbv2 describe-listeners \
+    --region "$REGION" \
+    --load-balancer-arn "$alb_arn" \
+    --query "length(Listeners)" \
+    --output text 2>/dev/null || echo 0)
+
+  # Strong deletion signal only if fully detached
+  if [[ "$tg_count" -eq 0 && "$listener_count" -eq 0 ]]; then
+    echo 100
+  elif [[ "$tg_count" -eq 0 ]]; then
+    echo 70
+  else
+    echo 0
+  fi
+}
+
+# ------------------------------------------------------------
+# ENI → GRAPH DECISION ENGINE
+# ------------------------------------------------------------
+
+process_eni() {
   local eni="$1"
 
-  local score=0
   local type
   type=$(classify_eni "$eni")
 
-  local source
-  source=$(get_attachment_source "$eni")
-
-  local age
-  age=$(eni_age_hours "$eni")
-
-  # CORE INFRA BLOCK
+  # HARD SAFETY
   if [[ "$type" == "CORE" ]]; then
-    echo 0
+    log "SKIP CORE ENI: $eni"
     return
   fi
 
-  # Attachment source scoring
-  if [[ "$source" == "amazon-elb" ]]; then
-    ((score+=25))
-  elif [[ "$source" == "amazon-eks" ]]; then
-    ((score+=20))
-  elif [[ "$source" == "unknown" ]]; then
-    ((score+=0))
+  local source
+  source=$(get_eni_attachment_source "$eni")
+
+  log "ENI=$eni TYPE=$type SOURCE=$source"
+
+  # --------------------------------------------------------
+  # GRAPH ESCALATION: ENI → ALB
+  # --------------------------------------------------------
+
+  local alb_hint
+  alb_hint=$(get_alb_from_eni "$eni")
+
+  local alb_score=0
+
+  if [[ -n "$alb_hint" ]]; then
+    log "ENI linked to ALB candidate: $alb_hint"
+
+    # attempt ALB ARN resolution (best effort)
+    local alb_arn
+    alb_arn=$(aws elb describe-load-balancers \
+      --region "$REGION" \
+      --query "LoadBalancers[?contains(LoadBalancerName, '$alb_hint')].LoadBalancerArn" \
+      --output text 2>/dev/null || true)
+
+    if [[ -n "$alb_arn" ]]; then
+      alb_score=$(validate_alb_graph "$alb_arn")
+      log "ALB GRAPH SCORE: $alb_score"
+    fi
   fi
 
-  # Age scoring
-  if (( age > MAX_AGE_HOURS )); then
-    ((score+=15))
+  # --------------------------------------------------------
+  # FINAL DECISION LOGIC (GRAPH-AWARE)
+  # --------------------------------------------------------
+
+  local eni_score=0
+
+  [[ "$source" == "amazon-elb" ]] && eni_score=$((eni_score+20))
+  [[ "$source" == "amazon-eks" ]] && eni_score=$((eni_score+15))
+
+  # ALB graph heavily influences ENI decision
+  if (( alb_score >= 100 )); then
+    eni_score=$((eni_score+60))
+  elif (( alb_score >= 70 )); then
+    eni_score=$((eni_score+30))
   fi
 
-  # Type scoring
-  if [[ "$type" == "ELB" ]]; then
-    ((score+=25))
-  fi
+  log "FINAL ENI SCORE: $eni_score"
 
-  echo "$score"
-}
-
-# ------------------------------------------------------------
-# ALB VALIDATION CHAIN
-# ------------------------------------------------------------
-
-validate_alb() {
-  local arn="$1"
-
-  local tags
-  tags=$(aws elbv2 describe-tags \
-    --region "$REGION" \
-    --resource-arns "$arn" \
-    --query "TagDescriptions[0].Tags[].Key" \
-    --output text 2>/dev/null || true)
-
-  if [[ "$tags" != *"kubernetes.io/cluster/$CLUSTER_NAME"* ]]; then
-    echo 0
-    return
-  fi
-
-  local tg_count
-  tg_count=$(aws elbv2 describe-target-groups \
-    --region "$REGION" \
-    --query "length(TargetGroups)" \
-    --output text)
-
-  if [[ "$tg_count" -eq 0 ]]; then
-    echo 80
+  if (( eni_score >= 85 )); then
+    log "DELETE ENI (GRAPH CONFIRMED): $eni"
+    run aws ec2 delete-network-interface \
+      --region "$REGION" \
+      --network-interface-id "$eni"
   else
-    echo 40
+    log "SKIP ENI (insufficient graph confidence): $eni"
   fi
 }
 
 # ------------------------------------------------------------
-# EXECUTION LAYER
+# MAIN ENGINE
 # ------------------------------------------------------------
 
-process_enis() {
-  log "Scanning ENIs..."
+main() {
+  log "Starting reconciliation engine v2 (GRAPH MODE)"
+
+  assert_safety
 
   local enis
   enis=$(aws ec2 describe-network-interfaces \
@@ -204,44 +240,15 @@ process_enis() {
     --query "NetworkInterfaces[].NetworkInterfaceId" \
     --output text)
 
+  process_load_balancers
+  process_target_groups
+  process_efs_mount_targets
+
   for eni in $enis; do
-
-    local type
-    type=$(classify_eni "$eni")
-
-    if [[ "$type" == "CORE" ]]; then
-      log "SKIP CORE ENI: $eni"
-      continue
-    fi
-
-    local score
-    score=$(score_eni "$eni")
-
-    log "ENI=$eni TYPE=$type SCORE=$score"
-
-    if (( score >= 85 )); then
-      log "DELETE ENI (CONFIDENT): $eni"
-      run aws ec2 delete-network-interface \
-        --region "$REGION" \
-        --network-interface-id "$eni"
-    else
-      log "SKIP ENI (low confidence): $eni"
-    fi
+    process_eni "$eni"
   done
-}
 
-# ------------------------------------------------------------
-# MAIN FLOW
-# ------------------------------------------------------------
-
-main() {
-  log "Starting reconciliation engine v1"
-
-  assert_safety
-
-  process_enis
-
-  log "Engine complete"
+  log "Graph engine complete"
 }
 
 main
