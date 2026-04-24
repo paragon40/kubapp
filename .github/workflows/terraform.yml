@@ -326,33 +326,6 @@ jobs:
       - name: Set ENV
         run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
 
-      - name: Extract Data
-        working-directory: iac/k8s
-        run: |
-          set -euo pipefail
-          terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-
-          NAMESPACES=$(terraform output -json namespaces \
-            | jq -r '.[]' \
-            | awk '{printf "\"%s\" ", $0}')
-
-          ARRAY="($NAMESPACES)"
-          echo "NAMESPACES=$ARRAY" >> $GITHUB_ENV
-
-      - name: Cleanup cluster
-        run: bash scripts/clean_cluster.sh
-        env:
-          TF_CREATED_NS: "${{ env.NAMESPACES }}"
-
-      - name: Destroy K8s
-        working-directory: iac/k8s
-        run: |
-          set -euo pipefail
-          terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-          terraform validate
-          sops -d envs/${ENV}/k8s.tfvars.enc > k8s.tfvars
-          terraform destroy -auto-approve -var-file=k8s.tfvars
-
       - name: Extract cluster metadata
         working-directory: iac/infra
         run: |
@@ -374,6 +347,39 @@ jobs:
           echo "VPC_ID=$VPC_ID" >> $GITHUB_ENV
           echo "PROJECT=$PROJECT_NAME" >> $GITHUB_ENV
           echo "AWS_REGION=$AWS_REGION" >> $GITHUB_ENV
+
+      - name: Extract Data From K8s
+        working-directory: iac/k8s
+        run: |
+          set -euo pipefail
+          terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
+
+          NAMESPACES=$(terraform output -json namespaces \
+            | jq -r '.[]' \
+            | awk '{printf "\"%s\" ", $0}')
+
+          ARRAY="($NAMESPACES)"
+          echo "NAMESPACES=$ARRAY" >> $GITHUB_ENV
+
+      - name: Connect to EKS cluster
+        run: |
+          aws eks update-kubeconfig \
+            --name "${{ env.CLUSTER_NAME }}" \
+            --region "${{ env.AWS_REGION }}"
+
+      - name: Cleanup cluster
+        run: bash scripts/clean_cluster.sh
+        env:
+          TF_CREATED_NS: "${{ env.NAMESPACES }}"
+
+      - name: Destroy K8s
+        working-directory: iac/k8s
+        run: |
+          set -euo pipefail
+          terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
+          terraform validate
+          sops -d envs/${ENV}/k8s.tfvars.enc > k8s.tfvars
+          terraform destroy -auto-approve -var-file=k8s.tfvars
 
       - name: Ensure Clean For k8s resources
         run: bash scripts/delete_leftovers.sh
