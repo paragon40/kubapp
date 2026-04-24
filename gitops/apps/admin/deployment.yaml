@@ -19,4 +19,4 @@ spec:
           args:
             - "-text=Admin Service"
           ports:
-            - containerPort: 80
+            - containerPort: 5678
