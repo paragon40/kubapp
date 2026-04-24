@@ -2,14 +2,14 @@
 set -euo pipefail
 
 REGION="${AWS_REGION:-us-east-1}"
-TF_CREATED_NS"${TF_CREATED_NS:-}"
+TF_CREATED_NS="${TF_CREATED_NS:-}"
 
 echo "======================================"
 echo " Kubernetes SAFE CLEANUP START"
 echo "======================================"
 
 ########################################
-# 0. SAFETY GUARD (NEVER RUN IN PROD)
+# 0. SAFETY GUARD
 ########################################
 if kubectl config current-context | grep -qi "prod"; then
   echo "❌ Refusing to run in prod context"
@@ -17,53 +17,38 @@ if kubectl config current-context | grep -qi "prod"; then
 fi
 
 ########################################
-# 1. DELETE ARGOCD APPLICATIONSET (ROOT OWNER)
+# 1. DELETE APPLICATIONSETS (ROOT CONTROLLER)
 ########################################
-
-echo ">> Checking ApplicationSets..."
-APPSETS=$(kubectl get applicationsets -n argocd -o name 2>/dev/null || true)
-
-if [[ -z "$APPSETS" ]]; then
-  echo "✅ No ApplicationSets found. Nothing to clean."
-  exit 0
-fi
-
-if [[ -n "$APPSETS" ]]; then
-  echo ">> Deleting ApplicationSets..."
-  kubectl delete $APPSETS -n argocd || true
-fi
+echo ">> Deleting ApplicationSets..."
+kubectl delete applicationsets.argoproj.io --all -n argocd --ignore-not-found || true
 
 ########################################
-# 2. WAIT FOR APPLICATIONS TO STOP RECREATING
+# 2. DELETE ARGOCD APPLICATIONS
 ########################################
-
-echo ">> Waiting for Applications to settle..."
-sleep 10
-
 echo ">> Deleting Argo Applications..."
-APPS=$(kubectl get applications.argoproj.io -n argocd -o name 2>/dev/null || true)
-
-if [[ -n "$APPS" ]]; then
-  kubectl delete $APPS -n argocd || true
-fi
+kubectl delete applications.argoproj.io --all -n argocd --ignore-not-found || true
 
 ########################################
-# 3. DELETE NAMESPACED WORKLOADS (SAFE CLEAN)
+# 3. NAMESPACE CLEANUP
 ########################################
 
-NAMESPACES=$(kubectl get ns -o jsonpath='{.items[*].metadata.name}')
-TF_NS=$TF_CREATED_NS
+ALL_NS=$(kubectl get ns -o jsonpath='{.items[*].metadata.name}')
 
-for ns in $NAMESPACES; do
-  if [[ "$ns" == "kube-system" || "$ns" == "default" || "$ns" == "kube-public" || "$ns" == "kube-node-lease" ]]; then
-    continue
-  elif [[ -n "$TF_NS" ]];
-    for tf_ns in "$TF_NS"; do
-      if [[ "$ns" == "$tf_ns" ]]; then
-        continue
-      fi
-     done
-  fi
+for ns in $ALL_NS; do
+
+  # skip system namespaces
+  case "$ns" in
+    kube-system|default|kube-public|kube-node-lease)
+      continue
+      ;;
+  esac
+
+  # skip terraform-managed namespaces
+  for tf_ns in $TF_CREATED_NS; do
+    if [[ "$ns" == "$tf_ns" ]]; then
+      continue 2
+    fi
+  done
 
   echo ">> Cleaning namespace: $ns"
 
@@ -73,31 +58,28 @@ for ns in $NAMESPACES; do
 done
 
 ########################################
-# 4. VERIFY INGRESS IS GONE (CRITICAL FOR LB CLEANUP)
+# 4. INGRESS CHECK (LB SAFETY)
 ########################################
-
 echo ">> Checking Ingress resources..."
 kubectl get ingress -A || true
 
 ########################################
-# 5. FORCE FINALIZER CLEANUP ONLY IF NEEDED
+# 5. FINALIZER FIX (ONLY IF STUCK)
 ########################################
-
-for ns in $NAMESPACES; do
+for ns in $ALL_NS; do
   STATUS=$(kubectl get ns "$ns" -o jsonpath='{.status.phase}' 2>/dev/null || true)
 
   if [[ "$STATUS" == "Terminating" ]]; then
-    echo "⚠️ Namespace stuck: $ns - forcing finalizer removal"
+    echo "⚠️ Force finalizer cleanup: $ns"
 
-    kubectl replace --raw "/api/v1/namespaces/$ns/finalize" \
-      -f <(kubectl get ns "$ns" -o json | jq '.spec.finalizers=[]') || true
+    kubectl patch ns "$ns" \
+      -p '{"spec":{"finalizers":[]}}' --type=merge || true
   fi
 done
 
 ########################################
-# 6. FINAL CHECK
+# 6. FINAL STATE
 ########################################
-
 echo ">> Final cluster state:"
 kubectl get ns
 kubectl get ingress -A || true

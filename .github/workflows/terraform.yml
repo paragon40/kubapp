@@ -320,6 +320,9 @@ jobs:
           echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
           chmod 600 ~/.config/sops/age/keys.txt
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Set ENV
         run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
 
@@ -328,8 +331,13 @@ jobs:
         run: |
           set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-          NAMESPACES=$(terraform output --json namespaces | jq -r 'keys[]' 2>/dev/null || true)
-          echo "NAMESPACES=$NAMESPACES" >> $GITHUV_ENV
+
+          NAMESPACES=$(terraform output -json namespaces \
+            | jq -r 'keys[]' \
+            | awk '{print "\"" $0 "\""}' \
+            | tr '\n' ' ')
+          ARRAY="($NAMESPACES)"
+          echo "NAMESPACES=$ARRAY" >> $GITHUB_ENV
 
       - name: Cleanup cluster
         run: bash scripts/clean_cluster.sh
