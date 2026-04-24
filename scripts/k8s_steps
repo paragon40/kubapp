@@ -1,0 +1,15 @@
+
+# Watch ingress reconciliation
+#For ALB changes:
+
+kubectl get events -n ingress --sort-by=.metadata.creationTimestamp -w
+kubectl get ingress -n ingress -w
+kubectl logs -n argocd \
+  deploy/argocd-application-controller \
+  -f
+
+# Refresh is argo is slow
+kubectl annotate application user \
+  -n argocd \
+  argocd.argoproj.io/refresh=hard --overwrite
+
