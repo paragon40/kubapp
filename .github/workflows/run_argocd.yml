@@ -18,8 +18,6 @@ jobs:
       # --------------------------------
       - name: Checkout repo
         uses: actions/checkout@v4
-
-
       # --------------------------------
       # 2. AWS credentials
       # --------------------------------
@@ -32,8 +30,20 @@ jobs:
       - name: Check AWS credentials
         run: aws sts get-caller-identity
 
-      - name: Make script executable
-        run: chmod +x scripts/bootstrap_gitops.sh
+      - name: Generate GitHub App token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID_GITHUB }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
 
-      - name: Run GitOps bootstrap
+      - name: Check Readiness
+        run: bash scripts/check_cluster.sh
+
+      - name: Destroy system
+        run: |
+          kubectl delete  -n argocd -f gitops/argocd/appset.yaml
+          kubectl delete  -n argocd -f gitops/argocd/ingress-app.yaml
+
+      - name: Recreate
         run: bash scripts/bootstrap_gitops.sh
