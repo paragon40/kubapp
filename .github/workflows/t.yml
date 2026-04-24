@@ -1,76 +1,39 @@
-name: Test Terrafom
+name: Test ENI + ELB Cleanup Engine
 
 on:
   workflow_dispatch:
-    inputs:
-      action:
-        description: Action to run
-        required: true
-        type: choice
-        options: [apply, destroy]
-
-      env:
-        description: Environment
-        required: true
-        default: dev
-        type: choice
-        options: [dev, prod]
-
-permissions:
-  id-token: write
-  contents: read
-
-concurrency:
-  group: terraform-${{ github.event.inputs.env }}
-  cancel-in-progress: false
 
 jobs:
-  destroy:
-    if: ${{ github.event.inputs.action == 'destroy' }}
-    name: Destroy
+  test-engine:
     runs-on: ubuntu-latest
 
+    env:
+      ENV: dev
+      AWS_REGION: us-east-1
+      CLUSTER_NAME: kubapp-dev
+      VPC_ID: vpc-053b87f4e75163019
+      DRY_RUN: true
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Install SOPS
-        run: |
-          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
-          chmod +x sops
-          sudo mv sops /usr/local/bin/sops
-
-      - name: Configure AWS
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
-      - name: Setup AGE key
+      - name: Install dependencies
         run: |
-          mkdir -p ~/.config/sops/age
-          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
-          chmod 600 ~/.config/sops/age/keys.txt
+          sudo apt-get update
+          sudo apt-get install -y jq awscli
 
-      - name: Set ENV
-        run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
+      - name: Make script executable
+        run: chmod +x scripts/delete_leftovers.sh
 
-      - name: Destroy K8s
-        working-directory: iac/k8s
+      - name: Run cleanup engine (DRY RUN)
         run: |
-          set -euo pipefail
-          terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-          terraform validate
-          sops -d envs/${ENV}/k8s.tfvars.enc > k8s.tfvars
-          terraform destroy -auto-approve -var-file=k8s.tfvars
-
-      - name: Destroy Infra
-        working-directory: iac/infra
-        run: |
-          set -euo pipefail
-          terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-          terraform validate
-          sops -d envs/${ENV}/infra.tfvars.enc > infra.tfvars
-          terraform destroy -auto-approve -var-file=infra.tfvars
+          ./scripts/delete_leftovers.sh

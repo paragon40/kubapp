@@ -73,9 +73,5 @@ variable "fargate_workloads" {
     monitoring = {
       role = "observe"
     }
-
-    landing = {
-      role = "access"
-    }
   }
 }
