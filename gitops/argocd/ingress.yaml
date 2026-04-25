@@ -13,7 +13,7 @@ spec:
 
   template:
     metadata:
-      name: ingress-{{env}}
+      name: "ingress-{{env}}"
 
     spec:
       project: default
@@ -26,11 +26,11 @@ spec:
 
         helm:
           valueFiles:
-            - envs/{{env}}/ingress-values.yaml
+            - "envs/{{env}}/ingress-values.yaml"
 
       destination:
         server: https://kubernetes.default.svc
-        namespace: {{env}}
+        namespace: "{{env}}"
 
       syncPolicy:
         automated:
