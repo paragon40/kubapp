@@ -24,9 +24,13 @@ on:
           - dev
           - prod
 
+####################################################
+# PREPARE MATRIX
+####################################################
 jobs:
   prepare:
     runs-on: ubuntu-latest
+
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
 
@@ -36,15 +40,16 @@ jobs:
 
       - name: Install dependencies
         run: |
-            sudo apt-get update
-            sudo apt-get install -y jq curl
+          sudo apt-get update
+          sudo apt-get install -y jq curl
 
       - name: Generate dynamic matrix
         id: set-matrix
         run: |
           SERVICES=$(find docker -mindepth 1 -maxdepth 1 -type d -not -path "*/\.*" -printf '%f\n' \
-          | sort \
-          | jq -R -s -c 'split("\n")[:-1]')
+            | sort \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
           echo "matrix={\"service\":$SERVICES}" >> $GITHUB_OUTPUT
 
           if [ "$SERVICES" = "[]" ]; then
@@ -52,6 +57,9 @@ jobs:
             exit 1
           fi
 
+####################################################
+# BUILD JOB
+####################################################
   build:
     needs: prepare
     runs-on: ubuntu-latest
@@ -60,60 +68,72 @@ jobs:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
 
     env:
-      REGISTRY: "docker.io/${{ secrets.DOCKER_USER }}"
+      REGISTRY: docker.io
+      IMAGE_NAMESPACE: ${{ secrets.DOCKER_USER }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Login to Docker registry
+      ####################################################
+      # LOGIN
+      ####################################################
+      - name: Login to Docker Hub
         run: |
           echo "${{ secrets.DOCKER_PASS }}" | docker login $REGISTRY \
-          -u "${{ secrets.DOCKER_USER }}" --password-stdin
+            -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
-      # =========================
-      # BUILD MODE
-      # =========================
+      ####################################################
+      # BUILD
+      ####################################################
       - name: Build Docker image
         run: |
-          MODE=${{ github.event.inputs.mode || 'cached' }}
+          MODE="${{ github.event.inputs.mode }}"
+          MODE=${MODE:-cached}
+
+          IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
+          CONTEXT="docker/${{ matrix.service }}"
 
           if [ "$MODE" = "fresh" ]; then
             echo "Fresh build (no cache)"
-            docker build --no-cache \
-              -t $REGISTRY/${{ matrix.service }}:${{ github.sha }} \
-              docker/${{ matrix.service }}
+            docker build --no-cache -t "$IMAGE" "$CONTEXT"
           else
             echo "Cached build"
-            docker build \
-              -t $REGISTRY/${{ matrix.service }}:${{ github.sha }} \
-              docker/${{ matrix.service }}
+            docker build -t "$IMAGE" "$CONTEXT"
           fi
 
+      ####################################################
+      # PUSH
+      ####################################################
       - name: Push image
         run: |
-          docker push $REGISTRY/${{ matrix.service }}:${{ github.sha }}
+          IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
+          docker push "$IMAGE"
 
-      # =========================
-      # BUILD METADATA OUTPUT
-      # =========================
+      ####################################################
+      # METADATA
+      ####################################################
       - name: Generate build metadata
         run: |
           mkdir -p build-meta
 
+          IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
+
           echo "{
             \"service\": \"${{ matrix.service }}\",
-            \"image\": \"$REGISTRY/${{ matrix.service }}:${{ github.sha }}\",
+            \"image\": \"$IMAGE\",
             \"tag\": \"${{ github.sha }}\",
             \"registry\": \"$REGISTRY\",
-            \"env\": \"${{ github.event.inputs.env }}\"
+            \"namespace\": \"$IMAGE_NAMESPACE\",
+            \"env\": \"${{ github.event.inputs.env || 'dev' }}\"
           }" > build-meta/${{ matrix.service }}.json
 
-      # =========================
-      # UPLOAD ARTIFACT
-      # =========================
+      ####################################################
+      # ARTIFACT UPLOAD
+      ####################################################
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.service }}
           path: build-meta/${{ matrix.service }}.json
+
