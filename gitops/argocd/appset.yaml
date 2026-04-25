@@ -30,7 +30,7 @@ spec:
 
         helm:
           valueFiles:
-            - "../{{path}}/values.yaml"
+            - "../../../envs/{{path}}/values.yaml"
 
       destination:
         server: https://kubernetes.default.svc
