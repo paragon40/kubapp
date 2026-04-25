@@ -10,17 +10,14 @@ spec:
         repoURL: https://github.com/paragon40/kubapp.git
         revision: main
         directories:
-          - path: gitops/envs/*/*
-        values:
-          env: "{{path[2]}}"
-          app: "{{path[3]}}"
+          - path: envs/*/*
 
   template:
     metadata:
-      name: "{{path[3]}}-{{path[2]}}"
+      name: "{{path[2]}}-{{path[1]}}"
       labels:
-        env: "{{path[2]}}"
-        app: "{{path[3]}}"
+        env: "{{path[1]}}"
+        app: "{{path[2]}}"
 
     spec:
       project: default
@@ -33,11 +30,11 @@ spec:
 
         helm:
           valueFiles:
-            - values/{{path[2]}}/{{path[3]}}.yaml
+            - "../../{{path}}/values.yaml"
 
       destination:
         server: https://kubernetes.default.svc
-        namespace: "{{path[2]}}"
+        namespace: "{{path[1]}}"
 
       syncPolicy:
         automated:
@@ -45,4 +42,3 @@ spec:
           selfHeal: true
         syncOptions:
           - CreateNamespace=true
-
