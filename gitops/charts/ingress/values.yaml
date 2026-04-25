@@ -1,0 +1,21 @@
+namespace: dev
+
+ingress:
+  name: kubapp-alb
+  className: alb
+
+  annotations:
+    scheme: internet-facing
+    targetType: ip
+    healthcheckPath: /
+    listenPorts: '[{"HTTP":80}]'
+
+  paths:
+    - path: /user
+      serviceName: user-service
+      servicePort: 80
+
+    - path: /admin
+      serviceName: admin-service
+      servicePort: 80
+

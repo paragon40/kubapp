@@ -11,14 +11,17 @@ echo "=============================="
 ############################################
 # 1. VALIDATION (STRICT)
 ############################################
+echo "RUNNING VALIDATE SCRIPT..."
 ./scripts/validate.sh "$ENV"
 
 ############################################
 # 2. PRE-FLIGHT EXECUTION SCRIPTS
 ############################################
-echo "Running preflight scripts..."
+echo "RUNNING ENCRYPT SECRETS SCRIPT..."
 
 ./scripts/encrypt_secrets.sh "$ENV"
+
+echo "RUNNING VALIDATE GITOPS SCRIPT..."
 ./scripts/validate_gitops.sh
 
 ############################################

@@ -1,24 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres
-  namespace: ingress
+  name: {{ .Values.postgres.name }}
+  namespace: {{ .Values.namespace }}
+
 spec:
   replicas: 1
 
   selector:
     matchLabels:
-      app: postgres
+      app: {{ .Values.postgres.name }}
 
   template:
     metadata:
       labels:
-        app: postgres
+        app: {{ .Values.postgres.name }}
 
     spec:
       containers:
         - name: postgres
-          image: postgres:15
+          image: {{ .Values.postgres.image }}
 
           ports:
             - containerPort: 5432
@@ -27,19 +28,19 @@ spec:
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secret
+                  name: {{ .Values.postgres.name }}-secret
                   key: POSTGRES_DB
 
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secret
+                  name: {{ .Values.postgres.name }}-secret
                   key: POSTGRES_USER
 
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secret
+                  name: {{ .Values.postgres.name }}-secret
                   key: POSTGRES_PASSWORD
 
           volumeMounts:
@@ -49,5 +50,5 @@ spec:
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:
-            claimName: postgres-pvc
+            claimName: {{ .Values.postgres.name }}-pvc
 

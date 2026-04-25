@@ -1,0 +1,46 @@
+# =====================
+# Kubapp values file
+# =====================
+
+# Identity (lightweight, not important for infra)
+app_name=user
+
+# Image
+image_repo=codest40/edgeapp
+image_tag=latest-green
+
+# Runtime
+app_port=8080
+env=dev
+
+# =====================
+# ENV VARS (app-level only)
+# =====================
+map:env_DATABASE_URL=postgresql://kubuser:kubpassword@postgres:5432/kubapp
+map:env_USE_SQLITE=false
+map:env_RUN_MIGRATIONS=true
+
+# =====================
+# FEATURES (platform flags)
+# =====================
+flag:hpa=true
+flag:expose=true
+
+# =====================
+# SCALING HINTS (optional)
+# =====================
+min_replicas=2
+max_replicas=5
+
+# =====================
+# COMPLEX CONFIG (map of object)
+# =====================
+block:services.auth.url=http://auth.internal
+block:services.auth.timeout=30
+block:services.payment.url=http://pay.internal
+block:services.payment.timeout=60
+
+# =====================
+# LIST EXAMPLE
+# =====================
+list:allowed_hosts=localhost,api.local,app.local
