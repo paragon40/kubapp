@@ -2,10 +2,10 @@
   "name": "url-shortener-backend",
   "version": "1.0.0",
   "description": "URL Shortener backend with Express",
-  "main": "src/app.js",
+  "main": "backend/src/app.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "node src/app.js"
+    "start": "node backend/src/app.js",
+    "dev": "node backend/src/app.js"
   },
   "keywords": [
     "nodejs",
