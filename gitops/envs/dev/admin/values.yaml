@@ -5,7 +5,7 @@ namespace: dev
 replicaCount: 2
 
 image:
-  repository: hashicorp/http-echo
+  repository: nodejs_app
   tag: latest
   pullPolicy: IfNotPresent
 
