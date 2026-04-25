@@ -29,7 +29,7 @@ spec:
         repoURL: https://github.com/paragon40/kubapp.git
         targetRevision: main
 
-        chart: charts/apps
+        path: charts/apps
 
         helm:
           valueFiles:

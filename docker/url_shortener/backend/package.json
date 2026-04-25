@@ -1,0 +1,22 @@
+{
+  "name": "url-shortener-backend",
+  "version": "1.0.0",
+  "description": "URL Shortener backend with Express",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node src/app.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "url-shortener",
+    "docker",
+    "kubernetes"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
