@@ -1,8 +1,9 @@
-name: Build and Push Docker Image
+name: Docker Test build
 
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build-and-push:
