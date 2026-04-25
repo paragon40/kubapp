@@ -17,8 +17,23 @@ spec:
         - name: user
           image: codest40/edgeapp:Bv-1774266373-92dfe6-R142-green
           imagePullPolicy: Always
-          env:
-            - name: DATABASE_URL
-              value: "postgresql://test:test@dummy:5432/testdb"
           ports:
             - containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              value: postgresql://kubuser:kubpassword@postgres:5432/kubapp
+
+            - name: USE_SQLITE
+              value: "false"
+
+            - name: BOTH_DB
+              value: "false"
+
+            - name: RUN_MIGRATIONS
+              value: "true"
+
+      resources:
+        requests:
+          cpu: 100m
+        limits:
+          cpu: 500m
