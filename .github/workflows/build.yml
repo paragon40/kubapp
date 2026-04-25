@@ -1,7 +1,7 @@
 name: Build and Push Docker Images
 
 on:
-  push:
+#  push: {}
     paths:
       - "docker/**"
 
