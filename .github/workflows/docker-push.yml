@@ -25,7 +25,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./docker/nodejs_app
-          file: ./nodejs_app/Dockerfile
+          file: ./docker/nodejs_app/Dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKER_USER }}/nodejs_app:latest
