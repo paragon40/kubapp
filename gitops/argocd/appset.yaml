@@ -29,11 +29,11 @@ spec:
         repoURL: https://github.com/paragon40/kubapp.git
         targetRevision: main
 
-        path: charts/apps
+        path: gitops/charts/apps
 
         helm:
           valueFiles:
-            - values.yaml
+            - ../../envs/{{path[2]}}/{{path[3]}}/values.yaml
 
       destination:
         server: https://kubernetes.default.svc
