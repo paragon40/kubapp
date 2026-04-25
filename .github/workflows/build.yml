@@ -60,7 +60,7 @@ jobs:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
 
     env:
-      REGISTRY: "docker.io/${{ secrets.DOCKER_USERNAME }}"
+      REGISTRY: "docker.io/${{ secrets.DOCKER_USER }}"
 
     steps:
       - name: Checkout repo
