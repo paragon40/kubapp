@@ -29,7 +29,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_USER }}/nodejs_app:latest
-            ${{ secrets.DOCKER_USER }}/nodejs_app:${{ github.sha }}
+            #${{ secrets.DOCKER_USER }}/nodejs_app:${{ github.sha }}
 
       - name: Image pushed successfully
         run: echo "Docker image built and pushed successfully"
