@@ -5,8 +5,8 @@ namespace: dev
 replicaCount: 2
 
 image:
-  repository: nodejs_app
-  tag: latest
+  repository: codest40/nodejs_app
+  tag: 4186279582d0cf9943fdceb70b994c6b4cd5b347
   pullPolicy: IfNotPresent
 
 service:

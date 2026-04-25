@@ -31,7 +31,7 @@ spec:
         helm:
           valueFiles:
             - "../../../{{path}}/values.yaml"
-
+            # - gitops/envs/{{path[1]}}/{{path[2]}}/values.yaml
       destination:
         server: https://kubernetes.default.svc
         namespace: "{{path[2]}}"
