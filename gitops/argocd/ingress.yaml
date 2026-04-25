@@ -9,7 +9,7 @@ spec:
     - list:
         elements:
           - env: dev
-          - env: prod
+          #- env: prod
 
   template:
     metadata:
