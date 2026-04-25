@@ -10,14 +10,14 @@ spec:
         repoURL: https://github.com/paragon40/kubapp.git
         revision: main
         directories:
-          - path: envs/*/*
+          - path: gitops/envs/*/*
 
   template:
     metadata:
-      name: "{{path[2]}}-{{path[1]}}"
+      name: "{{path[3]}}-{{path[2]}}"
       labels:
-        env: "{{path[1]}}"
-        app: "{{path[2]}}"
+        env: "{{path[2]}}"
+        app: "{{path[3]}}"
 
     spec:
       project: default
@@ -34,7 +34,7 @@ spec:
 
       destination:
         server: https://kubernetes.default.svc
-        namespace: "{{path[1]}}"
+        namespace: "{{path[2]}}"
 
       syncPolicy:
         automated:
