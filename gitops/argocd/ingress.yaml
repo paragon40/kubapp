@@ -1,5 +1,5 @@
 apiVersion: argoproj.io/v1alpha1
-kind: ingress
+kind: ApplicationSet
 metadata:
   name: ingress
   namespace: argocd
@@ -26,7 +26,7 @@ spec:
 
         helm:
           valueFiles:
-            - "envs/{{env}}/values.yaml"
+            - "envs/{{env}}/ingress/values.yaml"
 
       destination:
         server: https://kubernetes.default.svc
