@@ -1,8 +1,7 @@
 name: Docker Test build
 
 on:
-  push:
-    branches: [ "main" ]
+#  push: {}
   workflow_dispatch:
 
 jobs:
