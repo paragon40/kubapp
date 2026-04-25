@@ -1,0 +1,24 @@
+gitops/
+├── charts/
+│   ├── app/                # reusable app chart (user/admin/etc)
+│   ├── postgres/           # postgres chart
+│   └── ingress/            # global ALB ingress chart
+│
+├── envs/
+│   ├── dev/
+│   │   ├── user-values.yaml
+│   │   ├── admin-values.yaml
+│   │   ├── postgres-values.yaml
+│   │   └── ingress-values.yaml
+│   │
+│   └── prod/
+│       ├── user-values.yaml
+│       ├── admin-values.yaml
+│       ├── postgres-values.yaml
+│       └── ingress-values.yaml
+│
+├── argocd/
+│   ├── appset.yaml
+│   └── root-app.yaml
+│
+└── secrets/

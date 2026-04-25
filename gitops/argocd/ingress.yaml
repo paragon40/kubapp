@@ -1,23 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: kubapp
+  name: ingress
   namespace: argocd
 
 spec:
   generators:
-    - git:
-        repoURL: https://github.com/paragon40/kubapp.git
-        revision: main
-        directories:
-          - path: gitops/envs/*/*
+    - list:
+        elements:
+          - env: dev
+          - env: prod
 
   template:
     metadata:
-      name: "{{path[2]}}-{{path[1]}}"
-      labels:
-        env: "{{path[1]}}"
-        app: "{{path[2]}}"
+      name: ingress-{{env}}
 
     spec:
       project: default
@@ -26,20 +22,18 @@ spec:
         repoURL: https://github.com/paragon40/kubapp.git
         targetRevision: main
 
-        chart: charts/app
+        chart: charts/ingress
 
         helm:
           valueFiles:
-            - "{{path}}/values.yaml"
+            - envs/{{env}}/ingress-values.yaml
 
       destination:
         server: https://kubernetes.default.svc
-        namespace: "{{path[1]}}"
+        namespace: {{env}}
 
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
-        syncOptions:
-          - CreateNamespace=true
 

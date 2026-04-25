@@ -140,7 +140,7 @@ echo "✅ YAML OK"
 echo "Checking GitOps structure..."
 
 check_dir "gitops/argocd"
-check_dir "gitops/apps"
+check_dir "gitops/charts"
 check_dir "gitops/envs"
 
 echo "✅ GitOps structure OK"

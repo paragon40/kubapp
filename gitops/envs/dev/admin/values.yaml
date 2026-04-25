@@ -1,0 +1,29 @@
+appName: admin
+
+namespace: dev
+
+replicaCount: 2
+
+image:
+  repository: hashicorp/http-echo
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5678
+
+resources:
+  requests:
+    cpu: 100m
+  limits:
+    cpu: 300m
+
+env: {}
+
+hpa:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  cpu: 70

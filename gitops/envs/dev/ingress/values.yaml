@@ -1,0 +1,4 @@
+namespace: dev
+
+ingress:
+  name: kubapp-dev-alb
