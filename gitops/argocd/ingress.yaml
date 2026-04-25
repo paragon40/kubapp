@@ -22,7 +22,7 @@ spec:
         repoURL: https://github.com/paragon40/kubapp.git
         targetRevision: main
 
-        chart: charts/ingress
+        path: gitops/charts/ingress
 
         helm:
           valueFiles:
