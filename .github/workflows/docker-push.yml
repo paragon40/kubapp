@@ -1,0 +1,35 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docker/nodejs_app
+          file: ./nodejs_app/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USER }}/nodejs_app:latest
+            ${{ secrets.DOCKER_USER }}/nodejs_app:${{ github.sha }}
+
+      - name: Image pushed successfully
+        run: echo "Docker image built and pushed successfully"
