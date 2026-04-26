@@ -1,0 +1,5 @@
+groups:
+  - name: recording-rules
+    rules:
+      - record: gitops:deployment_success_rate
+        expr: sum(rate(argocd_app_sync_total{status="Synced"}[5m]))

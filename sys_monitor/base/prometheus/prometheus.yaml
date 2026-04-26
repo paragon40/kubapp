@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "argocd"
+    static_configs:
+      - targets: ["argocd-server.argocd.svc.cluster.local:8082"]
+
+  - job_name: "github-webhook"
+    static_configs:
+      - targets: ["github-webhook-collector:3000"]

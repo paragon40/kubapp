@@ -1,0 +1,6 @@
+groups:
+  - name: argocd-alerts
+    rules:
+      - alert: ArgoCDOutOfSync
+        expr: argocd_app_sync_status != 1
+        for: 5m
