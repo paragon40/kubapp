@@ -19,7 +19,7 @@ jobs:
       - name: Checkout GitOps repo
         uses: actions/checkout@v4
         with:
-          repository: timzapone/kubapp-project
+          repository: paragon40/kubapp
           token: ${{ secrets.GITOPS_TOKEN }}
 
       - name: Install dependencies
@@ -36,13 +36,9 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           path: artifacts
 
-      # =========================
-      # VALIDATION (STRICT)
-      # =========================
       - name: Validate artifacts
         run: |
           set -e
-
           echo "Checking artifacts directory..."
 
           if [ ! -d "artifacts" ]; then
@@ -67,13 +63,11 @@ jobs:
       - name: Validate GitOps structure
         run: ./scripts/validate_gitops.sh artifacts
 
-      # =========================
-      # APPLY GITOPS UPDATES
-      # =========================
       - name: Apply GitOps updates
         run: |
           set -e
 
+          REG_FILE="gitops/registry/services.yaml"
           for file in $(find artifacts -name "*.json"); do
             SERVICE=$(jq -r .service "$file")
             IMAGE=$(jq -r .image "$file")
@@ -84,9 +78,20 @@ jobs:
               exit 1
             fi
 
-            FILE="gitops/envs/$ENV/$SERVICE/values.yaml"
+            EXISTS=$(yq e ".services | has(\"$SERVICE\")" "$REG_FILE")
+            if [ "$EXISTS" != "true" ]; then
+              echo "Service $SERVICE not registered"
+              exit 1
+            fi
+
+            FILE=$(yq e ".services.$SERVICE.values.$ENV" "$REG_FILE")
+            if [ "$FILE" = "null" ] || [ -z "$FILE" ]; then
+              echo "No env mapping for $SERVICE in $ENV"
+              exit 1
+            fi
 
             echo "Updating $SERVICE ($ENV)"
+            echo "Target file: $FILE"
 
             if [ ! -f "$FILE" ]; then
               echo "Missing GitOps file: $FILE"
@@ -94,11 +99,9 @@ jobs:
             fi
 
             yq e ".image.repository = strenv(IMAGE)" -i "$FILE"
+
           done
 
-      # =========================
-      # COMMIT CHANGES
-      # =========================
       - name: Commit changes
         run: |
           git config user.name "github-actions"
