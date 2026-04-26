@@ -26,8 +26,8 @@ spec:
 
         helm:
           valueFiles:
-            #- "envs/{{env}}/ingress/values.yaml"
-            - "../../envs/{{env}}/ingress/values.yaml"
+            #- "ingress/{{env}}/values.yaml"
+            - "../../ingress/{{env}}/values.yaml"
 
       destination:
         server: https://kubernetes.default.svc
