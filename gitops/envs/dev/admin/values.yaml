@@ -6,7 +6,7 @@ replicaCount: 2
 
 image:
   repository: codest40/nodejs_app
-  tag: 4186279582d0cf9943fdceb70b994c6b4cd5b347
+  tag: 7c63966cb07479e7d709a9edc033165407f79382
   pullPolicy: IfNotPresent
 
 service:
