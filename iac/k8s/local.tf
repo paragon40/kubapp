@@ -58,21 +58,21 @@ locals {
       workload  = "control-plane"
     }
 
-    monitoring = {
-      component = "observability"
-      workload  = "monitoring"
-      telemetry = "metrics"
-    }
+    #    monitoring = {
+    #      component = "observability"
+    #      workload  = "monitoring"
+    #      telemetry = "metrics"
+    #    }
 
-    user = {
-      component = "application"
-      workload  = "users"
-    }
+    #    user = {
+    #      component = "application"
+    #      workload  = "users"
+    #    }
 
-    admin = {
-      component = "application"
-      workload  = "admin"
-    }
+    #    admin = {
+    #      component = "application"
+    #      workload  = "admin"
+    #    }
   }
 }
 
