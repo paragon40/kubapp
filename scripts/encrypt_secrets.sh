@@ -124,11 +124,32 @@ if [[ -d "$GITOPS_DIR" ]]; then
   echo ""
   echo "Starting GitOps secrets encryption..."
 
-  for yaml in "$GITOPS_DIR"/*.yaml; do
-    [[ -f "$yaml" ]] || continue
-    encrypt_gitops_yaml "$yaml"
-  done
+  for file in "$GITOPS_DIR"/*; do
+    [[ -f "$file" ]] || continue
 
+    case "$file" in
+      *.yaml|*.yml)
+        encrypt_gitops_yaml "$file"
+        ;;
+      *.env)
+        echo "Encrypting GitOps env secret: $file → ${file}.enc"
+        ENCRYPTED_FILE="${file}.enc"
+
+        echo "🔐 Encrypting (without modifying original) → $ENCRYPTED_FILE"
+
+        sops --encrypt \
+          --input-type yaml \
+          --output-type yaml \
+          --age "$AGE_PUBLIC_KEY" \
+          "$file" > "$ENCRYPTED_FILE"
+
+        echo "✅ Done: $file → $ENCRYPTED_FILE"
+        ;;
+      *)
+        echo "Skipping unsupported file: $file"
+        ;;
+    esac
+  done
   echo "✅ GitOps encryption complete"
 else
   echo "❌ GitOps secrets directory not found: $GITOPS_DIR"
