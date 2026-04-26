@@ -102,5 +102,37 @@ for env in $(get_envs); do
   done
 done
 
+
+# =========================
+# GITOPS SOPS ENCRYPTION
+# =========================
+
+encrypt_gitops_yaml() {
+  local file="$1"
+  local out="${file}.enc"
+
+  echo "Encrypting GitOps secret: $file → $out"
+
+  sops --encrypt \
+    --age "$AGE_PUBLIC_KEY" \
+    "$file" > "$out"
+}
+
+GITOPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../gitops/secrets" && pwd)"
+
+if [[ -d "$GITOPS_DIR" ]]; then
+  echo ""
+  echo "Starting GitOps secrets encryption..."
+
+  for yaml in "$GITOPS_DIR"/*.yaml; do
+    [[ -f "$yaml" ]] || continue
+    encrypt_gitops_yaml "$yaml"
+  done
+
+  echo "✅ GitOps encryption complete"
+else
+  echo "❌ GitOps secrets directory not found: $GITOPS_DIR"
+fi
+
 echo ""
 echo "✅ Encryption complete"

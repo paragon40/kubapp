@@ -67,16 +67,20 @@ jobs:
         run: |
           set -e
 
-          if [ -f gitops/secrets/github-repo-secret.yaml ]; then
-            kubectl apply --validate=false -f gitops/secrets/github-repo-secret.yaml
-            echo "ArgoCD secret applied from file"
+          SECRET_FILE=$(find gitops/secrets -type f -name "github-repo-secret.*" | head -n 1)
+
+          if [ -n "$SECRET_FILE" ]; then
+            echo "Decrypting secret file: $SECRET_FILE"
+            sops -d "$SECRET_FILE" | kubectl apply --validate=false -f -
+            echo "✅ ArgoCD secret applied from Sops"
           else
-            echo "Generating secret"
+            echo "❌ No encrypted secret files found. Generating one"
             python3 scripts/apply_argo_secret.py
             kubectl apply --validate=false -f gitops/secrets/github-repo-secret.yaml
+            echo "✅ ArgoCD secret applied from Script"
           fi
-        #env:
-        #PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        env:
+           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
 
       # --------------------------------
       # 5. Verify ArgoCD resources
