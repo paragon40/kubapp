@@ -26,7 +26,7 @@ spec:
         repoURL: https://github.com/paragon40/kubapp.git
         targetRevision: main
 
-        path: gitops/charts/apps
+        path: "gitops/charts/{{path[3]}}"
 
         helm:
           valueFiles:

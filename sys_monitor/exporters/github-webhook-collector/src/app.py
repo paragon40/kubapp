@@ -10,12 +10,14 @@ app = Flask(__name__)
 # ---------------------------
 github_push_total = Counter(
     "github_push_total",
-    "Total number of GitHub push events"
+    "Total number of GitHub push events",
+    ["repo", "commit"]
 )
 
 github_pr_total = Counter(
     "github_pr_total",
-    "Total number of GitHub pull request events"
+    "Total number of GitHub pull request events",
+    ["repo", "action"]
 )
 
 github_merge_total = Counter(
@@ -60,21 +62,25 @@ def github_webhook():
     event = request.headers.get("X-GitHub-Event")
     payload = request.json
 
-    print(f"GitHub Event: {event}")
-
     if event == "push":
-        github_push_total.inc()
         repo = payload["repository"]["full_name"]
         commit = payload["after"]
+
+        github_push_total.labels(
+            repo=repo,
+            commit=commit
+        ).inc()
+
         print(f"[PUSH] repo={repo} commit={commit}")
 
     elif event == "pull_request":
-        github_pr_total.inc()
+        repo = payload["repository"]["full_name"]
         action = payload["action"]
-        print(f"[PR] action={action}")
 
-    elif event == "merge":
-        github_merge_total.inc()
+        github_pr_total.labels(
+            repo=repo,
+            action=action
+        ).inc()
 
     return "ok", 200
 
