@@ -5,8 +5,8 @@ namespace: dev
 replicaCount: 2
 
 image:
-  repository: codest40/edgeapp
-  tag: latest-green
+  repository: codest40/weather_app
+  tag: 7c63966cb07479e7d709a9edc033165407f79382
   pullPolicy: Always
 
 service:
