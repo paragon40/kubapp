@@ -36,9 +36,6 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           path: artifacts
 
-      # =========================
-      # VALIDATE ARTIFACTS EXIST
-      # =========================
       - name: Validate artifacts
         run: |
           set -e
@@ -50,9 +47,6 @@ jobs:
             exit 1
           fi
 
-      # =========================
-      # VERIFY VIA ARGOCD CLI
-      # =========================
       - name: Verify ArgoCD apps
         env:
           ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
@@ -65,8 +59,8 @@ jobs:
             ENV=$(jq -r .env "$file")
 
             APP_NAME="${SERVICE}-${ENV}"
-
             echo "Checking $APP_NAME"
+
             argocd app get $APP_NAME \
               --server $ARGOCD_SERVER \
               --auth-token $ARGOCD_AUTH_TOKEN \
@@ -87,20 +81,55 @@ jobs:
 
           done
 
-      # =========================
-      # ROLLBACK (SAFE VERSION)
-      # =========================
-      - name: Rollback on failure
+      - name: Suggest Rollback on failure
         if: failure()
         run: |
-          echo "Deployment failed. Roll back safely"
-
           git fetch --tags
-
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ || echo "")
+          ENV=$(find artifacts -name "*.json" | head -1 | xargs jq -r .env)
+          PREVIOUS_TAG=$(git tag --list "stable-${ENV}-*" --sort=-creatordate | sed -n '2p')
 
           if [ -z "$PREVIOUS_TAG" ]; then
             echo "No previous tag found."
             exit 1
           fi
+          echo "Deployment failed. Roll back safely with: $PREVIOUS_TAG"
+
+
+      - name: Create stable deployment tag
+        run: |
+          ENV=$(find artifacts -name "*.json" | head -1 | xargs jq -r .env)
+          TAG="stable-${ENV}-$(date +%Y%m%d-%H%M%S)"
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git fetch --tags
+
+          git tag -a "$TAG" -m "Stable deployment snapshot: $TAG || commit=$(git rev-parse HEAD)"
+          git push origin "$TAG"
+
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "✅ Created stable tag: $TAG"
+
+
+      - name: Save deployment snapshot metadata
+        env:
+          TAG: ${{ env.TAG }}
+        run: |
+          mkdir -p snapshot
+
+          echo "{
+            \"tag\": \"$TAG\",
+            \"commit\": \"$(git rev-parse HEAD)\",
+            \"time\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"
+          }" > snapshot/state.json
+
+      - name: Upload snapshot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-snapshot
+          path: snapshot/state.json
+
+      - name: Veriyfy Complete
+        run: echo "✅ Gitops System Safe"
 

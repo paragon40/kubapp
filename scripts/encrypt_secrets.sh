@@ -135,7 +135,7 @@ if [[ -d "$GITOPS_DIR" ]]; then
         echo "Encrypting GitOps env secret: $file → ${file}.enc"
         ENCRYPTED_FILE="${file}.enc"
 
-        echo "🔐 Encrypting (without modifying original) → $ENCRYPTED_FILE"
+        echo "Encrypting → $ENCRYPTED_FILE"
 
         sops --encrypt \
           --input-type yaml \
