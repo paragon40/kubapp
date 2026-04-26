@@ -10,7 +10,7 @@ spec:
         repoURL: https://github.com/paragon40/kubapp.git
         revision: main
         directories:
-          - path: gitops/envs/*/*
+          - path: gitops/envs/dev/*
 
   template:
     metadata:
@@ -26,7 +26,7 @@ spec:
         repoURL: https://github.com/paragon40/kubapp.git
         targetRevision: main
 
-        path: "gitops/charts/{{path[3]}}"
+        path: gitops/charts/apps
 
         helm:
           valueFiles:
