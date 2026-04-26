@@ -1,0 +1,5 @@
+groups:
+  - name: gitops-recordings
+    rules:
+      - record: gitops:sync_latency
+        expr: histogram_quantile(0.95, rate(argocd_app_reconcile_duration_seconds_bucket[5m]))

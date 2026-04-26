@@ -1,0 +1,5 @@
+groups:
+  - name: deployment-failures
+    rules:
+      - alert: DeploymentFailureSpike
+        expr: rate(argocd_app_sync_total{status="Failed"}[5m]) > 0.2
