@@ -39,7 +39,7 @@ for ns in $ALL_NS; do
 
   # skip system namespaces
   case "$ns" in
-    kube-system|default|kube-public|kube-node-lease|argocd|monitoring|admin|user)
+    kube-system|default|kube-public|kube-node-lease)
       continue
       ;;
   esac
