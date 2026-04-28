@@ -3,6 +3,9 @@ namespace: dev
 ingress:
   name: kubapp-dev-alb
   className: alb
+  baseDomain: kubapp.rundailytest.site
+
+  enableSubdomainRouting: true
 
   annotations:
     scheme: internet-facing
@@ -10,11 +13,8 @@ ingress:
     healthcheckPath: /
     listenPorts: '[{"HTTP":80}]'
 
-  paths:
-    - path: /user
-      serviceName: user-service
-      servicePort: 80
+services:
+  - name: user
+  - name: admin
+  - name: payment
 
-    - path: /admin
-      serviceName: admin-service
-      servicePort: 80

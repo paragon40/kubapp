@@ -9,20 +9,41 @@ metadata:
     alb.ingress.kubernetes.io/target-type: {{ .Values.ingress.annotations.targetType }}
     alb.ingress.kubernetes.io/listen-ports: '{{ .Values.ingress.annotations.listenPorts }}'
     alb.ingress.kubernetes.io/healthcheck-path: {{ .Values.ingress.annotations.healthcheckPath }}
+    alb.ingress.kubernetes.io/group.name: kubapp-shared
 
 spec:
   ingressClassName: {{ .Values.ingress.className }}
 
   rules:
-    - http:
+
+    # Path-based routing
+    - host: {{ .Values.ingress.baseDomain }}
+      http:
         paths:
-{{- range .Values.ingress.paths }}
-          - path: {{ .path }}
+{{- range .Values.services }}
+          - path: /{{ .name }}
             pathType: Prefix
             backend:
               service:
-                name: {{ .serviceName }}
+                name: {{ .name }}-service
                 port:
-                  number: {{ .servicePort }}
+                  number: 80
 {{- end }}
 
+{{- if .Values.ingress.enableSubdomainRouting }}
+{{- range .Values.services }}
+
+    # Subdomain routing
+    - host: {{ .name }}.{{ $.Values.ingress.baseDomain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .name }}-service
+                port:
+                  number: 80
+
+{{- end }}
+{{- end }}
