@@ -106,6 +106,19 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
 
+      - name: Ensure helm is isntalled
+        run: |
+          if ! command -v helm >/dev/null 2>&1; then
+            sudo snap install helm --classic
+          fi
+
+      - name: Install Metrics Server for HPA
+        run: |
+          helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+          helm upgrade --install metrics-server metrics-server/metrics-server \
+            -n kube-system \
+            --create-namespace
+
       - name: Make script executable
         run: chmod +x scripts/bootstrap_gitops.sh
 

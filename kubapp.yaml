@@ -1,0 +1,22 @@
+# =====================
+# Kubapp values file
+# =====================
+
+service:
+  name: notification
+
+app:
+  port: 3000
+  healthPath: /
+
+deploy:
+  env: dev
+
+runtime:
+  env:
+    NODE_ENV: developement
+    REDIS_HOST: redis-service
+    REDIS_PORT: "6379"
+    LOG_LEVEL: info
+    API_TIMEOUT: "30"
+

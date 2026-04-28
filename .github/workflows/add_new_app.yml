@@ -1,0 +1,143 @@
+name: Add New App (GitOps Provisioning)
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Images"]
+    types:
+      - completed
+
+concurrency:
+  group: add-new-app
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v4
+        with:
+          repository: paragon40/kubapp
+          token: ${{ secrets.GITOPS_TOKEN }}
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+          if ! command -v yq >/dev/null 2>&1; then
+            sudo wget -qO /usr/local/bin/yq \
+              https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+            sudo chmod +x /usr/local/bin/yq
+          fi
+
+          if ! command -v helm >/dev/null 2>&1; then
+            sudo snap install helm --classic
+          fi
+
+          if ! command -v sops >/dev/null 2>&1; then
+            curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+            chmod +x sops
+            sudo mv sops /usr/local/bin/sops
+          fi
+
+      - name: Setup AGE key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          path: artifacts
+
+      - name: Validate artifacts
+        run: |
+          set -euo pipefail
+
+          FILES=$(find artifacts -name "*.json")
+
+          if [[ -z "$FILES" ]]; then
+            echo "❌ No build artifacts found"
+            exit 1
+          fi
+
+          echo "Artifacts detected:"
+          find artifacts -name "*.json"
+
+      - name: Create values + inject vars + ingress registration
+        run: |
+          set -euo pipefail
+
+          for file in $(find artifacts -name "*.json"); do
+            echo ""
+            echo "================================================"
+            echo "Processing artifact: $file"
+            echo "================================================"
+
+            SERVICE=$(jq -r '.service' "$file")
+            ENV=$(jq -r '.env' "$file")
+
+            if [[ -z "$SERVICE" || "$SERVICE" == "null" ]]; then
+              echo "❌ Invalid service in $file"
+              exit 1
+            fi
+
+            if [[ -z "$ENV" || "$ENV" == "null" ]]; then
+              echo "❌ Invalid env in $file"
+              exit 1
+            fi
+
+            ####################################################
+            # Create values.yaml
+            ####################################################
+            echo "Creating values.yaml..."
+            bash scripts/create_values.sh "$file"
+
+            ####################################################
+            # Inject runtime env + encrypted secrets
+            ####################################################
+            echo "Preparing runtime env + secrets..."
+            bash scripts/set_app_secret.sh "$file"
+
+            ####################################################
+            # Register app in shared ingress
+            ####################################################
+            echo "Registering ingress route..."
+            bash scripts/register_new_svc.sh "$SERVICE"
+
+            echo "✅ Provision complete for: $SERVICE"
+          done
+
+      - name: Validate GitOps structure
+        run: |
+          set -euo pipefail
+          bash scripts/validate_gitops.sh
+
+      - name: Commit GitOps changes
+        run: |
+          set -euo pipefail
+
+          DATE=$(date +"%Y-%m-%d_%H-%M-%S")
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add gitops/
+
+          git diff --cached --quiet && {
+            echo "ℹ️  No new app changes detected"
+            exit 0
+          }
+
+          git commit -m "[ADD-APP] ${DATE} provision new application(s)"
+          git push
+
+          echo "✅ New app provisioning committed successfully"
