@@ -135,10 +135,10 @@ jobs:
 
           if [[ -n "$SECRET_FILE" && -s "$SECRET_FILE" ]]; then
             echo "Secrets file detected: $SECRET_FILE"
-            echo "NO_SECRETS=false"
+            echo "NO_SECRETS=false" >> $GITHUB_ENV
           else
-            echo "NO_SECRETS=true"
-          fi >> $GITHUB_ENV
+            echo "NO_SECRETS=true" >> $GITHUB_ENV
+          fi
 
           NAMESPACE="$ENV"
           IMAGE="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA"
@@ -155,7 +155,7 @@ jobs:
             "namespace": "$NAMESPACE",
             "env": "$ENV",
             "port": "$PORT",
-            "NO_VARS": "$NO_VARS"
+            "NO_VARS": "$NO_VARS",
             "NO_SECRETS": "$NO_SECRETS"
           }
           EOF
@@ -175,6 +175,7 @@ jobs:
           MODE=${MODE:-cached}
 
           IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
+
           CONTEXT="docker/${{ matrix.service }}"
 
           if [ "$MODE" = "fresh" ]; then
