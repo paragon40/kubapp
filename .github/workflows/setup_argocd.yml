@@ -78,11 +78,11 @@ jobs:
         run: |
           set -e
 
-          SECRET_FILE=$(find gitops/secrets -type f -name "*.enc" | head -n 1)
+          SECRET_FILE=$(find gitops/secrets -type f -name "github-repo-secret.yaml" | head -n 1)
 
           if [ -n "$SECRET_FILE" ]; then
             echo "Decrypting secret file: $SECRET_FILE"
-            sops -d "$SECRET_FILE" | kubectl apply --validate=false -f -
+            kubectl apply --validate=false -f "$SECRET_FILE"
             echo "✅ ArgoCD secret applied from Sops"
           else
             echo "❌ No encrypted secret files found. Generating one"
