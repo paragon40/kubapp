@@ -128,10 +128,10 @@ if [[ -d "$GITOPS_DIR" ]]; then
     [[ -f "$file" ]] || continue
 
     case "$file" in
-      *.yaml|*.yml)
+      *.yaml)
         encrypt_gitops_yaml "$file"
         ;;
-      *.env)
+      *.yml)
         echo "Encrypting GitOps env secret: $file → ${file}.enc"
         ENCRYPTED_FILE="${file}.enc"
 
