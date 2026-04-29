@@ -242,4 +242,4 @@ jobs:
           fi
 
           git commit -m "[BUILD_APP] Registry update: (batch commit)"
-          git push
+          git pull --rebase && push
