@@ -65,6 +65,9 @@ jobs:
       - name: Create values + inject vars + ingress registration
         run: |
           set -euo pipefail
+          APP_LIST="$(find gitops/registry -name "*.json" | wc -l)"
+          echo "Number of Apps Found: $APP_LIST"
+
           for file in $(find gitops/registry -name "*.json"); do
             echo ""
             echo "================================================"
