@@ -1,0 +1,12 @@
+{
+  "service": "url_shortener",
+  "context": "docker/url_shortener",
+  "image": "codest40/url_shortener:c53a7628937f560ea5e4cc899ee9760cb5df4289",
+  "tag": "c53a7628937f560ea5e4cc899ee9760cb5df4289",
+  "registry": "docker.io",
+  "namespace": "dev",
+  "env": "dev",
+  "port": "80",
+  "NO_VARS": "true",
+  "NO_SECRETS": ""
+}
