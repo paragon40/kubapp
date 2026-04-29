@@ -42,8 +42,18 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
 
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID_GITHUB }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          repository: paragon40/kubapp
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Install dependencies
         run: |
@@ -88,6 +98,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          repository: paragon40/kubapp
+          token: ${{ steps.app-token.outputs.token }}
 
       ####################################################
       # LOGIN

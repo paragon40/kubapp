@@ -1,7 +1,7 @@
 name: Add New App (GitOps Provisioning)
 
 on:
-  pull_request:
+  push:
     paths:
       - "gitops/registry/**"
 
