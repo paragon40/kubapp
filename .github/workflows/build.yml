@@ -40,22 +40,8 @@ jobs:
 
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-      token: ${{ steps.app-token.outputs.token }}
 
     steps:
-      - name: Generate GitHub App token
-        id: app-token
-        uses: tibdex/github-app-token@v2
-        with:
-          app_id: ${{ secrets.APP_ID_GITHUB }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
-
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          repository: paragon40/kubapp
-          token: ${{ steps.app-token.outputs.token }}
-
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -97,11 +83,18 @@ jobs:
       IMAGE_NAMESPACE: ${{ secrets.DOCKER_USER }}
 
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID_GITHUB }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           repository: paragon40/kubapp
-          token: ${{ needs.prepare.outputs.token }}
+          token: ${{ steps.app-token.outputs.token }}
 
       ####################################################
       # LOGIN
@@ -226,7 +219,9 @@ jobs:
           git config user.email "github-actions@github.com"
 
           git add gitops/registry/
-          git diff --cached --quiet && exit 0
+          if git diff --cached --quiet; then
+            echo "No chages detected"  && exit 0
+          fi
 
           git commit -m "[BUILD_APP] Registry update: $SERVICE"
           git remote set-url origin https://x-access-token:$GH_TOKEN@github.com/paragon40/kubapp.git
