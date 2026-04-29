@@ -83,7 +83,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          for file in $(find artifacts -name "*.json"); do
+          for file in artifacts/*.json"; do
             echo ""
             echo "================================================"
             echo "Processing artifact: $file"
