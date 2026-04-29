@@ -115,7 +115,10 @@ encrypt_gitops_yaml() {
 
   sops --encrypt \
     --age "$AGE_PUBLIC_KEY" \
-    "$file" > "$out"
+    "$file" > "$out" || {
+    echo "❌ Failed to encrypt $file"
+    exit 1
+  }
 }
 
 GITOPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../gitops/secrets" && pwd)"
