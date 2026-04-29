@@ -2,7 +2,7 @@
 
 services:
 
-  github-exporter:
+  github_exporter:
     build: ./exporters/github-webhook-collector
     container_name: github-exporter
     ports:
