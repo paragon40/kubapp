@@ -122,7 +122,7 @@ jobs:
             echo "Using app file: $APP_FILE"
             SERVICE_NAME=$(yq e '.service.name // env(SERVICE)' "$APP_FILE")
             PORT=$(yq e '.app.port // 80' "$APP_FILE")
-            ENV=$(yq e '.deploy.env // env.ENV' "$APP_FILE")
+            ENV=$(yq e '.deploy.env' "$APP_FILE")
 
             VAR_COUNT=$(yq e '.runtime.env // {} | length' "$APP_FILE")
             if [[ "$VAR_COUNT" -gt 0 ]]; then
