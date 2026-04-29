@@ -5,7 +5,7 @@ namespace: dev
 replicaCount: 2
 
 image:
-  repository: codest40/nodejs_app
+  repository: codest40/url_shortener
   tag: 7c63966cb07479e7d709a9edc033165407f79382
   pullPolicy: IfNotPresent
 
