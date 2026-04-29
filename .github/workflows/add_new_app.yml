@@ -5,11 +5,6 @@ on:
     paths:
       - "gitops/registry/**"
 
-  workflow_run:
-    workflows: ["Build and Push Docker Images"]
-    types:
-      - completed
-
 concurrency:
   group: add-new-app
   cancel-in-progress: false
@@ -71,8 +66,7 @@ jobs:
       - name: Create values + inject vars + ingress registration
         run: |
           set -euo pipefail
-          #for file in (find gitops/registry -name "*.json"); do
-          for file in gitops/registry/**/*.json; do
+          for file in $(find gitops/registry -name "*.json"); do
             echo ""
             echo "================================================"
             echo "Processing metadata: $file"
