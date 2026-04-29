@@ -45,6 +45,12 @@ jobs:
       # -----------------------------
       # Decrypt test
       # -----------------------------
+      - name: Debug SOPS key loading
+        run: |
+          sops --version
+          echo "Checking key file format..."
+          cat ~/.config/sops/age/keys.txt | head -c 50
+
       - name: Decrypt SOPS file
         run: |
           echo "🔓 Decrypting..."
