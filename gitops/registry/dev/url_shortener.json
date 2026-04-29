@@ -1,8 +1,8 @@
 {
   "service": "url_shortener",
   "context": "docker/url_shortener",
-  "image": "codest40/url_shortener:6889368e41f471def62f1454d276fa0a6ff6ebf6",
-  "tag": "6889368e41f471def62f1454d276fa0a6ff6ebf6",
+  "image": "codest40/url_shortener:baab37a1703558fceeb138a0db51a79ba6f7adc0",
+  "tag": "baab37a1703558fceeb138a0db51a79ba6f7adc0",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
