@@ -128,22 +128,8 @@ if [[ -d "$GITOPS_DIR" ]]; then
     [[ -f "$file" ]] || continue
 
     case "$file" in
-      *.yaml)
+      *.yaml|*.yml)
         encrypt_gitops_yaml "$file"
-        ;;
-      *.yml)
-        echo "Encrypting GitOps env secret: $file → ${file}.enc"
-        ENCRYPTED_FILE="${file}.enc"
-
-        echo "Encrypting → $ENCRYPTED_FILE"
-
-        sops --encrypt \
-          --input-type yaml \
-          --output-type yaml \
-          --age "$AGE_PUBLIC_KEY" \
-          "$file" > "$ENCRYPTED_FILE"
-
-        echo "✅ Done: $file → $ENCRYPTED_FILE"
         ;;
       *)
         echo "Skipping unsupported file: $file"
