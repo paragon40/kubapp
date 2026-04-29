@@ -2,8 +2,8 @@ appName: url_shortener
 namespace: dev
 replicaCount: 2
 image:
-  repository: codest40/url_shortener:68c19258985f169a14b48687ca1c036ed3fd98b0
-  tag: 68c19258985f169a14b48687ca1c036ed3fd98b0
+  repository: codest40/url_shortener:c203da5b8f47c35a320de83ffdeb523422bb0a67
+  tag: c203da5b8f47c35a320de83ffdeb523422bb0a67
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -22,6 +22,6 @@ hpa:
   cpu: 70
 meta:
   staticFingerprint: f5ed585cbc7e602b2cfd099b560d3fedd14ed74753dc41730c10c36af9065ce6
-  generatedAt: 2026-04-29T13:15:46Z
+  generatedAt: 2026-04-29T13:16:59Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
