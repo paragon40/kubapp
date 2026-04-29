@@ -1,4 +1,4 @@
-name: Run Argocd
+name: Test Run Argocd
 
 on:
   workflow_dispatch:
