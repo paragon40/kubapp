@@ -46,6 +46,10 @@ jobs:
       # -----------------------------
       # Decrypt test
       # -----------------------------
+      - name: Show time
+        run: |
+          echo "$(date)"
+
       - name: Debug SOPS key loading
         run: |
           sops --version
