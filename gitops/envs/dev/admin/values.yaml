@@ -6,7 +6,7 @@ replicaCount: 2
 
 image:
   repository: codest40/url_shortener
-  tag: 7c63966cb07479e7d709a9edc033165407f79382
+  tag: latest
   pullPolicy: IfNotPresent
 
 service:
