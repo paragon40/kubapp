@@ -107,42 +107,49 @@ done
 # GITOPS SOPS ENCRYPTION
 # =========================
 
-encrypt_gitops_yaml() {
-  local file="$1"
-  local out="${file}.enc"
-
-  echo "Encrypting GitOps secret: $file → $out"
-
-  sops --encrypt \
-    --age "$AGE_PUBLIC_KEY" \
-    "$file" > "$out" || {
-    echo "❌ Failed to encrypt $file"
-    exit 1
-  }
-}
-
 GITOPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../gitops/secrets" && pwd)"
+BACKUP_DIR="$GITOPS_DIR/.backup"
 
-if [[ -d "$GITOPS_DIR" ]]; then
-  echo ""
-  echo "Starting GitOps secrets encryption..."
+echo "Starting GitOps encryption in: $GITOPS_DIR"
 
-  for file in "$GITOPS_DIR"/*; do
-    [[ -f "$file" ]] || continue
+# Create backup directory
+mkdir -p "$BACKUP_DIR"
 
-    case "$file" in
-      *.yaml|*.yml)
-        encrypt_gitops_yaml "$file"
-        ;;
-      *)
-        echo "Skipping unsupported file: $file"
-        ;;
-    esac
-  done
-  echo "✅ GitOps encryption complete"
-else
+if [[ ! -d "$GITOPS_DIR" ]]; then
   echo "❌ GitOps secrets directory not found: $GITOPS_DIR"
+  exit 1
 fi
+
+shopt -s nullglob
+
+for file in "$GITOPS_DIR"/*.yaml "$GITOPS_DIR"/*.yml; do
+  [[ -f "$file" ]] || continue
+
+  echo "➡ Processing: $file"
+
+  # -------------------------
+  # 1. Backup original file
+  # -------------------------
+  backup_file="$BACKUP_DIR/$(basename "$file").env"
+
+  cp -f "$file" "$backup_file"
+
+  echo "Backup created: $backup_file"
+
+  # -------------------------
+  # 2. Encrypt in-place using .sops.yaml
+  # -------------------------
+  if sops -e -i "$file"; then
+    echo "✅ Encrypted: $file"
+  else
+    echo "❌ Failed to encrypt: $file"
+    echo "🔄 Restoring from backup..."
+
+    cp -f "$backup_file" "$file"
+    exit 1
+  fi
+
+done
 
 echo ""
 echo "✅ Encryption complete"
