@@ -175,15 +175,17 @@ jobs:
           MODE=${MODE:-cached}
 
           IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
-
+          IMAGE2="$IMAGE_NAMESPACE/${{ matrix.service }}:latest"
           CONTEXT="docker/${{ matrix.service }}"
 
           if [ "$MODE" = "fresh" ]; then
             echo "Fresh build (no cache)"
             docker build --no-cache -t "$IMAGE" "$CONTEXT"
+            docker build --no-cache -t "$IMAGE2" "$CONTEXT"
           else
             echo "Cached build"
             docker build -t "$IMAGE" "$CONTEXT"
+            docker build -t "$IMAGE2" "$CONTEXT"
           fi
 
       ####################################################
@@ -192,7 +194,9 @@ jobs:
       - name: Push image
         run: |
           IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
+          IMAGE2="$IMAGE_NAMESPACE/${{ matrix.service }}:latest"
           docker push "$IMAGE"
+          docker push "$IMAGE2"
 
       ####################################################
       # ARTIFACT
