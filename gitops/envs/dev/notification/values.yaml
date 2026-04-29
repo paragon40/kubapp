@@ -2,8 +2,8 @@ appName: notification
 namespace: dev
 replicaCount: 2
 image:
-  repository: codest40/nodejs_app:ad3630329f04cc76b2a3c78d7bc7f44bb0ef9136
-  tag: ad3630329f04cc76b2a3c78d7bc7f44bb0ef9136
+  repository: codest40/nodejs_app:69dafbc120f479d5a8439948713d79db2a5e9008
+  tag: 69dafbc120f479d5a8439948713d79db2a5e9008
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -26,6 +26,6 @@ hpa:
   cpu: 70
 meta:
   staticFingerprint: 7ec8d0b9fad67e88c8837e9fa95517e5330fef0838a6ed3c71340888383e6fc2
-  generatedAt: 2026-04-29T12:44:32Z
+  generatedAt: 2026-04-29T12:45:39Z
   source: build-pipeline
   runtimeHash: c028fb8cf52adbd06e5a9ad09a541d5a1b920c144d1dfb7195457d975cfd54ab
