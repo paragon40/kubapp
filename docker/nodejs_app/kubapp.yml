@@ -2,7 +2,7 @@ app_name:
   name: nodejs
 
 service:
-  name: notification
+  name: nodejs_app
 
 app:
   port: 3000
