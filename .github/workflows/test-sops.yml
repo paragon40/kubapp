@@ -1,0 +1,64 @@
+name: SOPS Encryption Test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "gitops/secrets/**"
+
+jobs:
+  test-sops:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # -----------------------------
+      # Install SOPS
+      # -----------------------------
+      - name: Install SOPS
+        run: |
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+
+      # -----------------------------
+      # Setup AGE key (SAFE method)
+      # -----------------------------
+      - name: Setup AGE key
+        run: |
+          mkdir -p ~/.config/sops/age
+
+          cat <<EOF > ~/.config/sops/age/keys.txt
+${{ secrets.AGE_PRIVATE_KEY }}
+EOF
+
+          chmod 600 ~/.config/sops/age/keys.txt
+
+          echo "SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt" >> $GITHUB_ENV
+
+      # -----------------------------
+      # Encrypt fresh (CI test)
+      # -----------------------------
+      - name: Encrypt secret
+        run: |
+          sops -e --age "$(grep -o 'age1[a-z0-9]*' ~/.config/sops/age/keys.txt || true)" \
+          gitops/secrets/github-repo-secret.yaml > secret.yaml.enc
+
+      # -----------------------------
+      # Decrypt test
+      # -----------------------------
+      - name: Decrypt secret
+        run: |
+          echo "🔓 Decrypting..."
+          sops -d secret.yaml.enc > decrypted.yaml
+
+      # -----------------------------
+      # Validate output
+      # -----------------------------
+      - name: Validate Kubernetes YAML
+        run: |
+          echo "📦 Validating manifest..."
+          cat decrypted.yaml
+          kubectl apply --dry-run=client -f decrypted.yaml
