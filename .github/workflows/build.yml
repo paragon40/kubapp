@@ -230,8 +230,8 @@ jobs:
         token: ${{ steps.app-token.outputs.token }}
         fetch-depth: 0
 
-      - name: Commit Metadata
-        run: |
+    - name: Commit Metadata
+      run: |
           set -euo pipefail
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
