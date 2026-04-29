@@ -1,0 +1,4 @@
+creation_rules:
+  - path_regex: gitops/secrets/.*\.yaml$
+    encrypted_regex: '^(data|stringData)$'
+    age: age1scfdeeyeassgvmey569kn5xwtl47gh3v0gqkuu0ndyhaajdr2a6s6dswul
