@@ -1,7 +1,10 @@
 name: Build and Push Docker Images
 
 on:
-  push: {}
+  push:
+    paths:
+      - "docker/**"
+
   pull_request:
     paths:
       - "docker/**"
