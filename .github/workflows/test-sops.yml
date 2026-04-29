@@ -23,11 +23,11 @@ jobs:
           chmod +x sops
           sudo mv sops /usr/local/bin/sops
 
-      - name: Install kubectl
+      - name: Install kubeconform
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/
+          curl -L -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar -xzf kubeconform.tar.gz
+          sudo mv kubeconform /usr/local/bin/
 
       # -----------------------------
       # Setup AGE private key (IMPORTANT)
@@ -64,9 +64,6 @@ jobs:
       # -----------------------------
       # Validate YAML correctness
       # -----------------------------
-      - name: Validate Kubernetes manifest
+      - name: Validate YAML schema
         run: |
-          echo "📦 Validating manifest..."
-          cat decrypted.yaml
-
-          kubectl apply --dry-run=client -f decrypted.yaml
+          kubeconform -strict decrypted.yaml
