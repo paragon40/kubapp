@@ -22,7 +22,7 @@ resources:
 
 env:
   RUN_MIGRATIONS: "true"
-
+  USE_SQLITE: true
 hpa:
   enabled: true
   minReplicas: 2
