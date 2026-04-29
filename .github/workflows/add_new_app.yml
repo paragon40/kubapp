@@ -59,9 +59,15 @@ jobs:
           echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
           chmod 600 ~/.config/sops/age/keys.txt
 
+      - name: Debug workflow run
+        run: |
+          echo "Run ID: ${{ github.event.workflow_run.id }}"
+          echo "Repo: ${{ github.repository }}"
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
+          repository: paragon40/kubapp
           run-id: ${{ github.event.workflow_run.id }}
           path: artifacts
 
