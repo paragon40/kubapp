@@ -60,7 +60,7 @@ jobs:
         run: |
           echo "🔓 Decrypting..."
 
-          sops -d gitops/secrets/github-repo-secret.yaml.enc > decrypted.yaml
+          sops -d gitops/secrets/github-repo-secret.yaml > decrypted.yaml
 
       # -----------------------------
       # Validate YAML correctness
