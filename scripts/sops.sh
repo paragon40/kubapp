@@ -1,28 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${AGE_PUBLIC_KEY:?AGE_PUBLIC_KEY is not set}"
+GITOPS_DIR="gitops/secrets"
 
-GITOPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../gitops/secrets" && pwd)"
+echo "🔐 Encrypting Kubernetes secrets in: $GITOPS_DIR"
 
-echo "🚀 Encrypting GitOps secrets in: $GITOPS_DIR"
-
-shopt -s nullglob
-
-for file in "$GITOPS_DIR"/*.{yaml,yml}; do
+for file in "$GITOPS_DIR"/*.yaml; do
   [[ -f "$file" ]] || continue
 
-  out="${file}.enc"
+  echo "➡ Encrypting: $file"
 
-  echo "🔐 Encrypting $file → $out"
+  # IMPORTANT: let sops use .sops.yaml (DO NOT pass --age manually)
+  sops -e -i "$file"
 
-  sops --encrypt \
-    --input-type yaml \
-    --output-type yaml \
-    --age "$AGE_PUBLIC_KEY" \
-    "$file" > "$out"
-
-  echo "✅ Done: $out"
+  echo "✅ Encrypted in-place: $file"
 done
 
-echo "🎉 Local encryption complete"
+echo "🎉 Encryption complete"
