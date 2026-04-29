@@ -14,3 +14,4 @@ services:
   - name: admin
   - name: payment
   - name: notification
+  - name: url_shortener
