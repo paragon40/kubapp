@@ -1,8 +1,8 @@
 {
   "service": "notification",
   "context": "docker/nodejs_app",
-  "image": "codest40/nodejs_app:2fa42d63c5c180d5ddf1a27aeba84f143d48e4b2",
-  "tag": "2fa42d63c5c180d5ddf1a27aeba84f143d48e4b2",
+  "image": "codest40/nodejs_app:9a2b46e649f11f494a66763c77ea274bbbb9fd17",
+  "tag": "9a2b46e649f11f494a66763c77ea274bbbb9fd17",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
