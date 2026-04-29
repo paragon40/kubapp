@@ -78,7 +78,7 @@ jobs:
         run: |
           set -e
 
-          SECRET_FILE=$(find gitops/secrets -type f -name "github-repo-secret.env.enc" | head -n 1)
+          SECRET_FILE=$(find gitops/secrets -type f -name "*yaml.enc" | head -n 1)
 
           if [ -n "$SECRET_FILE" ]; then
             echo "Decrypting secret file: $SECRET_FILE"
