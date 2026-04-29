@@ -17,6 +17,8 @@ for file in "$GITOPS_DIR"/*.{yaml,yml}; do
   echo "🔐 Encrypting $file → $out"
 
   sops --encrypt \
+    --input-type yaml \
+    --output-type yaml \
     --age "$AGE_PUBLIC_KEY" \
     "$file" > "$out"
 
