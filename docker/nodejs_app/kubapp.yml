@@ -1,0 +1,19 @@
+app_name:
+  name: nodejs
+
+service:
+  name: notification
+
+app:
+  port: 3000
+  healthPath: api/health
+
+deploy:
+  env: dev
+
+runtime:
+  env:
+    NODE_ENV: developement
+    REDIS_HOST: redis-service
+    REDIS_PORT: "6379"
+    LOG_LEVEL: info
