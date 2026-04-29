@@ -212,20 +212,34 @@ jobs:
       ####################################################
       # Github Registry
       ####################################################
+  commit:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Generate GitHub App token
+      id: app-token
+      uses: tibdex/github-app-token@v2
+      with:
+        app_id: ${{ secrets.APP_ID_GITHUB }}
+        private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        token: ${{ steps.app-token.outputs.token }}
+        fetch-depth: 0
+
       - name: Commit Metadata
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          SERVICE="${{ matrix.service }}"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           git add gitops/registry/
           if git diff --cached --quiet; then
-            echo "No chages detected"  && exit 0
+            echo "No Registry changes detected"  && exit 0
           fi
 
-          git commit -m "[BUILD_APP] Registry update: $SERVICE"
-          git remote set-url origin https://x-access-token:$GH_TOKEN@github.com/paragon40/kubapp.git
+          git commit -m "[BUILD_APP] Registry update: (batch commit)"
           git push
