@@ -83,19 +83,27 @@ jobs:
               echo "❌ Invalid env in $file"
               exit 1
             fi
+            echo "file=$file" >> $GITHUB_ENV
 
+
+      - name: Create Values Files
+        run: |
             ####################################################
             # Create values.yaml
             ####################################################
             echo "Creating values.yaml..."
             bash scripts/create_values.sh "$file"
 
+      - name: Setup Secrets
+        run: |
             ####################################################
             # Inject runtime env + encrypted secrets
             ####################################################
             echo "Preparing runtime env + secrets..."
             bash scripts/set_app_secret.sh "$file"
 
+      - name: App Ingress registration
+        run: |
             ####################################################
             # Register app in shared ingress
             ####################################################
