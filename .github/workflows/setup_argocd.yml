@@ -19,7 +19,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-
       # --------------------------------
       # 2. AWS credentials
       # --------------------------------
@@ -31,6 +30,18 @@ jobs:
 
       - name: Check AWS credentials
         run: aws sts get-caller-identity
+
+      - name: Install SOPS
+        run: |
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+
+      - name: Setup AGE key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
 
       # --------------------------------
       # 3. Setup kubeconfig (EKS access)
