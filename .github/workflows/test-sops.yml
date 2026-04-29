@@ -36,7 +36,7 @@ jobs:
         run: |
           mkdir -p ~/.config/sops/age
 
-          echo "${{ secrets.PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
 
           chmod 600 ~/.config/sops/age/keys.txt
 
