@@ -1,4 +1,4 @@
-name: SOPS Encryption Test
+name: SOPS Encrypt + Decrypt Test
 
 on:
   workflow_dispatch:
@@ -30,41 +30,33 @@ jobs:
           sudo mv kubectl /usr/local/bin/
 
       # -----------------------------
-      # Setup AGE key (FIXED)
+      # Setup AGE private key (IMPORTANT)
       # -----------------------------
-      - name: Setup AGE key
+      - name: Setup SOPS AGE key
         run: |
           mkdir -p ~/.config/sops/age
 
-          cat <<EOF > ~/.config/sops/age/keys.txt
-          ${{ secrets.AGE_PRIVATE_KEY }}
-          EOF
+          echo "${{ secrets.PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
 
           chmod 600 ~/.config/sops/age/keys.txt
 
           echo "SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt" >> $GITHUB_ENV
 
       # -----------------------------
-      # Encrypt (FIXED - NO grep, NO multiline bug)
-      # -----------------------------
-      - name: Encrypt secret
-        run: |
-          sops -e --age "${{ secrets.AGE_PUBLIC_KEY }}" \
-            gitops/secrets/github-repo-secret.yaml > secret.yaml.enc
-
-      # -----------------------------
       # Decrypt test
       # -----------------------------
-      - name: Decrypt secret
+      - name: Decrypt SOPS file
         run: |
           echo "🔓 Decrypting..."
-          sops -d secret.yaml.enc > decrypted.yaml
+
+          sops -d gitops/secrets/github-repo-secret.yaml.enc > decrypted.yaml
 
       # -----------------------------
-      # Validate YAML
+      # Validate YAML correctness
       # -----------------------------
-      - name: Validate Kubernetes YAML
+      - name: Validate Kubernetes manifest
         run: |
           echo "📦 Validating manifest..."
           cat decrypted.yaml
+
           kubectl apply --dry-run=client -f decrypted.yaml
