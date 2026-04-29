@@ -1,6 +1,10 @@
 name: Add New App (GitOps Provisioning)
 
 on:
+  pull_request:
+    paths:
+      - "gitops/registry/**"
+
   workflow_run:
     workflows: ["Build and Push Docker Images"]
     types:
@@ -64,35 +68,14 @@ jobs:
           echo "Run ID: ${{ github.event.workflow_run.id }}"
           echo "Repo: ${{ github.repository }}"
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          repository: paragon40/kubapp
-          run-id: ${{ github.event.workflow_run.id }}
-          path: artifacts
-
-      - name: Validate artifacts
-        run: |
-          set -euo pipefail
-
-          FILES=$(find artifacts -name "*.json")
-
-          if [[ -z "$FILES" ]]; then
-            echo "❌ No build artifacts found"
-            exit 1
-          fi
-
-          echo "Artifacts detected:"
-          find artifacts -name "*.json"
-
       - name: Create values + inject vars + ingress registration
         run: |
           set -euo pipefail
-
-          for file in artifacts/*.json"; do
+          #for file in (find gitops/registry -name "*.json"); do
+          for file in gitops/registry/**/*.json; do
             echo ""
             echo "================================================"
-            echo "Processing artifact: $file"
+            echo "Processing metadata: $file"
             echo "================================================"
 
             SERVICE=$(jq -r '.service' "$file")
