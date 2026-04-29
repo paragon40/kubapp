@@ -1,0 +1,12 @@
+{
+  "service": "notification",
+  "context": "docker/nodejs_app",
+  "image": "codest40/nodejs_app:83d7019cf64da239f93ffdf9ea2fe0b976ab8d3e",
+  "tag": "83d7019cf64da239f93ffdf9ea2fe0b976ab8d3e",
+  "registry": "docker.io",
+  "namespace": "dev",
+  "env": "dev",
+  "port": "3000",
+  "NO_VARS": "false",
+  "NO_SECRETS": ""
+}
