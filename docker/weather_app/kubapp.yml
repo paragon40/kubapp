@@ -1,0 +1,21 @@
+app_name:
+  name: weather_app
+
+service:
+  name: weather
+
+app:
+  port: 80
+  healthPath: /health
+
+deploy:
+  env: dev
+
+runtime:
+  env:
+    DATABASE_URL: postgresql://kubuser:kubpassword@postgres:5432/kubapp
+    USE_SQLITE: "true"
+    BOTH_DB: "false"
+    RUN_MIGRATIONS: "true"
+
+

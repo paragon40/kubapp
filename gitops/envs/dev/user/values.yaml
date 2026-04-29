@@ -21,9 +21,6 @@ resources:
     cpu: 500m
 
 env:
-  DATABASE_URL: postgresql://kubuser:kubpassword@postgres:5432/kubapp
-  USE_SQLITE: "true"
-  BOTH_DB: "false"
   RUN_MIGRATIONS: "true"
 
 hpa:
