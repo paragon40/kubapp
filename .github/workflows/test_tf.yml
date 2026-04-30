@@ -82,6 +82,8 @@ jobs:
           terraform plan -var-file=infra.tfvars -out=tfplan
           terraform apply -auto-approve tfplan
 
+
+
       - name: Destroy K8s
         if: ${{ github.event.inputs.action == 'destroy' && github.event.inputs.stack == 'k8s'}}
         working-directory: iac/k8s
@@ -109,4 +111,3 @@ jobs:
 
       - name: Verify Cleanups
         run: bash scripts/cleanup_logs.sh
-
