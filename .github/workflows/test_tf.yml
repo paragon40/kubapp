@@ -101,11 +101,7 @@ jobs:
           set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
           terraform validate
-          terraform import module.iam_core.aws_iam_role.eks_cluster kubapp-dev-cluster-role
-          terraform import module.efs.aws_efs_file_system.this fs-0d7526a8f4d44cb3b
-          terraform import module.logging.aws_cloudwatch_log_group.logs["eks_cluster_log_group"] /aws/eks/kubapp-dev/cluster
           sops -d envs/${ENV}/infra.tfvars.enc > infra.tfvars
-          terraform plan -var-file=infra.tfvars
           terraform destroy -auto-approve -var-file=infra.tfvars
           echo "✅ Destory complete.. Remvoing Logs.."
 
