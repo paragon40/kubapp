@@ -79,6 +79,7 @@ jobs:
       - name: Terraform Validate
         working-directory: iac/infra
         run: |
+          terraform fmt
           terraform fmt -check
           terraform validate -backend=false
 
@@ -210,7 +211,10 @@ jobs:
 
       - name: Validate K8s
         working-directory: iac/k8s
-        run: terraform validate
+        run: |
+          terraform fmt
+          terraform fmt -check
+          terraform validate -backend=false
 
       - name: Load tfvars (k8s)
         working-directory: iac/k8s
