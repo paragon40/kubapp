@@ -2,43 +2,19 @@
 set -euo pipefail
 
 TARGET="gitops/registry"
-TMP_DIR=$(mktemp -d)
 
-cleanup() {
-  rm -rf "$TMP_DIR"
-}
-trap cleanup EXIT
-
-echo "🔍 Computing current hash..."
-
-CURRENT_HASH=$(find "$TARGET" -type f -print0 2>/dev/null \
-  | sort -z \
-  | xargs -0 sha256sum 2>/dev/null \
-  | sha256sum \
-  | awk '{print $1}')
-
-echo " Fetching remote state..."
+echo "🔍 Fetching remote state..."
 git fetch origin main
 
-echo "Extracting remote registry..."
+echo "🔍 Computing tree hashes..."
 
-if git ls-tree -r origin/main --name-only | grep -q "^$TARGET/"; then
-  git archive origin/main "$TARGET" | tar -x -C "$TMP_DIR"
+LOCAL_HASH=$(git ls-tree -r HEAD "$TARGET" | sha256sum | awk '{print $1}' || echo "EMPTY")
+REMOTE_HASH=$(git ls-tree -r origin/main "$TARGET" | sha256sum | awk '{print $1}' || echo "EMPTY")
 
-  REMOTE_HASH=$(find "$TMP_DIR/$TARGET" -type f -print0 \
-    | sort -z \
-    | xargs -0 sha256sum \
-    | sha256sum \
-    | awk '{print $1}')
-else
-  echo "⚠️ Remote registry not found — treating as empty"
-  REMOTE_HASH="EMPTY"
-fi
+echo "Local : $LOCAL_HASH"
+echo "Remote: $REMOTE_HASH"
 
-echo "Current: ${CURRENT_HASH:-EMPTY}"
-echo "Remote : ${REMOTE_HASH:-EMPTY}"
-
-if [[ "${CURRENT_HASH:-EMPTY}" == "${REMOTE_HASH:-EMPTY}" ]]; then
+if [[ "$LOCAL_HASH" == "$REMOTE_HASH" ]]; then
   echo "✅ NO CHANGE DETECTED"
   exit 0
 fi
@@ -46,20 +22,22 @@ fi
 echo "⚠️ CHANGE DETECTED"
 
 ########################################
-# SAFE COMMIT + PUSH (WITH REBASE)
+# Now rely on Git for actual staging
 ########################################
-
-git config user.name "github-actions"
-git config user.email "github-actions@github.com"
 
 git add "$TARGET"
 
 if git diff --cached --quiet; then
-  echo "No staged changes after all"
-  exit 0
+  echo "⚠️ Hash changed but no actual Git diff — investigate normalization issue"
+  exit 1
 fi
 
-git commit -m "[BUILD_APP (REGISTRY)] change detected via hash"
+echo "✅ Real changes confirmed — committing..."
+
+git config user.name "github-actions"
+git config user.email "github-actions@github.com"
+
+git commit -m "[REGISTRY] update"
 
 for i in {1..3}; do
   if git push origin HEAD:main; then
@@ -74,4 +52,3 @@ done
 
 echo "❌ Failed to push after retries"
 exit 1
-
