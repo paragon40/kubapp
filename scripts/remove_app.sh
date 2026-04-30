@@ -11,8 +11,8 @@ set -euo pipefail
 # - Explicit validation before delete
 # =========================================================
 
-SERVICE="${1:-}"
-ENV="${2:-}"
+SERVICE="${1:?SERVICE is required}"
+ENV="${2:?ENV is required}"
 
 fail() {
   echo "❌ $1"
