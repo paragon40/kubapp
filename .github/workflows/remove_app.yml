@@ -1,0 +1,16 @@
+name: Remove App
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        required: true
+      env:
+        required: true
+
+jobs:
+  remove:
+    uses: ./.github/workflows/runner.yml
+    with:
+      script: scripts/remove_app.sh
+      args: "${{ inputs.service }} ${{ inputs.env }}"
