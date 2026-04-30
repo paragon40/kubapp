@@ -6,25 +6,43 @@ STACKS=("infra" "k8s")
 
 ENV="${1:-dev}"   # dev | prod | all
 
-echo "Root is $ROOT"
+echo
+echo "=================================================="
+echo "[INFO] SECRETS ENCRYPTION STARTED"
+echo "[INFO] ENVIRONMENT: $ENV"
+echo "[INFO] ROOT: $ROOT"
+echo "=================================================="
+echo
 
 # =========================
 # LOAD SETUP FUNCTIONS
 # =========================
+echo "--------------------------------------------------"
+echo "[INFO] LOADING SOPS SETUP"
+echo "--------------------------------------------------"
+
 SETUP="./setup_sops.sh"
 SETUP1="scripts/setup_sops.sh"
+
 if [[ -f "$SETUP" ]]; then
-  echo "Sourcing $SETUP"
+  echo "[INFO] Sourcing $SETUP"
   source "$SETUP"
 elif [[ -f "$SETUP1" ]]; then
-  echo "Sourcing $SETUP1"
+  echo "[INFO] Sourcing $SETUP1"
   source "$SETUP1"
 else
-  echo "❌ setup_sops.sh not found"
+  echo "[ERROR] ❌ setup_sops.sh not found"
   exit 1
 fi
 
-echo "Checking prerequisites..."
+echo
+
+# =========================
+# PREREQUISITES
+# =========================
+echo "--------------------------------------------------"
+echo "[INFO] CHECKING PREREQUISITES"
+echo "--------------------------------------------------"
 
 install_sops
 install_age
@@ -33,11 +51,12 @@ ensure_age_key
 AGE_PUBLIC_KEY=$(get_age_public_key)
 
 if [[ -z "$AGE_PUBLIC_KEY" ]]; then
-  echo "❌ Could not extract AGE public key"
+  echo "[ERROR] ❌ Could not extract AGE public key"
   exit 1
 fi
 
-echo " Using AGE key: $AGE_PUBLIC_KEY"
+echo "[INFO] Using AGE key: $AGE_PUBLIC_KEY"
+echo
 
 # =========================
 # ENV SELECTION
@@ -54,7 +73,7 @@ get_envs() {
       echo "dev prod"
       ;;
     *)
-      echo "❌ Invalid env: $ENV"
+      echo "[ERROR] ❌ Invalid env: $ENV"
       exit 1
       ;;
   esac
@@ -67,7 +86,7 @@ encrypt_tfvars() {
   local file="$1"
   local out="${file}.enc"
 
-  echo "Encrypting: $file → $out"
+  echo "[INFO] Encrypting: $file -> $out"
 
   sops --encrypt \
     --age "$AGE_PUBLIC_KEY" \
@@ -77,45 +96,52 @@ encrypt_tfvars() {
 # =========================
 # MAIN LOOP
 # =========================
-echo " Starting encryption for ENV=$ENV"
+echo "--------------------------------------------------"
+echo "[INFO] TERRAFORM SECRETS ENCRYPTION"
+echo "--------------------------------------------------"
+echo "[INFO] Starting encryption for ENV=$ENV"
+echo
 
 for env in $(get_envs); do
-  echo ""
-  echo "ENV: $env"
+  echo "[INFO] ENV: $env"
 
   for stack in "${STACKS[@]}"; do
     DIR="$ROOT/$stack/envs/$env"
 
     if [[ -d "$DIR" ]]; then
-      echo "found"
+      echo "[INFO] Directory found: $DIR"
     else
-      echo "Not Found"
+      echo "[WARN] ⚠️ Directory not found: $DIR"
       continue
     fi
 
-    echo "   → Stack: $stack"
+    echo "[INFO] Processing stack: $stack"
 
     for tfvars in "$DIR"/*.tfvars; do
-      [[ -f "$tfvars" ]] ||  continue
+      [[ -f "$tfvars" ]] || continue
       encrypt_tfvars "$tfvars"
     done
   done
-done
 
+  echo
+done
 
 # =========================
 # GITOPS SOPS ENCRYPTION
 # =========================
+echo "--------------------------------------------------"
+echo "[INFO] GITOPS SECRETS ENCRYPTION"
+echo "--------------------------------------------------"
 
 GITOPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../gitops/secrets" && pwd)"
 BACKUP_DIR="$GITOPS_DIR/.backup"
 
-echo " Starting GitOps encryption in: $GITOPS_DIR"
+echo "[INFO] Target directory: $GITOPS_DIR"
 
 mkdir -p "$BACKUP_DIR"
 
 [[ -d "$GITOPS_DIR" ]] || {
-  echo "❌ Directory not found: $GITOPS_DIR"
+  echo "[ERROR] ❌ Directory not found: $GITOPS_DIR"
   exit 1
 }
 
@@ -128,13 +154,13 @@ for file in "$GITOPS_DIR"/*.yaml "$GITOPS_DIR"/*.yml; do
   [[ -f "$file" ]] || continue
   found_files=true
 
-  echo "➡ Processing: $file"
+  echo "[INFO] Processing: $file"
 
   # -------------------------
   # Detect already encrypted
   # -------------------------
   if grep -q '^sops:' "$file"; then
-    echo "⏭ Already encrypted, skipping: $file"
+    echo "[WARN] ⚠️ Already encrypted, skipping: $file"
     valid_files=true
     continue
   fi
@@ -144,17 +170,17 @@ for file in "$GITOPS_DIR"/*.yaml "$GITOPS_DIR"/*.yml; do
   # -------------------------
   backup_file="$BACKUP_DIR/$(basename "$file").bak"
   cp -f "$file" "$backup_file"
-  echo " Backup: $backup_file"
+  echo "[INFO] Backup created: $backup_file"
 
   # -------------------------
   # Encrypt in-place
   # -------------------------
   if sops -e -i "$file"; then
-    echo "✅ Encrypted: $file"
+    echo "[INFO] ✅ Encrypted: $file"
     valid_files=true
   else
-    echo "❌ Failed: $file"
-    echo "Restoring backup..."
+    echo "[ERROR] ❌ Failed: $file"
+    echo "[ERROR] Restoring backup..."
     cp -f "$backup_file" "$file"
     exit 1
   fi
@@ -164,15 +190,23 @@ done
 # -------------------------
 # Final validation
 # -------------------------
+echo
+echo "--------------------------------------------------"
+echo "[INFO] FINAL VALIDATION"
+echo "--------------------------------------------------"
+
 if [[ "$found_files" = false ]]; then
-  echo "❌ No YAML files found"
+  echo "[ERROR] ❌ No YAML files found"
   exit 1
 fi
 
 if [[ "$valid_files" = false ]]; then
-  echo "❌ No valid encrypted files exist"
+  echo "[ERROR] ❌ No valid encrypted files exist"
   exit 1
 fi
 
-echo ""
-echo "✅ Encryption complete"
+echo
+echo "=================================================="
+echo "[INFO] ✅ ENCRYPTION COMPLETE"
+echo "=================================================="
+echo
