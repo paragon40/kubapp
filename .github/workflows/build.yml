@@ -222,6 +222,12 @@ jobs:
           docker push "$IMAGE"
           docker push "$IMAGE2"
 
+      - name: Upload registry artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: registry
+          path: gitops/registry
+
       ####################################################
       # Github Registry
       ####################################################
@@ -242,6 +248,12 @@ jobs:
       with:
         token: ${{ steps.app-token.outputs.token }}
         fetch-depth: 0
+
+    - name: Download registry artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: registry
+        path: gitops/registry
 
     - name: Commit Metadata
       run: |
