@@ -8,6 +8,11 @@ on:
         required: true
         type: choice
         options: [apply, destroy]
+      stack:
+        description: Which Stack
+        required: true
+        type: choice
+        options: [infra, k8s]
 
       env:
         description: Environment
@@ -25,9 +30,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  destroy:
-    if: ${{ github.event.inputs.action == 'destroy' }}
-    name: Destroy
+  apply_destroy:
     runs-on: ubuntu-latest
 
     steps:
@@ -58,6 +61,7 @@ jobs:
         run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
 
       - name: Destroy K8s
+        if: ${{ github.event.inputs.action == 'destroy' && github.event.inputs.stack == 'k8s'}}
         working-directory: iac/k8s
         run: |
           set -euo pipefail
@@ -67,6 +71,7 @@ jobs:
           terraform destroy -auto-approve -var-file=k8s.tfvars
 
       - name: Destroy Infra
+        if: ${{ github.event.inputs.action == 'destroy' && github.event.inputs.stack == 'infra'}}
         working-directory: iac/infra
         run: |
           set -euo pipefail

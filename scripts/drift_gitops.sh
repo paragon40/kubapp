@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVICE="${1:-}"
-ENV="${2:-}"
+SERVICE="${1:?SERVICE NAME Required}"
+ENV="${2:?ENV Must Be Supplied}"
 
 fail() { echo "❌ $1"; exit 1; }
 
