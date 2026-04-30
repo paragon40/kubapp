@@ -14,3 +14,4 @@ services:
   - name: admin
   - name: url_shortener
   - name: notification
+  - name: weather
