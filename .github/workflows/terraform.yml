@@ -78,7 +78,9 @@ jobs:
 
       - name: Terraform Validate
         working-directory: iac/infra
-        run: terraform validate
+        run: |
+          terraform fmt -check
+          terraform validate -backend=false
 
       - name: Load tfvars (infra)
         working-directory: iac/infra
