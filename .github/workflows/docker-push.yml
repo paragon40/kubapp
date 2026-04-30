@@ -1,8 +1,11 @@
-name: Docker Test build
+name: Test Docker build
 
 on:
-#  push: {}
   workflow_dispatch:
+    inputs:
+      folder:
+        required: true
+        default: ""
 
 jobs:
   build-and-push:
@@ -24,12 +27,13 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
-          context: ./docker/nodejs_app
-          file: ./docker/nodejs_app/Dockerfile
+          context: ./docker/${{ github.event.inputs.folder }}
+          file: ./docker/${{ github.event.inputs.folder }}/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USER }}/nodejs_app:latest
-            #${{ secrets.DOCKER_USER }}/nodejs_app:${{ github.sha }}
+            ${{ secrets.DOCKER_USER }}/${{ github.event.inputs.folder }}:latest
+            ${{ secrets.DOCKER_USER }}/${{ github.event.inputs.folder }}:${{ github.sha }}
 
       - name: Image pushed successfully
-        run: echo "Docker image built and pushed successfully"
+        run: echo "Docker image for ${{ github.event.inputs.folder }} built and pushed successfully"
+
