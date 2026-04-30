@@ -1,4 +1,4 @@
-# envs/dev/backend-k8s.hcl
+# envs/dev/backend.hcl
 bucket         = "kubapp-tf-state"
 key            = "dev/k8s/terraform.tfstate"
 region         = "us-east-1"
