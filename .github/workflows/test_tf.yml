@@ -82,5 +82,5 @@ jobs:
           echo "✅ Destory complete.. Remvoing Logs.."
 
       - name: Verify Cleanups
-        run: bash scripts/verify_cleanup.sh
+        run: bash scripts/cleanup_logs.sh
 
