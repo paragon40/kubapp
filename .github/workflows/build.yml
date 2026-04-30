@@ -246,14 +246,4 @@ jobs:
     - name: Commit Metadata
       run: |
           set -euo pipefail
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git add gitops
-          if git diff --cached --quiet; then
-            echo "No Registry changes detected"  && exit 0
-          fi
-
-          git status
-          git commit -m "[BUILD_APP] Registry update: (batch commit)"
-          git pull --rebase && push
+          bash scripts/commit.sh
