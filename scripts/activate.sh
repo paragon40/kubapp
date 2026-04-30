@@ -37,7 +37,7 @@ if [[ "$CONFIRM" == "yes" ]]; then
   echo "[INFO] Staging changes..."
   git add .
 
-  COMMIT_MSG="[CHORE]: run activation pipeline for $ENV - $(date '+%Y-%m-%d %H:%M:%S')"
+  COMMIT_MSG="[CHORE (Activate)]: run activation pipeline for $ENV - $(date '+%Y-%m-%d %H:%M:%S')"
 
   echo "[INFO] Creating commit..."
   git commit -m "$COMMIT_MSG" || echo "[WARN] ⚠️ No changes to commit"

@@ -12,6 +12,4 @@ ingress:
 services:
   - name: user
   - name: admin
-  - name: payment
-  - name: notification
   - name: url_shortener
