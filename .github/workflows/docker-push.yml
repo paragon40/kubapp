@@ -15,6 +15,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check folder
+        run: |
+          DIR="./docker/${{ github.event.inputs.folder }}"
+          DIR_FILE="./docker/${{ github.event.inputs.folder }}/Dockerfile"
+          if [[ -d "$DIR" ]] && [[ -f "DIR_FILE" ]]; then
+            echo "❌ $DIR or $DIR_FILE Does NOT Exist" && exit 1
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
