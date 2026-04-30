@@ -43,9 +43,13 @@ if [[ "$CONFIRM" == "yes" ]]; then
   git commit -m "$COMMIT_MSG" || echo "[WARN] ⚠️ No changes to commit"
 
   echo "[INFO] Pushing to remote..."
-  git push
-
+  if git push; then
   echo "[INFO] ✅ Push successful"
+  else
+    echo "[WARN] ⚠️  Remote State Changed, Rebasing First..."
+    git pull --rebase && git push
+    echo "[INFO] ✅ Push successful"
+  fi
 else
   echo "[WARN] ⚠️ Push skipped by user"
 fi
