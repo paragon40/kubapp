@@ -110,46 +110,69 @@ done
 GITOPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../gitops/secrets" && pwd)"
 BACKUP_DIR="$GITOPS_DIR/.backup"
 
-echo "Starting GitOps encryption in: $GITOPS_DIR"
+echo " Starting GitOps encryption in: $GITOPS_DIR"
 
-# Create backup directory
 mkdir -p "$BACKUP_DIR"
 
-if [[ ! -d "$GITOPS_DIR" ]]; then
-  echo "❌ GitOps secrets directory not found: $GITOPS_DIR"
+[[ -d "$GITOPS_DIR" ]] || {
+  echo "❌ Directory not found: $GITOPS_DIR"
   exit 1
-fi
+}
 
 shopt -s nullglob
 
+found_files=false
+valid_files=false
+
 for file in "$GITOPS_DIR"/*.yaml "$GITOPS_DIR"/*.yml; do
   [[ -f "$file" ]] || continue
+  found_files=true
 
   echo "➡ Processing: $file"
 
   # -------------------------
-  # 1. Backup original file
+  # Detect already encrypted
   # -------------------------
-  backup_file="$BACKUP_DIR/$(basename "$file").env"
+  if grep -q '^sops:' "$file"; then
+    echo "⏭ Already encrypted, skipping: $file"
+    valid_files=true
+    continue
+  fi
 
+  # -------------------------
+  # Backup original
+  # -------------------------
+  backup_file="$BACKUP_DIR/$(basename "$file").bak"
   cp -f "$file" "$backup_file"
-
-  echo "Backup created: $backup_file"
+  echo " Backup: $backup_file"
 
   # -------------------------
-  # 2. Encrypt in-place using .sops.yaml
+  # Encrypt in-place
   # -------------------------
   if sops -e -i "$file"; then
     echo "✅ Encrypted: $file"
+    valid_files=true
   else
-    echo "❌ Failed to encrypt: $file"
-    echo "🔄 Restoring from backup..."
-
+    echo "❌ Failed: $file"
+    echo "Restoring backup..."
     cp -f "$backup_file" "$file"
     exit 1
   fi
 
 done
+
+# -------------------------
+# Final validation
+# -------------------------
+if [[ "$found_files" = false ]]; then
+  echo "❌ No YAML files found"
+  exit 1
+fi
+
+if [[ "$valid_files" = false ]]; then
+  echo "❌ No valid encrypted files exist"
+  exit 1
+fi
 
 echo ""
 echo "✅ Encryption complete"

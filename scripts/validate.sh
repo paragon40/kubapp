@@ -105,7 +105,7 @@ for stack in infra k8s; do
 
   check_file "$BASE/${stack}.tfvars"
 
-  if [[ -f "$BASE/${stack}.enc.json" ]]; then
+  if [[ -f "$BASE/${stack}.tfvars.enc" ]]; then
     :
   else
     echo "Warning: Missing encrypted file for $stack/$ENV"

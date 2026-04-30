@@ -2,8 +2,9 @@ import os
 import yaml
 from pathlib import Path
 
+BASE_FILE = os.getenv("BASE_FILE")
 BASE_DIR = Path(__file__).resolve().parent.parent
-FILE = BASE_DIR / "gitops/secrets/github-repo-secret.yaml"
+FILE = BASE_DIR / BASE_FILE
 
 private_key = os.getenv("PRIVATE_KEY")
 app_id = os.getenv("APP_ID")
