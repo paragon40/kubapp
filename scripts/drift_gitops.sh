@@ -16,7 +16,7 @@ FILE="gitops/envs/$ENV/$SERVICE/values.yaml"
 [[ -f "$FILE" ]] || fail "values.yaml not found: $FILE"
 
 echo ""
-echo "🔍 SELF-HEAL DRIFT ANALYSIS"
+echo "SELF-HEAL DRIFT ANALYSIS"
 echo "Service: $SERVICE"
 echo "Env:     $ENV"
 echo "File:    $FILE"
@@ -42,12 +42,7 @@ if [[ "$EXPECTED_FP" != "$COMPUTED_FP" ]]; then
   echo "Current computed     : $COMPUTED_FP"
   echo ""
 
-  echo "📌 Likely cause:"
-  echo "- create_values.sh did not run"
-  echo "- manual edit to static fields"
-  echo ""
-
-  echo "🛠 Suggested fix:"
+  echo "🛠Suggested fix:"
   echo "  ./scripts/create_values.sh <latest-artifact>"
   echo ""
 
@@ -85,19 +80,6 @@ else
   echo "✔ Runtime state OK"
   RUNTIME_DRIFT=false
 fi
-
-####################################################
-# 3. IMAGE DRIFT (informational only)
-####################################################
-echo ""
-echo " IMAGE STATE"
-echo "-----------------------------------"
-echo "Image: $IMAGE:$TAG"
-
-echo ""
-echo " Note:"
-echo "- Image drift is expected from update.yml"
-echo "- No action required unless rollback needed"
 
 ####################################################
 # 4. FINAL SUMMARY
