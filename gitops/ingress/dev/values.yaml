@@ -13,3 +13,4 @@ services:
   - name: user
   - name: admin
   - name: url_shortener
+  - name: notification
