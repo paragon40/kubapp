@@ -12,9 +12,9 @@ on:
           - prod
 
       folders:
-        description: "Terraform folders (comma-separated, e.g. network,iam,eks)"
+        description: "Terraform folders (comma-separated, e.g. network,iam,xyz)"
         required: true
-        default: "."
+        default: ""
 
 jobs:
   drift-check:
@@ -23,6 +23,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -96,10 +103,4 @@ jobs:
           echo "DRIFT SUMMARY"
           echo "=============================="
           cat /tmp/drift-summary.txt || echo "No summary available"
-
-      - name: Upload Logs
-        uses: actions/upload-artifact@v4
-        with:
-          name: tf-drift-logs
-          path: /tmp/drift-logs
 
