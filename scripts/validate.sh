@@ -75,6 +75,9 @@ check_dir "$ROOT_DIR/iac/infra"
 check_dir "$ROOT_DIR/iac/k8s"
 check_dir "$ROOT_DIR/gitops"
 check_dir "$ROOT_DIR/scripts"
+check_dir "$ROOT_DIR/docker"
+check_dir "$ROOT_DIR/sys_monitor"
+check_dir "$ROOT_DIR/.github/workflows"
 
 for stack in infra k8s; do
   for env in dev prod; do
