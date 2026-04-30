@@ -79,3 +79,5 @@ jobs:
           terraform validate
           sops -d envs/${ENV}/infra.tfvars.enc > infra.tfvars
           terraform destroy -auto-approve -var-file=infra.tfvars
+          echo "✅ Destory complete.. Remvoing Logs.."
+          bash scripts/cleanup_logs.sh
