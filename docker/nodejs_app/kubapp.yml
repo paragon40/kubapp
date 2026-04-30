@@ -1,5 +1,3 @@
-app_name:
-  name: nodejs
 
 service:
   name: nodejs_app
