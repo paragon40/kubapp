@@ -8,7 +8,7 @@ on:
       env:
         required: true
 
-permisisons:
+permissions:
   contents: write
 
 jobs:
