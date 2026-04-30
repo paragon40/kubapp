@@ -68,6 +68,13 @@ jobs:
         working-directory: iac/infra
         run: terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
 
+      - name: Debug ENV and others
+        run: |
+          echo "ENV=$ENV"
+          ls -la envs/${ENV}/
+          echo "Cheking config file.."
+          cat envs/${ENV}/backend.hcl
+
       - name: Terraform Validate
         working-directory: iac/infra
         run: terraform validate
