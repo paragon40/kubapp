@@ -72,6 +72,9 @@ jobs:
           if [ "$SERVICES" = "[]" ]; then
             echo "No services found in docker/"
             exit 1
+          else
+            COUNT=$("$SERVICE" | wc -l)
+            echo "Total Services found in docker directory: $COUNT"
           fi
 
 ####################################################
