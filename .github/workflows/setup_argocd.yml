@@ -39,9 +39,9 @@ jobs:
 
       - name: Setup AGE key
         run: |
-          mkdir -p ~/.config/sops/age
-          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
-          chmod 600 ~/.config/sops/age/keys.txt
+          mkdir -p config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > config/sops/age/keys.txt
+          chmod 600 config/sops/age/keys.txt
 
       # --------------------------------
       # 3. Setup kubeconfig (EKS access)
@@ -78,20 +78,27 @@ jobs:
         run: |
           set -e
 
-          SECRET_FILE=$(find gitops/secrets -type f -name "github-repo-secret.yaml" | head -n 1)
+          SECRET_FILE=$(find gitops/secrets -type f -name "github-repo-secret.yaml.enc" | head -n 1)
+          DECRYPTED="decrypted.yaml"
 
           if [ -n "$SECRET_FILE" ]; then
             echo "Decrypting secret file: $SECRET_FILE"
-            kubectl apply --validate=false -f "$SECRET_FILE"
+            sops -d "$SECRET_FILE" > "$DECRYPTED"
+            kubectl apply --validate=false -f "$DECRYPTED"
             echo "✅ ArgoCD secret applied from Sops"
           else
             echo "❌ No encrypted secret files found. Generating one"
+            mkdir -p gitops/secrets
+            BASE_FILE="gitops/secrets/github-repo-secret.yaml"
             python3 scripts/apply_argo_secret.py
-            kubectl apply --validate=false -f gitops/secrets/github-repo-secret.yaml
+            kubectl apply --validate=false -f "$BASE_FILE"
             echo "✅ ArgoCD secret applied from Script"
           fi
         env:
-           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+           PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+           APP_ID: ${{ secrets.APP_ID_GITHUB }}
+           REPO_URL: ${{ secrets.REPO_URL }}
+           BASE_FILE: "$BASE_FILE"
 
       # --------------------------------
       # 5. Verify ArgoCD resources
