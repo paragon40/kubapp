@@ -8,10 +8,6 @@ set -euo pipefail
 # - Remove service route from shared ingress
 # - Remove gitops/envs/<env>/<service>/
 # - Validate structure after deletion
-#
-# SAFE MODE:
-# - No auto commit
-# - No auto push
 # - Explicit validation before delete
 # =========================================================
 
