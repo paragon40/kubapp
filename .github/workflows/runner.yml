@@ -1,0 +1,62 @@
+name: GitOps Commit Runner
+
+on:
+  workflow_call:
+    inputs:
+      script:
+        required: true
+        type: string
+      args:
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  run-gitops:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          
+          # install yq
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh
+
+      - name: Run GitOps Script
+        run: |
+          bash ${{ inputs.script }} ${{ inputs.args }}
+
+      - name: Validate GitOps
+        run: bash scripts/validate_gitops.sh
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git add gitops/
+
+            git commit -m "[RUNNER (GITOPS)]: apply changes via ${{ inputs.script }}"
+
+            if git push; then
+              :
+            else
+              echo "Git State mismatch, rebasing current.."
+              git pull --rebase && git push
+            fi
+          else
+            echo "No changes to commit"
+          fi

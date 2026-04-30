@@ -32,7 +32,7 @@ PORT=$(yq e '.service.targetPort' "$FILE")
 
 EXPECTED_FP=$(yq e '.meta.fingerprint' "$FILE")
 
-COMPUTED_FP=$(echo -n "$SERVICE_NAME|$IMAGE|$TAG|$ENV|$PORT" | sha256sum | awk '{print $1}')
+COMPUTED_FP=$(echo -n "$SERVICE_NAME|$TAG|$ENV|$PORT" | sha256sum | awk '{print $1}')
 
 if [[ "$EXPECTED_FP" != "$COMPUTED_FP" ]]; then
   echo ""
@@ -117,7 +117,6 @@ if [[ "$STRUCT_DRIFT" == "true" || "$RUNTIME_DRIFT" == "true" ]]; then
   echo "   3. update.yml (image only)"
   echo ""
 
-  echo "NO AUTO FIX performed (safe mode)"
   exit 1
 fi
 
