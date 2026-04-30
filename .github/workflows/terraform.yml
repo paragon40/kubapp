@@ -81,7 +81,7 @@ jobs:
         run: |
           terraform fmt
           terraform fmt -check
-          terraform validate -backend=false
+          terraform validate
 
       - name: Load tfvars (infra)
         working-directory: iac/infra
@@ -214,7 +214,7 @@ jobs:
         run: |
           terraform fmt
           terraform fmt -check
-          terraform validate -backend=false
+          terraform validate
 
       - name: Load tfvars (k8s)
         working-directory: iac/k8s
