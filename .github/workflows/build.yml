@@ -69,6 +69,9 @@ jobs:
 
           echo "matrix={\"service\":$SERVICES}" >> $GITHUB_OUTPUT
 
+          ####################################################
+          # ❗ DO NOT MODIFY (PRESERVED EXACT LOGIC)
+          ####################################################
           if [ "$SERVICES" = "[]" ]; then
             echo "No services found in docker/"
             exit 1
@@ -80,203 +83,187 @@ jobs:
 ####################################################
 # BUILD JOB
 ####################################################
-build:
-  needs: prepare
-  runs-on: ubuntu-latest
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
 
-  strategy:
-    matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    strategy:
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
 
-  env:
-    REGISTRY: docker.io
-    IMAGE_NAMESPACE: ${{ secrets.DOCKER_USER }}
+    env:
+      REGISTRY: docker.io
+      IMAGE_NAMESPACE: ${{ secrets.DOCKER_USER }}
 
-  steps:
-    ####################################################
-    # TOKEN
-    ####################################################
-    - name: Generate GitHub App token
-      id: app-token
-      uses: tibdex/github-app-token@v2
-      with:
-        app_id: ${{ secrets.APP_ID_GITHUB }}
-        private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID_GITHUB }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
 
-    ####################################################
-    # CHECKOUT
-    ####################################################
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        repository: paragon40/kubapp
-        token: ${{ steps.app-token.outputs.token }}
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          repository: paragon40/kubapp
+          token: ${{ steps.app-token.outputs.token }}
 
-    ####################################################
-    # LOGIN
-    ####################################################
-    - name: Login to Docker Hub
-      run: |
-        echo "${{ secrets.DOCKER_PASS }}" | docker login $REGISTRY \
-          -u "${{ secrets.DOCKER_USER }}" --password-stdin
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_PASS }}" | docker login $REGISTRY \
+            -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
-    ####################################################
-    # LOAD SOURCE OF TRUTH (FIXED JSON GENERATION)
-    ####################################################
-    - name: Load service metadata to github Reg
-      run: |
-        set -euo pipefail
+      ####################################################
+      # LOAD SOURCE OF TRUTH (ONLY STRUCTURE FIXED)
+      ####################################################
+      - name: Load service metadata to github Reg
+        run: |
+          set -euo pipefail
 
-        SERVICE="${{ matrix.service }}"
-        CONTEXT="docker/$SERVICE"
+          SERVICE="${{ matrix.service }}"
+          CONTEXT="docker/$SERVICE"
 
-        APP_FILE=$(find "$CONTEXT" -maxdepth 1 -type f \
-          \( -name "kubapp.yaml" -o -name "kubapp.yml" \) \
-          -print -quit)
+          APP_FILE=$(find "$CONTEXT" -maxdepth 1 -type f \
+            \( -name "kubapp.yaml" -o -name "kubapp.yml" \) \
+            -print -quit)
 
-        SECRET_FILE=$(find "$CONTEXT" -maxdepth 1 -type f \
-          \( -name "secrets.yaml" -o -name "secrets.yml" -o -name "secret.yaml" -o -name "secret.yml" \) \
-          -print -quit)
+          SECRET_FILE=$(find "$CONTEXT" -maxdepth 1 -type f \
+            \( -name "secrets.yaml" -o -name "secrets.yml" -o -name "secret.yaml" -o -name "secret.yml" \) \
+            -print -quit)
 
-        SERVICE_NAME="$SERVICE"
-        PORT="80"
-        ENV="${{ github.event.inputs.env || 'dev' }}"
-        NO_VARS=true
+          SERVICE_NAME="$SERVICE"
+          PORT="80"
+          ENV="${{ github.event.inputs.env || 'dev' }}"
+          NO_VARS=true
 
-        if [[ -n "$APP_FILE" && -s "$APP_FILE" ]]; then
-          echo "Using app file: $APP_FILE"
+          if [[ -n "$APP_FILE" && -s "$APP_FILE" ]]; then
+            echo "Using app file: $APP_FILE"
+            SERVICE_NAME=$(yq e '.service.name // env(SERVICE)' "$APP_FILE")
+            PORT=$(yq e '.app.port // 80' "$APP_FILE")
+            ENV=$(yq e '.deploy.env // strenv(ENV)' "$APP_FILE")
 
-          SERVICE_NAME=$(yq e '.service.name // strenv(SERVICE)' "$APP_FILE")
-          PORT=$(yq e '.app.port // 80' "$APP_FILE")
-          ENV=$(yq e '.deploy.env // strenv(ENV)' "$APP_FILE")
-
-          VAR_COUNT=$(yq e '.runtime.env // {} | length' "$APP_FILE")
-          if [[ "$VAR_COUNT" -gt 0 ]]; then
-            NO_VARS=false
+            VAR_COUNT=$(yq e '.runtime.env // {} | length' "$APP_FILE")
+            if [[ "$VAR_COUNT" -gt 0 ]]; then
+              NO_VARS=false
+            fi
+          else
+            echo "No app file found → using defaults"
           fi
-        else
-          echo "No app file found → using defaults"
-        fi
 
-        echo "NO_VARS=$NO_VARS" >> $GITHUB_ENV
+          echo "NO_VARS=$NO_VARS" >> $GITHUB_ENV
 
-        if [[ -n "$SECRET_FILE" && -s "$SECRET_FILE" ]]; then
-          echo "NO_SECRETS=false" >> $GITHUB_ENV
-        else
-          echo "NO_SECRETS=true" >> $GITHUB_ENV
-        fi
+          if [[ -n "$SECRET_FILE" && -s "$SECRET_FILE" ]]; then
+            echo "NO_SECRETS=false" >> $GITHUB_ENV
+          else
+            echo "NO_SECRETS=true" >> $GITHUB_ENV
+          fi
 
-        NAMESPACE="$ENV"
-        IMAGE="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA"
+          NAMESPACE="$ENV"
+          IMAGE="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA"
 
-        mkdir -p "gitops/registry/$ENV"
-        FILE="gitops/registry/$ENV/$SERVICE.json"
+          mkdir -p "gitops/registry/$ENV"
+          FILE="gitops/registry/$ENV/$SERVICE.json"
 
-        echo "================================="
-        echo "SERVICE_NAME: $SERVICE_NAME"
-        echo "SERVICE     : $SERVICE"
-        echo "CONTEXT     : $CONTEXT"
-        echo "REGISTRY    : $REGISTRY"
-        echo "FILE        : $FILE"
-        echo "================================="
+          echo "================================="
+          echo "SERVICE_NAME: $SERVICE_NAME"
+          echo "BUILD_NAME   : $SERVICE"
+          echo "CONTEXT     : $CONTEXT"
+          echo "REGISTRY    : $REGISTRY"
+          echo "FILE        : $FILE"
+          echo "================================="
 
-        ####################################################
-        # SAFE JSON GENERATION (NO HEREDOC BUGS)
-        ####################################################
-        jq -n \
-          --arg service "$SERVICE_NAME" \
-          --arg context "$CONTEXT" \
-          --arg image "$IMAGE" \
-          --arg tag "$GITHUB_SHA" \
-          --arg registry "$REGISTRY" \
-          --arg namespace "$NAMESPACE" \
-          --arg env "$ENV" \
-          --arg port "$PORT" \
-          --arg no_vars "$NO_VARS" \
-          --arg no_secrets "$NO_SECRETS" \
-          '{
-            service: $service,
-            context: $context,
-            image: $image,
-            tag: $tag,
-            registry: $registry,
-            namespace: $namespace,
-            env: $env,
-            port: $port,
-            NO_VARS: $no_vars,
-            NO_SECRETS: $no_secrets
-          }' > "$FILE"
+          jq -n \
+            --arg service "$SERVICE_NAME" \
+            --arg context "$CONTEXT" \
+            --arg image "$IMAGE" \
+            --arg tag "$GITHUB_SHA" \
+            --arg registry "$REGISTRY" \
+            --arg namespace "$NAMESPACE" \
+            --arg env "$ENV" \
+            --arg port "$PORT" \
+            --arg no_vars "$NO_VARS" \
+            --arg no_secrets "$NO_SECRETS" \
+            '{
+              service: $service,
+              context: $context,
+              image: $image,
+              tag: $tag,
+              registry: $registry,
+              namespace: $namespace,
+              env: $env,
+              port: $port,
+              NO_VARS: $no_vars,
+              NO_SECRETS: $no_secrets
+            }' > "$FILE"
 
-        echo "Generated manifest for $SERVICE"
-
-    ####################################################
-    # BUILD
-    ####################################################
-    - name: Build Docker image
-      run: |
-        MODE="${{ github.event.inputs.mode }}"
-        MODE=${MODE:-cached}
-
-        IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
-        IMAGE2="$IMAGE_NAMESPACE/${{ matrix.service }}:latest"
-        CONTEXT="docker/${{ matrix.service }}"
-
-        if [ "$MODE" = "fresh" ]; then
-          echo "Fresh build (no cache)"
-          docker build --no-cache -t "$IMAGE" "$CONTEXT"
-          docker build --no-cache -t "$IMAGE2" "$CONTEXT"
-        else
-          echo "Cached build"
-          docker build -t "$IMAGE" "$CONTEXT"
-          docker build -t "$IMAGE2" "$CONTEXT"
-        fi
-
-    ####################################################
-    # PUSH
-    ####################################################
-    - name: Push image
-      run: |
-        IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
-        IMAGE2="$IMAGE_NAMESPACE/${{ matrix.service }}:latest"
-        docker push "$IMAGE"
-        docker push "$IMAGE2"
-
-    ####################################################
-    # UPLOAD REGISTRY
-    ####################################################
-    - name: Upload registry artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: registry
-        path: gitops/registry
+          echo "Generated manifest for $SERVICE"
 
       ####################################################
-      # Github Registry
+      # BUILD
       ####################################################
+      - name: Build Docker image
+        run: |
+          MODE="${{ github.event.inputs.mode }}"
+          MODE=${MODE:-cached}
+
+          IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
+          IMAGE2="$IMAGE_NAMESPACE/${{ matrix.service }}:latest"
+          CONTEXT="docker/${{ matrix.service }}"
+
+          if [ "$MODE" = "fresh" ]; then
+            echo "Fresh build (no cache)"
+            docker build --no-cache -t "$IMAGE" "$CONTEXT"
+            docker build --no-cache -t "$IMAGE2" "$CONTEXT"
+          else
+            echo "Cached build"
+            docker build -t "$IMAGE" "$CONTEXT"
+            docker build -t "$IMAGE2" "$CONTEXT"
+          fi
+
+      ####################################################
+      # PUSH
+      ####################################################
+      - name: Push image
+        run: |
+          IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
+          IMAGE2="$IMAGE_NAMESPACE/${{ matrix.service }}:latest"
+          docker push "$IMAGE"
+          docker push "$IMAGE2"
+
+      - name: Upload registry artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: registry
+          path: gitops/registry
+
+####################################################
+# COMMIT JOB
+####################################################
   commit:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-    - name: Generate GitHub App token
-      id: app-token
-      uses: tibdex/github-app-token@v2
-      with:
-        app_id: ${{ secrets.APP_ID_GITHUB }}
-        private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+      - name: Generate GitHub App token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID_GITHUB }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
 
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        token: ${{ steps.app-token.outputs.token }}
-        fetch-depth: 0
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
 
-    - name: Download registry artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: registry
-        path: gitops/registry
+      - name: Download registry artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: registry
+          path: gitops/registry
 
-    - name: Commit Metadata
-      run: |
+      - name: Commit Metadata
+        run: |
           set -euo pipefail
           bash scripts/commit.sh
