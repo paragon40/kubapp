@@ -19,7 +19,7 @@ jobs:
         run: |
           DIR="./docker/${{ github.event.inputs.folder }}"
           DIR_FILE="./docker/${{ github.event.inputs.folder }}/Dockerfile"
-          if [[ -d "$DIR" ]] && [[ -f "DIR_FILE" ]]; then
+          if [[ ! -d "$DIR" ]] && [[ ! -f "DIR_FILE" ]]; then
             echo "❌ $DIR or $DIR_FILE Does NOT Exist" && exit 1
           fi
 
