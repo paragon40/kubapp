@@ -12,9 +12,8 @@ on:
         default: ""
 
 jobs:
-  run-gitops:
+  commit_push:
     runs-on: ubuntu-latest
-
     permissions:
       contents: write
 

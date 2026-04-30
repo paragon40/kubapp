@@ -8,6 +8,9 @@ on:
       env:
         required: true
 
+permisisons:
+  contents: write
+
 jobs:
   remove:
     uses: ./.github/workflows/runner.yml
