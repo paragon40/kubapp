@@ -27,15 +27,27 @@ echo "[ACTIVATE] RUNNING VALIDATE GITOPS SCRIPT..."
 ############################################
 # 3. GIT PUSH
 ############################################
+echo "--------------------------------------------------"
+echo "[INFO] GIT OPERATIONS"
+echo "--------------------------------------------------"
+
 read -rp "Push to GitHub? (yes/no): " CONFIRM
 
 if [[ "$CONFIRM" == "yes" ]]; then
+  echo "[INFO] Staging changes..."
   git add .
-  git commit -m "chore: activate pipeline for $ENV" || echo "No changes"
+
+  COMMIT_MSG="[CHORE]: run activation pipeline for $ENV - $(date '+%Y-%m-%d %H:%M:%S')"
+
+  echo "[INFO] Creating commit..."
+  git commit -m "$COMMIT_MSG" || echo "[WARN] ⚠️ No changes to commit"
+
+  echo "[INFO] Pushing to remote..."
   git push
-  echo "✅ Pushed to GitHub"
+
+  echo "[INFO] ✅ Push successful"
 else
-  echo "Skipped push"
+  echo "[WARN] ⚠️ Push skipped by user"
 fi
 
 echo "=============================="
