@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Starting full GitOps validation..."
+echo
+echo "=================================================="
+echo "[INFO] GITOPS VALIDATION STARTED"
+echo "=================================================="
+echo
 
 ############################################
 # DIRECTORIES (FULL SYSTEM COVERAGE)
@@ -17,7 +21,9 @@ DIRS=(
 # HELPERS
 ############################################
 fail() {
-  echo "❌ $1"
+  echo
+  echo "[ERROR] ❌ $1"
+  echo "=================================================="
   exit 1
 }
 
@@ -30,16 +36,31 @@ check_yaml() {
   yq e '.' "$file" >/dev/null 2>&1 || fail "Invalid YAML: $file"
 }
 
+############################################
+# PREREQUISITES
+############################################
+echo "--------------------------------------------------"
+echo "[INFO] CHECKING PREREQUISITES"
+echo "--------------------------------------------------"
+
 if ! command -v yq >/dev/null 2>&1; then
   fail "yq is required but not installed"
 fi
 
+echo "[INFO] ✅ yq available"
+echo
+
 ############################################
 # VALIDATE CORE STRUCTURE
 ############################################
+echo "--------------------------------------------------"
+echo "[INFO] CORE STRUCTURE VALIDATION"
+echo "--------------------------------------------------"
+
 for dir in "${DIRS[@]}"; do
-  echo ""
-  echo "Checking directory: $dir"
+  echo
+  echo "[INFO] Checking directory: $dir"
+
   check_dir "$dir"
 
   mapfile -t FILES < <(
@@ -47,7 +68,7 @@ for dir in "${DIRS[@]}"; do
   )
 
   if [[ ${#FILES[@]} -eq 0 ]]; then
-    echo "⚠️  No YAML files found in $dir"
+    echo "[WARN] ⚠️ No YAML files found in $dir"
     continue
   fi
 
@@ -55,11 +76,11 @@ for dir in "${DIRS[@]}"; do
   # FILE VALIDATION LOOP
   ############################################
   for file in "${FILES[@]}"; do
-    echo " Validating: $file"
+    echo "[INFO] Validating file: $file"
 
     # basic YAML check
     if [[ "$file" == *"/templates/"* ]]; then
-      echo "Skipping raw YAML validation for Helm template"
+      echo "[INFO] Skipping raw YAML validation for Helm template"
     else
       check_yaml "$file"
     fi
@@ -74,7 +95,7 @@ for dir in "${DIRS[@]}"; do
       [[ "$NAME" != "null" && -n "$NAME" ]] || fail "Missing metadata.name in $file"
 
       if [[ "$KIND" == "ApplicationSet" || "$KIND" == "Application" ]]; then
-        echo "✔ ArgoCD object: $KIND ($NAME)"
+        echo "[INFO] ✅ ArgoCD object valid: $KIND ($NAME)"
       else
         fail "Invalid ArgoCD kind in $file: $KIND"
       fi
@@ -92,7 +113,7 @@ for dir in "${DIRS[@]}"; do
       [[ -n "$NAMESPACE" && "$NAMESPACE" != "null" ]] || fail "Missing namespace in $file"
       [[ -n "$IMAGE" && "$IMAGE" != "null" ]] || fail "Missing image.repository in $file"
 
-      echo "✔ App env config: $APP_NAME ($NAMESPACE)"
+      echo "[INFO] ✅ App env config valid: $APP_NAME ($NAMESPACE)"
     fi
 
     ############################################
@@ -105,26 +126,32 @@ for dir in "${DIRS[@]}"; do
       [[ -n "$INGRESS_NAME" && "$INGRESS_NAME" != "null" ]] || fail "Missing ingress.name in $file"
       [[ "$SERVICES_COUNT" -ge 0 ]] || fail "Invalid services list in $file"
 
-      echo "✔ Ingress: $INGRESS_NAME (services: $SERVICES_COUNT)"
+      echo "[INFO] ✅ Ingress valid: $INGRESS_NAME (services: $SERVICES_COUNT)"
     fi
   done
 done
 
-echo ""
+############################################
+# HELM VALIDATION
+############################################
+echo
+echo "--------------------------------------------------"
+echo "[INFO] HELM CHART VALIDATION"
+echo "--------------------------------------------------"
 
 if command -v helm >/dev/null 2>&1; then
-  echo "⎈ Validating Helm charts..."
+  echo "[INFO] Helm detected, validating charts..."
 
   for chart in gitops/charts/*; do
     [[ -d "$chart" ]] || continue
 
     if [[ -f "$chart/Chart.yaml" ]]; then
-      echo "Checking Helm chart: $chart"
+      echo "[INFO] Checking Helm chart: $chart"
 
       helm template test "$chart" >/dev/null 2>&1 \
         || fail "Helm template validation failed: $chart"
 
-      echo "✔ Helm chart valid: $chart"
+      echo "[INFO] ✅ Helm chart valid: $chart"
     fi
   done
 
@@ -132,9 +159,15 @@ else
   if [[ "${CI:-}" == "true" ]]; then
     fail "helm is required in CI but not installed"
   else
-    echo "⚠️  Helm not installed locally — skipping Helm chart validation"
+    echo "[WARN] ⚠️ Helm not installed locally — skipping Helm chart validation"
   fi
 fi
 
-echo ""
-echo "✅ Full GitOps validation successful"
+############################################
+# DONE
+############################################
+echo
+echo "=================================================="
+echo "[INFO] ✅ FULL GITOPS VALIDATION SUCCESSFUL"
+echo "=================================================="
+echo
