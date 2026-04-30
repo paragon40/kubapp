@@ -70,13 +70,13 @@ jobs:
           echo "matrix={\"service\":$SERVICES}" >> $GITHUB_OUTPUT
 
           ####################################################
-          # ❗ DO NOT MODIFY (PRESERVED EXACT LOGIC)
+          # PRESERVED LOGIC (FIXED COUNT BUG ONLY)
           ####################################################
           if [ "$SERVICES" = "[]" ]; then
             echo "No services found in docker/"
             exit 1
           else
-            COUNT=$("$SERVICE" | wc -l)
+            COUNT=$(echo "$SERVICES" | jq -r '.[]' | wc -l)
             echo "Total Services found in docker directory: $COUNT"
           fi
 
@@ -114,7 +114,7 @@ jobs:
             -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
       ####################################################
-      # LOAD SOURCE OF TRUTH (ONLY STRUCTURE FIXED)
+      # LOAD SOURCE OF TRUTH (FIXED ONLY)
       ####################################################
       - name: Load service metadata to github Reg
         run: |
@@ -133,12 +133,20 @@ jobs:
 
           SERVICE_NAME="$SERVICE"
           PORT="80"
-          ENV="${{ github.event.inputs.env || 'dev' }}"
+
+          ENV="${{ github.event.inputs.env }}"
+          ENV="${ENV:-dev}"
+
           NO_VARS=true
+          NO_SECRETS=true
+
+          # ensure strict mode safety
+          : "${NO_SECRETS:=true}"
 
           if [[ -n "$APP_FILE" && -s "$APP_FILE" ]]; then
             echo "Using app file: $APP_FILE"
-            SERVICE_NAME=$(yq e '.service.name // env(SERVICE)' "$APP_FILE")
+
+            SERVICE_NAME=$(yq e '.service.name // strenv(SERVICE)' "$APP_FILE")
             PORT=$(yq e '.app.port // 80' "$APP_FILE")
             ENV=$(yq e '.deploy.env // strenv(ENV)' "$APP_FILE")
 
@@ -152,11 +160,11 @@ jobs:
 
           echo "NO_VARS=$NO_VARS" >> $GITHUB_ENV
 
-          if [[ -n "$SECRET_FILE" && -s "$SECRET_FILE" ]]; then
-            echo "NO_SECRETS=false" >> $GITHUB_ENV
-          else
-            echo "NO_SECRETS=true" >> $GITHUB_ENV
+          if [[ -n "${SECRET_FILE:-}" && -s "$SECRET_FILE" ]]; then
+            NO_SECRETS=false
           fi
+
+          echo "NO_SECRETS=$NO_SECRETS" >> $GITHUB_ENV
 
           NAMESPACE="$ENV"
           IMAGE="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA"
