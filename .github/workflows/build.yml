@@ -158,6 +158,13 @@ jobs:
           IMAGE="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA"
 
           mkdir -p gitops/registry/$ENV
+          echo "================================="
+          echo "Debug Level for $IMAGE_NAMESPACE..."
+          echo "SERVICE_NAME: $SERVICE_NAME"
+          echo "SERVICE: $SERVICE"
+          echo "CONTEXT: $CONTEXT"
+          echo "REGISTRY: $REGISTRY"
+          echo "====================================="
 
           cat > gitops/registry/$ENV/$SERVICE.json <<EOF
           {
