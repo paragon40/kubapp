@@ -165,9 +165,9 @@ jobs:
           fi
 
           echo "NO_SECRETS=$NO_SECRETS" >> $GITHUB_ENV
-
+          TS="$(date +%s)"
           NAMESPACE="$ENV"
-          IMAGE="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA"
+          IMAGE="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA-$TS"
 
           mkdir -p "gitops/registry/$ENV"
           FILE="gitops/registry/$ENV/$SERVICE.json"
@@ -175,6 +175,7 @@ jobs:
           echo "================================="
           echo "SERVICE_NAME: $SERVICE_NAME"
           echo "BUILD_NAME   : $SERVICE"
+          echo "IMAGE       : $IMAGE"
           echo "CONTEXT     : $CONTEXT"
           echo "REGISTRY    : $REGISTRY"
           echo "FILE        : $FILE"
@@ -189,6 +190,7 @@ jobs:
             --arg namespace "$NAMESPACE" \
             --arg env "$ENV" \
             --arg port "$PORT" \
+            --arg file "$FILE" \
             --arg no_vars "$NO_VARS" \
             --arg no_secrets "$NO_SECRETS" \
             '{
@@ -200,6 +202,7 @@ jobs:
               namespace: $namespace,
               env: $env,
               port: $port,
+              file: $file,
               NO_VARS: $no_vars,
               NO_SECRETS: $no_secrets
             }' > "$FILE"
