@@ -37,8 +37,22 @@ jobs:
       - name: Validate GitOps structure
         run: ./scripts/validate_gitops.sh
 
-      - name: Validate GitOps structure
-        run: ./scripts/get_state_file.sh
+      - name: Retrieve Currect ENV
+        run: |
+          set -euo pipefail
+          STATE_FILE="gitops/state/current.json"
+          if [[ ! -f "$STATE_FILE" || ! -s "$STATE_FILE" ]]; then
+            echo "❌ State File: $STATE_FILE is Missing or Empty."
+            exit 1
+          fi
+
+          STATE_ENV=$(jq -r '.env' "$STATE_FILE")
+          if [[ -z "$STATE_ENV" || "$STATE_ENV" == "null" ]]; then
+            echo "❌ ENV Source from state file Empty"
+            exit 1
+          fi
+          echo "Detected ENV: $STATE_ENV"
+          echo "ENV=$ENV" >> $GITHUB_ENV
 
       - name: Apply GitOps updates
         run: |
