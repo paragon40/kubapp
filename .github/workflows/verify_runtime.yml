@@ -1,8 +1,8 @@
-name: GitOps Verification
+name: GitOps Runtime Verification
 
 on:
   workflow_run:
-    workflows: ["Update GitOps"]
+    workflows: ["Runtime Image Update"]
     types:
       - completed
 
@@ -12,11 +12,19 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Checkout GitOps repo
+      - name: Generate GitHub App token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID_GITHUB }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
           repository: paragon40/kubapp
-          token: ${{ secrets.GITOPS_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
@@ -44,8 +52,9 @@ jobs:
       - name: validate files
         run: |
           set -e
-
-          FILES=$(find gitops/registry/$ENV -name "*.json")
+          ENV1="${{ env.ENV}}"
+          echo "ENV1=$ENV1" >> $GITHU_ENV
+          FILES=$(find gitops/registry/$ENV1 -name "*.json")
 
           if [ -z "$FILES" ]; then
             echo "No Registry File found"
@@ -58,8 +67,8 @@ jobs:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
           set -e
-
-          for file in $(find gitops/registry/$ENV -name "*.json"); do
+          ENV1="${{ env.ENV1}}"
+          for file in $(find gitops/registry/$ENV1 -name "*.json"); do
             SERVICE=$(jq -r .service "$file")
             ENV=$(jq -r .env "$file")
 
@@ -89,8 +98,9 @@ jobs:
       - name: Suggest Rollback on failure
         if: failure()
         run: |
+          ENV1="${{ env.ENV1}}"
           git fetch --tags
-          ENV=$(find artifacts -name "*.json" | head -1 | xargs jq -r .env)
+          ENV=$(find gitops/registry/$ENV1 -name "*.json" | head -1 | xargs jq -r .env)
           PREVIOUS_TAG=$(git tag --list "stable-${ENV}-*" --sort=-creatordate | sed -n '2p')
 
           if [ -z "$PREVIOUS_TAG" ]; then
@@ -98,42 +108,6 @@ jobs:
             exit 1
           fi
           echo "Deployment failed. Roll back safely with: $PREVIOUS_TAG"
-
-
-      - name: Create stable deployment tag
-        run: |
-          ENV=$(find artifacts -name "*.json" | head -1 | xargs jq -r .env)
-          TAG="stable-${ENV}-$(date +%Y%m%d-%H%M%S)"
-
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git fetch --tags
-
-          git tag -a "$TAG" -m "Stable deployment snapshot: $TAG || commit=$(git rev-parse HEAD)"
-          git push origin "$TAG"
-
-          echo "TAG=$TAG" >> $GITHUB_ENV
-          echo "✅ Created stable tag: $TAG"
-
-
-      - name: Save deployment snapshot metadata
-        env:
-          TAG: ${{ env.TAG }}
-        run: |
-          mkdir -p snapshot
-
-          echo "{
-            \"tag\": \"$TAG\",
-            \"commit\": \"$(git rev-parse HEAD)\",
-            \"time\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"
-          }" > snapshot/state.json
-
-      - name: Upload snapshot artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: deployment-snapshot
-          path: snapshot/state.json
 
       - name: Veriyfy Complete
         run: echo "✅ Gitops System Safe"

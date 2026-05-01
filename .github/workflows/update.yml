@@ -1,10 +1,7 @@
-name: Update GitOps
+name: Runtime Image Update
 
 on:
-  workflow_run:
-    workflows: ["Build and Push Docker Images"]
-    types:
-      - completed
+  workflow_dispatch:
 
 concurrency:
   group: gitops-update
@@ -13,14 +10,21 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: Checkout GitOps repo
+      - name: Generate GitHub App token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID_GITHUB }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
           repository: paragon40/kubapp
-          token: ${{ secrets.GITOPS_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
@@ -31,13 +35,16 @@ jobs:
           sudo chmod +x /usr/local/bin/yq
 
       - name: Validate GitOps structure
-        run: ./scripts/validate_gitops.sh artifacts
+        run: ./scripts/validate_gitops.sh
+
+      - name: Validate GitOps structure
+        run: ./scripts/get_state_file.sh
 
       - name: Apply GitOps updates
         run: |
           set -e
-
-          for file in $(find gitops/registry/$ENV/*.json -name "*.json"); do
+          ENV1="${{ env.ENV }}"
+          for file in $(find gitops/registry/$ENV1/*.json -name "*.json"); do
             SERVICE=$(jq -r .service "$file")
             IMAGE=$(jq -r .image "$file")
             ENV=$(jq -r .env "$file")
