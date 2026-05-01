@@ -1,12 +1,14 @@
 {
   "service": "url_shortener",
   "context": "docker/url_shortener",
-  "image": "codest40/url_shortener:c203da5b8f47c35a320de83ffdeb523422bb0a67",
-  "tag": "c203da5b8f47c35a320de83ffdeb523422bb0a67",
+  "image1": "paragon40/url_shortener:ae7ae1e22ccc57b0101d1f2a3c73bc95492fb22d-1777635961",
+  "image2": "paragon40/url_shortener:latest",
+  "tag": "ae7ae1e22ccc57b0101d1f2a3c73bc95492fb22d",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
-  "port": "80",
+  "port": "3000",
+  "file": "test/dev/url_shortener/url_shortener.json",
   "NO_VARS": "true",
-  "NO_SECRETS": ""
+  "NO_SECRETS": "true"
 }
