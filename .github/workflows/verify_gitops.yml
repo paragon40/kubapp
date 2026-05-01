@@ -30,17 +30,22 @@ jobs:
           chmod +x argocd
           sudo mv argocd /usr/local/bin/
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          run-id: ${{ github.event.workflow_run.id }}
-          path: artifacts
+      - name: Install jq
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y jq
 
-      - name: Validate artifacts
+      - name: Retrieve Correct ENV
+        run: |
+          set -euo pipefail
+          bash scripts/get_state_file.sh
+
+      - name: validate files
         run: |
           set -e
 
-          FILES=$(find artifacts -name "*.json")
+          FILES=$(find gitops/registry/$ENV -name "*.json")
 
           if [ -z "$FILES" ]; then
             echo "No artifacts found"
@@ -54,7 +59,7 @@ jobs:
         run: |
           set -e
 
-          for file in $(find artifacts -name "*.json"); do
+          for file in $(find gitops/registry/$ENV -name "*.json"); do
             SERVICE=$(jq -r .service "$file")
             ENV=$(jq -r .env "$file")
 
