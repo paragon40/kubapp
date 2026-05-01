@@ -309,25 +309,40 @@ jobs:
           fi
           echo "✅ Artifact contains $LEN files"
 
-      - name:  Merge registry artifacts
+      - name: Debug downloaded artifacts
+        run: |
+          echo "=== ARTIFACT TREE ==="
+          find artifacts -type f -print
+
+      - name: Reset registry folder
+        run: |
+          rm -rf gitops/registry
+          echo " Old registry removed, New one recreating"
+          mkdir -p gitops/registry
+
+
+      - name: Rebuild registry from artifacts
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          for dir in artifacts/*; do
-            echo "Processing $dir"
-            if [ -d "$dir/gitops/registry" ]; then
-              cp -r "$dir/gitops/registry/." gitops/registry/
-            fi
+
+          echo "Copying JSON files into registry..."
+
+          find artifacts -type f -name "*.json" | while read -r file; do
+            echo "→ $file"
+            cp "$file" gitops/registry/
           done
 
-      - name: Validate registry completeness
+      - name: Validate registry
         run: |
-          COUNT=$(find gitops/registry -type f | wc -l)
+          COUNT=$(find gitops/registry -type f -name "*.json" | wc -l)
+
           if [ "$COUNT" -eq 0 ]; then
-            echo "❌ Registry is empty — aborting"
+            echo "❌ Registry is empty after rebuild"
             exit 1
           fi
-          echo "✅ Registry contains $COUNT files"
+
+          echo "✅ Registry rebuilt with $COUNT files"
+
 
       - name: Confirm New Folder content of Each file
         run: |
