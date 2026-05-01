@@ -1,14 +1,14 @@
 {
   "service": "nodejs_app",
   "context": "docker/nodejs_app",
-  "image1": "paragon40/nodejs_app:ae7ae1e22ccc57b0101d1f2a3c73bc95492fb22d-1777635960",
+  "image1": "paragon40/nodejs_app:306148fbf6d7a7039092bd1fffbd01b3871c7b8f-1777637987",
   "image2": "paragon40/nodejs_app:latest",
-  "tag": "ae7ae1e22ccc57b0101d1f2a3c73bc95492fb22d",
+  "tag": "306148fbf6d7a7039092bd1fffbd01b3871c7b8f",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
   "port": "3000",
-  "file": "test/dev/nodejs_app/nodejs_app.json",
   "NO_VARS": "false",
-  "NO_SECRETS": "true"
+  "NO_SECRETS": "true",
+  "CREATED_AT": "2026-05-01_12-19-47"
 }
