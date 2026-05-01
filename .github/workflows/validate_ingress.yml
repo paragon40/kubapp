@@ -50,7 +50,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
 
-    if: ${{ github.event_name == 'workflow_run' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
 
     env:
       ENV: ${{ github.event.inputs.env || 'dev' }}
