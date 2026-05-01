@@ -1,4 +1,4 @@
-name: Validate Ingress App List
+name: Validate & Reconcile Ingress
 
 on:
   workflow_run:
@@ -10,22 +10,54 @@ on:
   push:
     paths:
       - "gitops/registry/**"
-      - "gitops/ingress/*/values.yaml"
+      - "gitops/ingress/**"
+
+  workflow_dispatch:
+    inputs:
+      env:
+        description: Environment
+        required: true
+        default: dev
+        type: choice
+        options: [dev, prod]
+
+      repair_mode:
+        description: Auto-repair ingress drift
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+      auto_register:
+        description: Auto-register missing services into ingress
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+      strict:
+        description: Fail pipeline on drift
+        required: false
+        default: "true"
+        type: choice
+        options: ["true", "false"]
 
 concurrency:
-  group: ingress-validation
+  group: ingress-reconcile
   cancel-in-progress: false
 
 jobs:
-  validate-ingress:
+  validate:
     runs-on: ubuntu-latest
 
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
+    if: ${{ github.event_name == 'workflow_run' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
 
     env:
-      ENV: dev
-      FILE: iac/ingress/values.yaml
-      REPAIR_MODE: false
+      ENV: ${{ github.event.inputs.env || 'dev' }}
+      FILE: gitops/ingress/${{ github.event.inputs.env || 'dev' }}/values.yaml
+      REPAIR_MODE: ${{ github.event.inputs.repair_mode || 'false' }}
+      AUTO_REGISTER: ${{ github.event.inputs.auto_register || 'false' }}
+      STRICT: ${{ github.event.inputs.strict || 'true' }}
 
     steps:
       - name: Checkout repo
@@ -42,74 +74,75 @@ jobs:
       ####################################################
       # LOAD DATASETS
       ####################################################
-      - name: Load registry + ingress services
+      - name: Load registry and ingress services
         id: load
         run: |
           set -euo pipefail
 
-          echo "Loading registry services..."
-          REGISTRY_SERVICES=$(find gitops/registry/$ENV -name "*.json" \
+          echo "📦 Loading registry..."
+          REGISTRY=$(find gitops/registry/$ENV -name "*.json" \
             -exec jq -r '.service' {} \; | sort -u)
 
-          echo "Loading ingress services..."
-          INGRESS_SERVICES=$(yq e '.services[].name' "$FILE" | sort -u)
+          echo "📥 Loading ingress..."
+          INGRESS=$(yq e '.services[].name' "$FILE" | sort -u)
 
-          echo "REGISTRY_SERVICES<<EOF" >> $GITHUB_OUTPUT
-          echo "$REGISTRY_SERVICES" >> $GITHUB_OUTPUT
+          echo "REGISTRY<<EOF" >> $GITHUB_OUTPUT
+          echo "$REGISTRY" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          echo "INGRESS_SERVICES<<EOF" >> $GITHUB_OUTPUT
-          echo "$INGRESS_SERVICES" >> $GITHUB_OUTPUT
+          echo "INGRESS<<EOF" >> $GITHUB_OUTPUT
+          echo "$INGRESS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       ####################################################
-      # DIFF ANALYSIS
+      # COMPUTE DRIFT
       ####################################################
       - name: Compute drift
         id: diff
         run: |
           set -euo pipefail
 
-          REGISTRY="${{ steps.load.outputs.REGISTRY_SERVICES }}"
-          INGRESS="${{ steps.load.outputs.INGRESS_SERVICES }}"
+          REGISTRY="${{ steps.load.outputs.REGISTRY }}"
+          INGRESS="${{ steps.load.outputs.INGRESS }}"
 
-          MISSING_IN_INGRESS=$(comm -23 <(echo "$REGISTRY") <(echo "$INGRESS") || true)
-          INVALID_IN_INGRESS=$(comm -23 <(echo "$INGRESS") <(echo "$REGISTRY") || true)
+          MISSING=$(comm -23 <(echo "$REGISTRY") <(echo "$INGRESS") || true)
+          INVALID=$(comm -23 <(echo "$INGRESS") <(echo "$REGISTRY") || true)
 
           echo "MISSING<<EOF" >> $GITHUB_OUTPUT
-          echo "$MISSING_IN_INGRESS" >> $GITHUB_OUTPUT
+          echo "$MISSING" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
           echo "INVALID<<EOF" >> $GITHUB_OUTPUT
-          echo "$INVALID_IN_INGRESS" >> $GITHUB_OUTPUT
+          echo "$INVALID" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          echo "===== DRIFT REPORT ====="
-          echo "Missing in ingress:"
-          echo "$MISSING_IN_INGRESS"
+          echo "================ DRIFT REPORT ================"
+          echo "Missing in ingress (registry → ingress):"
+          echo "$MISSING"
           echo ""
-          echo "Invalid in ingress:"
-          echo "$INVALID_IN_INGRESS"
+          echo "Invalid in ingress (ingress → registry):"
+          echo "$INVALID"
+          echo "=============================================="
 
       ####################################################
-      # AUTO ADD MISSING SERVICES
+      # AUTO REGISTER MISSING SERVICES (SAFE)
       ####################################################
-      - name: Add missing services (registry → ingress)
-        if: steps.diff.outputs.MISSING != ''
+      - name: Register missing services into ingress
+        if: steps.diff.outputs.MISSING != '' && env.AUTO_REGISTER == 'true'
         run: |
           set -euo pipefail
 
-          echo "➕ Adding missing services to ingress..."
+          echo "➕ Auto-registering missing services..."
 
           for svc in ${{ steps.diff.outputs.MISSING }}; do
-            echo "Adding: $svc"
-            yq eval -i '.services += [{"name": strenv(svc)}]' "$FILE"
+            echo "Registering: $svc"
+            bash scripts/register_new_svc.sh "$svc" "$ENV"
           done
 
       ####################################################
       # HANDLE INVALID SERVICES
       ####################################################
-      - name: Handle invalid ingress services
+      - name: Handle invalid services
         run: |
           set -euo pipefail
 
@@ -124,14 +157,14 @@ jobs:
           echo "$INVALID"
 
           if [ "$REPAIR_MODE" = "true" ]; then
-            echo "Repair mode enabled — removing invalid services..."
+            echo " Repair mode enabled — removing invalid services..."
 
             for svc in $INVALID; do
               echo "Removing: $svc"
-              yq eval -i ".services |= map(select(.name != \"$svc\"))" "$FILE"
+              bash scripts/register_new_svc.sh remove "$svc" "$ENV"
             done
           else
-            echo "❌ Strict mode — failing pipeline"
+            echo "❌ Strict mode enabled — failing pipeline"
             exit 1
           fi
 
@@ -145,17 +178,17 @@ jobs:
           COUNT=$(yq e '.services | length' "$FILE")
 
           if [ "$COUNT" -eq 0 ]; then
-            echo "❌ Ingress has no services"
+            echo "❌ Ingress is empty"
             exit 1
           fi
 
-          echo "✅ Final ingress valid with $COUNT services"
+          echo "✅ Ingress valid with $COUNT services"
 
       ####################################################
       # DEBUG OUTPUT
       ####################################################
-      - name: Print final ingress
+      - name: Show final ingress
         run: |
-          echo "===== FINAL INGRESS ====="
+          echo "========== FINAL INGRESS =========="
           cat "$FILE"
 
