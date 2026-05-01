@@ -86,6 +86,8 @@ jobs:
   build:
     needs: prepare
     runs-on: ubuntu-latest
+    outputs:
+      env: ${{ steps.export.outputs.env }}
 
     strategy:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
@@ -136,7 +138,6 @@ jobs:
 
           ENV="${{ github.event.inputs.env }}"
           ENV="${ENV:-dev}"
-
           NO_VARS=true
           NO_SECRETS=true
 
@@ -165,7 +166,9 @@ jobs:
           fi
 
           echo "NO_SECRETS=$NO_SECRETS" >> $GITHUB_ENV
+          echo "ENV=$ENV" >> $GITHUB_ENV
           TS="$(date +%s)"
+          TM="$(date +%Y-%m-%d_%H-%M-%S)"
           NAMESPACE="$ENV"
           IMAGE1="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA-$TS"
           IMAGE2="$IMAGE_NAMESPACE/$SERVICE:latest"
@@ -197,9 +200,9 @@ jobs:
             --arg namespace "$NAMESPACE" \
             --arg env "$ENV" \
             --arg port "$PORT" \
-            --arg file "$FILE" \
             --arg no_vars "$NO_VARS" \
             --arg no_secrets "$NO_SECRETS" \
+            --arg created_at "$TM" \
             '{
               service: $service,
               context: $context,
@@ -210,9 +213,9 @@ jobs:
               namespace: $namespace,
               env: $env,
               port: $port,
-              file: $file,
               NO_VARS: $no_vars,
-              NO_SECRETS: $no_secrets
+              NO_SECRETS: $no_secrets,
+              CREATED_AT: $created_at
             }' > "$FILE"
 
           echo "Generated manifest for $SERVICE"
@@ -254,6 +257,13 @@ jobs:
         with:
           name: registry-${{ matrix.service }}
           path: "${{ env.DIR }}"
+
+
+      - name: Export env for commit job
+        id: export
+        run: |
+          ENV="${{ env.ENV }}"
+          echo "env=$ENV" >> $GITHUB_OUTPUT
 
 ####################################################
 # COMMIT JOB
@@ -311,25 +321,30 @@ jobs:
           find artifacts -type f -print
 
       - name: Reset registry folder
+        env:
+          ENV: ${{ needs.build.outputs.env }}
         run: |
           rm -rf gitops/registry
-          echo " Old registry removed, New one recreating"
-          mkdir -p gitops/registry
+          echo " Old registry removed, New one recreating.."
+          NEW_DIR="gitops/registry/$ENV"
+          mkdir -p  "$NEW_DIR"
+          echo "NEW_DIR=$NEW_DIR" >> $GITHUB_ENV
 
       - name: Rebuild registry from artifacts
         run: |
           set -euo pipefail
+          NEW_DIR="${{ env.NEW_DIR }}"
 
           echo "Copying JSON files into registry..."
-
           find artifacts -type f -name "*.json" | while read -r file; do
             echo "→ $file"
-            cp "$file" gitops/registry/
+            cp "$file" "$NEW_DIR"
           done
 
       - name: Validate registry
         run: |
-          COUNT=$(find gitops/registry -type f -name "*.json" | wc -l)
+          NEW_DIR="${{ env.NEW_DIR }}"
+          COUNT=$(find "$NEW_DIR" -type f -name "*.json" | wc -l)
 
           if [ "$COUNT" -eq 0 ]; then
             echo "❌ Registry is empty after rebuild"
@@ -341,8 +356,9 @@ jobs:
 
       - name: Confirm New Folder content of Each file
         run: |
+          NEW_DIR="${{ env.NEW_DIR }}"
           echo "===== DOWNLOADED REGISTRY ====="
-          find gitops/registry -type f | while read -r file; do
+          find "$NEW_DIR" -type f | while read -r file; do
             echo "=========== $file ==========="
             cat "$file"
             echo
