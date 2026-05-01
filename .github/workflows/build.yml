@@ -188,7 +188,8 @@ jobs:
           jq -n \
             --arg service "$SERVICE_NAME" \
             --arg context "$CONTEXT" \
-            --arg image "$IMAGE" \
+            --arg image1 "$IMAGE1" \
+            --arg image2 "$IMAGE2" \
             --arg tag "$GITHUB_SHA" \
             --arg registry "$REGISTRY" \
             --arg namespace "$NAMESPACE" \
@@ -200,7 +201,8 @@ jobs:
             '{
               service: $service,
               context: $context,
-              image: $image,
+              image1: $image1,
+              image2: $image2,
               tag: $tag,
               registry: $registry,
               namespace: $namespace,
