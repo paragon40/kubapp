@@ -79,7 +79,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "📦 Loading registry..."
+          echo "Loading registry..."
           REGISTRY=$(find gitops/registry/$ENV -name "*.json" \
             -exec jq -r '.service' {} \; | sort -u)
 
@@ -132,7 +132,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "➕ Auto-registering missing services..."
+          echo " Auto-registering missing services..."
 
           for svc in ${{ steps.diff.outputs.MISSING }}; do
             echo "Registering: $svc"
