@@ -386,10 +386,16 @@ jobs:
               timestamp: $timestamp
             }' > gitops/state/current.json
 
+          echo "file created!"
+          cat gitops/state/current.json
+
       - name: Commit Metadata
         run: |
           set -euo pipefail
           bash scripts/commit.sh
 
       - name: finally
-        run: echo "✅ Build Finished"
+        run: |
+          echo "✅ Build Finished"
+          echo "file created!"
+          cat gitops/state/current.json
