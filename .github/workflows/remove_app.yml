@@ -17,3 +17,4 @@ jobs:
     with:
       script: scripts/remove_app.sh
       args: "${{ inputs.service }} ${{ inputs.env }}"
+
