@@ -2,88 +2,116 @@
 set -euo pipefail
 
 # =========================================
-# Register new service into global ingress
-# One ALB / One Global Ingress pattern
+# Ingress Service Manager (ADD / REMOVE)
+# Backward compatible:
+#   register_new_svc.sh <service> <env>
+#   register_new_svc.sh add <service> <env>
+#   register_new_svc.sh remove <service> <env>
 # =========================================
 
-# -----------------------------------------
-# Validate input
-# -----------------------------------------
-SCRIPT="${0:-}"
-SERVICE_NAME="${1:-}"
-ENV="${2:-dev}"
+ACTION="${1:-}"
+SERVICE_NAME="${2:-}"
+ENV="${3:-dev}"
+
 VALUES_FILE="gitops/ingress/${ENV}/values.yaml"
 
+# -----------------------------------------
+# Normalize legacy usage
+# -----------------------------------------
 if [[ -z "$SERVICE_NAME" ]]; then
   echo "Usage:"
-  echo "  ./scripts/$SCRIPT <service-name>"
-  echo
-  echo "Example:"
-  echo "  ./scripts/$SCRIPT notification"
+  echo "  $0 <service> [env]"
+  echo "  $0 add <service> [env]"
+  echo "  $0 remove <service> [env]"
   exit 1
 fi
 
-echo "Registering service: $SERVICE_NAME"
-
-# -----------------------------------------
-# Validate values file exists
-# -----------------------------------------
-if [[ ! -f "$VALUES_FILE" ]]; then
-  echo "Ingress values file not found:"
-  echo "  $VALUES_FILE"
-  exit 1
+# If first arg is a service (legacy mode)
+if [[ "$ACTION" != "add" && "$ACTION" != "remove" ]]; then
+  ENV="${2:-dev}"
+  SERVICE_NAME="$ACTION"
+  ACTION="add"
 fi
 
+echo "================================="
+echo "ACTION : $ACTION"
+echo "SERVICE: $SERVICE_NAME"
+echo "ENV    : $ENV"
+echo "FILE   : $VALUES_FILE"
+echo "================================="
+
 # -----------------------------------------
-# Ensure yq exists
+# Preconditions
 # -----------------------------------------
-if ! command -v yq >/dev/null 2>&1; then
-  echo "yq is required but not installed"
+command -v yq >/dev/null 2>&1 || {
+  echo "yq is required"
   exit 1
-fi
+}
 
-# -----------------------------------------
-# Ensure services key exists
-# -----------------------------------------
-SERVICES_EXISTS=$(yq e '.services != null' "$VALUES_FILE")
+[[ -f "$VALUES_FILE" ]] || {
+  echo "Ingress file not found: $VALUES_FILE"
+  exit 1
+}
 
-if [[ "$SERVICES_EXISTS" != "true" ]]; then
-  echo "Initializing services list..."
+# ensure services exists
+if ! yq e '.services' "$VALUES_FILE" >/dev/null 2>&1; then
   yq e '.services = []' -i "$VALUES_FILE"
 fi
 
 # -----------------------------------------
-# Prevent duplicate registration
+# ADD SERVICE
 # -----------------------------------------
-EXISTS=$(yq e ".services[].name == \"$SERVICE_NAME\"" "$VALUES_FILE" | grep -c true || true)
+add_service() {
+  EXISTS=$(yq e ".services[].name == \"$SERVICE_NAME\"" "$VALUES_FILE" | grep -c true || true)
 
-if [[ "$EXISTS" -gt 0 ]]; then
-  echo "Service already registered: $SERVICE_NAME"
-  exit 0
-fi
+  if [[ "$EXISTS" -gt 0 ]]; then
+    echo "Service already exists: $SERVICE_NAME"
+    return 0
+  fi
+
+  echo "Adding service: $SERVICE_NAME"
+
+  yq e -i ".services += [{\"name\": \"$SERVICE_NAME\"}]" "$VALUES_FILE"
+
+  echo "Service added"
+}
 
 # -----------------------------------------
-# Append new service
+# REMOVE SERVICE
 # -----------------------------------------
-echo "Adding service to global ingress registry..."
+remove_service() {
+  EXISTS=$(yq e ".services[].name == \"$SERVICE_NAME\"" "$VALUES_FILE" | grep -c true || true)
 
-yq e ".services += [{\"name\": \"$SERVICE_NAME\"}]" -i "$VALUES_FILE"
+  if [[ "$EXISTS" -eq 0 ]]; then
+    echo "Service not found: $SERVICE_NAME"
+    return 0
+  fi
 
-echo "Service successfully registered."
+  echo "Removing service: $SERVICE_NAME"
+
+  yq e -i ".services |= map(select(.name != \"$SERVICE_NAME\"))" "$VALUES_FILE"
+
+  echo "Service removed"
+}
+
+# -----------------------------------------
+# ROUTER
+# -----------------------------------------
+case "$ACTION" in
+  add)
+    add_service
+    ;;
+  remove)
+    remove_service
+    ;;
+  *)
+    echo "Invalid action: $ACTION"
+    exit 1
+    ;;
+esac
 
 echo
-echo "Updated file:"
-echo "----------------------------------"
+echo "Updated ingress:"
+echo "---------------------------------"
 cat "$VALUES_FILE"
-echo "----------------------------------"
-
-echo
-echo "Resulting routes:"
-echo "Path route:"
-echo "  https://kubapp.rundailytest.site/$SERVICE_NAME"
-
-echo "Subdomain route:"
-echo "  https://$SERVICE_NAME.kubapp.rundailytest.site"
-
-echo
-echo "Done."
+echo "---------------------------------"
