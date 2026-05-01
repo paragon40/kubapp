@@ -59,7 +59,7 @@ jobs:
             exit 1
           fi
           echo "Detected ENV: $STATE_ENV"
-          echo "ENV=$ENV" >> $GITHUB_ENV
+          echo "ENV=$STATE_ENV" >> $GITHUB_ENV
 
       - name: validate files
         run: |

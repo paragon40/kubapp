@@ -80,6 +80,22 @@ jobs:
           set -euo pipefail
 
           echo "Loading registry..."
+          if [[ "${{ github.event_run }}" == "workflow_run" ]]; then
+            STATE_FILE="gitops/state/current.json"
+            if [[ ! -f "$STATE_FILE" || ! -s "$STATE_FILE" ]]; then
+              echo "❌ State File: $STATE_FILE is Missing or Empty."
+              exit 1
+            fi
+
+            STATE_ENV=$(jq -r '.env' "$STATE_FILE")
+            if [[ -z "$STATE_ENV" || "$STATE_ENV" == "null" ]]; then
+              echo "❌ ENV Source from state file Empty"
+              exit 1
+            fi
+            echo "Detected ENV: $STATE_ENV"
+            echo "ENV=$STATE_ENV" >> github_ENV
+          fi
+
           REGISTRY=$(find gitops/registry/$ENV -name "*.json" \
             -exec jq -r '.service' {} \; | sort -u)
 
