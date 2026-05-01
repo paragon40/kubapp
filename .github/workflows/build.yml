@@ -169,7 +169,8 @@ jobs:
           NAMESPACE="$ENV"
           IMAGE="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA-$TS"
           echo "IMAGE1=$IMAGE" >> $GITHUB_ENV
-          echo "IMAGE2=$IMAGE:latest" >> $GITHUB_ENV
+          IMAGE2="$IMAGE:latest"
+          echo "IMAGE2=$IMAGE2" >> $GITHUB_ENV
 
           mkdir -p "gitops/registry/$ENV"
           FILE="gitops/registry/$ENV/$SERVICE.json"
