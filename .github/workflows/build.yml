@@ -265,6 +265,15 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
 
+      - name: Confirm content of Each file in original folder
+        run: |
+          echo "===== ORIGINAL REGISTRY ====="
+          find gitops/registry -type f | while read -r file; do
+            echo "=========== $file ==========="
+            cat "$file"
+            echo
+          done
+
       - name: Remove existing registry
         run: |
           rm -rf gitops/registry
@@ -275,6 +284,24 @@ jobs:
         with:
           name: registry
           path: gitops/registry
+
+      - name: Validate registry completeness
+        run: |
+          COUNT=$(find gitops/registry -type f | wc -l)
+          if [ "$COUNT" -eq 0 ]; then
+            echo "❌ Registry is empty — aborting"
+            exit 1
+          fi
+          echo "✅ Registry contains $COUNT files"
+
+      - name: Confirm New Folder content of Each file
+        run: |
+          echo "===== DOWNLOADED REGISTRY ====="
+          find gitops/registry -type f | while read -r file; do
+            echo "=========== $file ==========="
+            cat "$file"
+            echo
+          done
 
       - name: Commit Metadata
         run: |
