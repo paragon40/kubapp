@@ -388,14 +388,15 @@ jobs:
 
           echo "file created!"
           cat gitops/state/current.json
+          STATE_FILE="gitops/state/current.json"
+          echo "STATE_FILE=$STATE_FILE"  >> $GITHUB_ENV
 
       - name: Commit Metadata
+        env: "${{ env.STATE_FILE }}"
         run: |
           set -euo pipefail
-          bash scripts/commit.sh
+          bash scripts/commit.sh "$STATE_FILE"
 
       - name: finally
         run: |
           echo "✅ Build Finished"
-          echo "file created!"
-          cat gitops/state/current.json

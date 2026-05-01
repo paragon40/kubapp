@@ -3,6 +3,7 @@ set -euo pipefail
 
 TARGET="gitops/registry"
 BRANCH="main"
+STATE_FILE=${STATE_FILE:?Supply State File}
 
 echo ""
 echo "======================================"
@@ -26,7 +27,8 @@ fi
 ########################################
 # STAGE ONLY REGISTRY
 ########################################
-echo " Staging registry changes..."
+echo " Staging registry + state file changes..."
+git add "$STATE_FILE"
 git add "$TARGET"
 
 ########################################
