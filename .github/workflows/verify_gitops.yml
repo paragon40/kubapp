@@ -48,7 +48,7 @@ jobs:
           FILES=$(find gitops/registry/$ENV -name "*.json")
 
           if [ -z "$FILES" ]; then
-            echo "No artifacts found"
+            echo "No Registry File found"
             exit 1
           fi
 
