@@ -172,8 +172,10 @@ jobs:
           echo "IMAGE1=$IMAGE1" >> $GITHUB_ENV
           echo "IMAGE2=$IMAGE2" >> $GITHUB_ENV
 
-          mkdir -p "gitops/registry/$ENV"
-          FILE="gitops/registry/$ENV/$SERVICE.json"
+          DIR="test/$ENV/$SERVICE"
+          echo "DIR=$DIR" >> $GITHUB_ENV
+          mkdir -p "$DIR"
+          FILE="$DIR/$SERVICE.json"
 
           echo "================================="
           echo "SERVICE_NAME: $SERVICE_NAME"
@@ -251,7 +253,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: registry-${{ matrix.service }}
-          path: gitops/registry
+          path: "${{ env.DIR }}"
 
 ####################################################
 # COMMIT JOB
@@ -283,12 +285,6 @@ jobs:
             echo
           done
 
-      - name: Remove existing registry
-        run: |
-          rm -rf gitops/registry
-          echo "Old Registry Removed... Applying New one"
-          mkdir -p gitops/registry
-
       - name: Download registry artifacts
         uses: actions/download-artifact@v4
         with:
@@ -319,7 +315,6 @@ jobs:
           rm -rf gitops/registry
           echo " Old registry removed, New one recreating"
           mkdir -p gitops/registry
-
 
       - name: Rebuild registry from artifacts
         run: |
