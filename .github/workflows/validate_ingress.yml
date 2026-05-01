@@ -83,7 +83,7 @@ jobs:
           REGISTRY=$(find gitops/registry/$ENV -name "*.json" \
             -exec jq -r '.service' {} \; | sort -u)
 
-          echo "📥 Loading ingress..."
+          echo "Loading ingress..."
           INGRESS=$(yq e '.services[].name' "$FILE" | sort -u)
 
           echo "REGISTRY<<EOF" >> $GITHUB_OUTPUT

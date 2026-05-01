@@ -395,7 +395,7 @@ jobs:
         env: "${{ env.STATE_FILE }}"
         run: |
           set -euo pipefail
-          bash scripts/commit.sh "$STATE_FILE"
+          bash scripts/commit.sh
 
       - name: finally
         run: |
