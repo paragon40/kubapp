@@ -167,9 +167,9 @@ jobs:
           echo "NO_SECRETS=$NO_SECRETS" >> $GITHUB_ENV
           TS="$(date +%s)"
           NAMESPACE="$ENV"
-          IMAGE="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA-$TS"
-          echo "IMAGE1=$IMAGE" >> $GITHUB_ENV
-          IMAGE2="$IMAGE:latest"
+          IMAGE1="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA-$TS"
+          IMAGE2="$IMAGE_NAMESPACE/$SERVICE:latest"
+          echo "IMAGE1=$IMAGE1" >> $GITHUB_ENV
           echo "IMAGE2=$IMAGE2" >> $GITHUB_ENV
 
           mkdir -p "gitops/registry/$ENV"
