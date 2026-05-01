@@ -165,7 +165,7 @@ jobs:
           fi
 
           echo "NO_SECRETS=$NO_SECRETS" >> $GITHUB_ENV
-          TS="$(date +%s)"
+          echo "TS=$(date +%s)" >> $GITHUB_ENV
           NAMESPACE="$ENV"
           IMAGE="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA-$TS"
 
@@ -217,7 +217,7 @@ jobs:
           MODE="${{ github.event.inputs.mode }}"
           MODE=${MODE:-cached}
 
-          IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
+          IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}-$TS"
           IMAGE2="$IMAGE_NAMESPACE/${{ matrix.service }}:latest"
           CONTEXT="docker/${{ matrix.service }}"
 
@@ -236,7 +236,7 @@ jobs:
       ####################################################
       - name: Push image
         run: |
-          IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}"
+          IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}-$TS"
           IMAGE2="$IMAGE_NAMESPACE/${{ matrix.service }}:latest"
           docker push "$IMAGE"
           docker push "$IMAGE2"
@@ -244,7 +244,7 @@ jobs:
       - name: Upload registry artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: registry
+          name: registry-${{ matrix.service }}
           path: gitops/registry
 
 ####################################################
@@ -281,12 +281,23 @@ jobs:
         run: |
           rm -rf gitops/registry
           echo "Old Registry Removed... Applying New one"
+          mkdir -p gitops/registry
 
       - name: Download registry artifacts
         uses: actions/download-artifact@v4
         with:
-          name: registry
-          path: gitops/registry
+          path: artifacts
+
+      - name:  Merge registry artifacts
+        run: |
+          set -euo pipefail
+
+          for dir in artifacts/*; do
+            echo "Processing $dir"
+            if [ -d "$dir/gitops/registry" ]; then
+              cp -r "$dir/gitops/registry/." gitops/registry/
+            fi
+          done
 
       - name: Validate registry completeness
         run: |
