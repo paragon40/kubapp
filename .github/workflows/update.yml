@@ -30,36 +30,6 @@ jobs:
           https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          run-id: ${{ github.event.workflow_run.id }}
-          path: artifacts
-
-      - name: Validate artifacts
-        run: |
-          set -e
-          echo "Checking artifacts directory..."
-
-          if [ ! -d "artifacts" ]; then
-            echo "Artifacts directory missing"
-            exit 1
-          fi
-
-          FILES=$(find artifacts -name "*.json")
-
-          if [ -z "$FILES" ]; then
-            echo "No artifacts found"
-            exit 1
-          fi
-
-          echo "Validating JSON files..."
-
-          for file in $FILES; do
-            echo "Checking $file"
-            jq empty "$file" || exit 1
-          done
-
       - name: Validate GitOps structure
         run: ./scripts/validate_gitops.sh artifacts
 
@@ -67,7 +37,7 @@ jobs:
         run: |
           set -e
 
-          for file in $(find artifacts -name "*.json"); do
+          for file in $(find gitops/registry/$ENV/*.json -name "*.json"); do
             SERVICE=$(jq -r .service "$file")
             IMAGE=$(jq -r .image "$file")
             ENV=$(jq -r .env "$file")
@@ -101,5 +71,5 @@ jobs:
             echo "No changes detected"
             exit 0
           }
-          git commit -m "[$DATE] Gitops Update from build pipeline" || exit 0
+          git commit -m "[IMAGE UPDATE: ($DATE)] Gitops Update from build pipeline" || exit 0
           git push
