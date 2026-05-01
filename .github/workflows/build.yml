@@ -206,7 +206,7 @@ jobs:
             '{
               service: $service,
               context: $context,
-              image1: $image1,
+              image: $image1,
               image2: $image2,
               tag: $tag,
               registry: $registry,
