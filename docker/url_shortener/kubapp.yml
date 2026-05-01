@@ -1,0 +1,13 @@
+
+service:
+  name: url_shortener
+
+app:
+  port: 3000
+  healthPath: /api/health
+
+deploy:
+  env: dev
+
+
+
