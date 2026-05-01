@@ -1,14 +1,14 @@
 {
   "service": "weather",
   "context": "docker/weather_app",
-  "image": "paragon40/weather_app:8424fb8cc19ea7481b9dcc4adafe14c6b3f05422-1777641033",
+  "image": "paragon40/weather_app:eaa4bb486c183db1fcade9c965bbf646ce17fa74-1777643326",
   "image2": "paragon40/weather_app:latest",
-  "tag": "8424fb8cc19ea7481b9dcc4adafe14c6b3f05422",
+  "tag": "eaa4bb486c183db1fcade9c965bbf646ce17fa74",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
   "port": "80",
   "NO_VARS": "false",
   "NO_SECRETS": "true",
-  "CREATED_AT": "2026-05-01_13-10-33"
+  "CREATED_AT": "2026-05-01_13-48-46"
 }
