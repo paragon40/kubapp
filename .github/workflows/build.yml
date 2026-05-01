@@ -165,9 +165,11 @@ jobs:
           fi
 
           echo "NO_SECRETS=$NO_SECRETS" >> $GITHUB_ENV
-          echo "TS=$(date +%s)" >> $GITHUB_ENV
+          TS="$(date +%s)"
           NAMESPACE="$ENV"
           IMAGE="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA-$TS"
+          echo "IMAGE1=$IMAGE" >> $GITHUB_ENV
+          echo "IMAGE2=$IMAGE:latest" >> $GITHUB_ENV
 
           mkdir -p "gitops/registry/$ENV"
           FILE="gitops/registry/$ENV/$SERVICE.json"
@@ -217,17 +219,17 @@ jobs:
           MODE="${{ github.event.inputs.mode }}"
           MODE=${MODE:-cached}
 
-          IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}-$TS"
-          IMAGE2="$IMAGE_NAMESPACE/${{ matrix.service }}:latest"
+          IMAGE1="${{ env.IMAGE1 }}"
+          IMAGE2="${{ env.IMAGE2 }}"
           CONTEXT="docker/${{ matrix.service }}"
 
           if [ "$MODE" = "fresh" ]; then
             echo "Fresh build (no cache)"
-            docker build --no-cache -t "$IMAGE" "$CONTEXT"
+            docker build --no-cache -t "$IMAGE1" "$CONTEXT"
             docker build --no-cache -t "$IMAGE2" "$CONTEXT"
           else
             echo "Cached build"
-            docker build -t "$IMAGE" "$CONTEXT"
+            docker build -t "$IMAGE1" "$CONTEXT"
             docker build -t "$IMAGE2" "$CONTEXT"
           fi
 
@@ -236,9 +238,9 @@ jobs:
       ####################################################
       - name: Push image
         run: |
-          IMAGE="$IMAGE_NAMESPACE/${{ matrix.service }}:${{ github.sha }}-$TS"
-          IMAGE2="$IMAGE_NAMESPACE/${{ matrix.service }}:latest"
-          docker push "$IMAGE"
+          IMAGE1="${{ env.IMAGE1 }}"
+          IMAGE2="${{ env.IMAGE2 }}"
+          docker push "$IMAGE1"
           docker push "$IMAGE2"
 
       - name: Upload registry artifacts
@@ -288,10 +290,25 @@ jobs:
         with:
           path: artifacts
 
+      - name:  Ensure artifact Not empty
+        run: |
+          set -euo pipefail
+          if [ ! -d artifacts ]; then
+            echo "❌ artifacts directory missing"
+            exit 1
+          fi
+
+          LEN=$(find artifacts -type f | wc -l)
+          if [[ "$LEN" -eq 0 ]]; then
+            echo "❌ Problem!, Downloaded Artifact is Empty o"
+            exit 1
+          fi
+          echo "✅ Artifact contains $LEN files"
+
       - name:  Merge registry artifacts
         run: |
           set -euo pipefail
-
+          shopt -s nullglob
           for dir in artifacts/*; do
             echo "Processing $dir"
             if [ -d "$dir/gitops/registry" ]; then
