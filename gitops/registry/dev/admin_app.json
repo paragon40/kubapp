@@ -1,14 +1,14 @@
 {
   "service": "admin",
   "context": "docker/admin_app",
-  "image": "paragon40/admin_app:fb3e3b8baaf7e1b011b467875a72063abb1074ee-1777718927",
+  "image": "paragon40/admin_app:bbe6aadbf20af908193d2bd92bb879b9b5b7b7b6-1777727244",
   "image2": "paragon40/admin_app:latest",
-  "tag": "fb3e3b8baaf7e1b011b467875a72063abb1074ee",
+  "tag": "bbe6aadbf20af908193d2bd92bb879b9b5b7b7b6",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
   "port": "4000",
   "NO_VARS": "true",
   "NO_SECRETS": "true",
-  "CREATED_AT": "2026-05-02_10-48-47"
+  "CREATED_AT": "2026-05-02_13-07-24"
 }
