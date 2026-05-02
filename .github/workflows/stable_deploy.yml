@@ -1,0 +1,91 @@
+name: Retrieve Stable Commit for Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: Environment
+        required: true
+        default: dev
+        type: choice
+        options: [dev, prod]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh jq
+
+      - name: Authenticate GitHub CLI
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      # 1. Get latest stable tag
+      - name: Get latest stable tag
+        id: tag
+        env:
+          ENV: "${{ github.event.inputs.env }}"
+        run: |
+          TAG=$(git ls-remote --tags origin \
+            | awk '{print $2}' \
+            | grep "^refs/tags/stable-${ENV}-" \
+            | grep "stable-${ENV}" \
+            | sort -t '-' -k3,3 \
+            | tail -n 1 \
+            | sed 's|refs/tags/||')
+
+          echo "TAG=$TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      # 2. Resolve commit from tag
+      - name: Resolve commit
+        id: commit
+        run: |
+          COMMIT=$(git rev-list -n 1 ${{ steps.tag.outputs.tag }})
+          echo "COMMIT=$COMMIT"
+          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+
+      # 3. Show commit details
+      - name: Show commit details
+        run: |
+          echo "=============================="
+          echo "COMMIT DETAILS"
+          echo "=============================="
+
+          git init
+          git remote add origin https://github.com/${{ github.repository }}.git
+          git fetch --depth=1 origin ${{ steps.commit.outputs.commit }}
+
+          git show ${{ steps.commit.outputs.commit }}
+
+      # 4. Get workflow run tied to commit
+      - name: Get run ID
+        id: run
+        run: |
+          RUN_ID=$(gh run list \
+            --workflow verify_runtime.yml \
+            --commit ${{ steps.commit.outputs.commit }} \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          echo "RUN_ID=$RUN_ID"
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      # 5. Download snapshot artifact
+      - name: Download snapshot
+        run: |
+          gh run download ${{ steps.run.outputs.run_id }} \
+            --name deployment-snapshot
+
+      # 6. Show snapshot (DEPLOY STATE)
+      - name: Show snapshot
+        run: |
+          echo "=============================="
+          echo "DEPLOYMENT SNAPSHOT"
+          echo "=============================="
+          cat **/*.json
+

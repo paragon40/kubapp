@@ -54,7 +54,7 @@ jobs:
             exit 1
           fi
 
-          MAX_AGE=18000
+          MAX_AGE=12000
           NOW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           STATE_EPOCH=$(date -d "$STATE_TS" +%s)
           NOW_EPOCH=$(date -d "$NOW_TS" +%s)
@@ -180,6 +180,11 @@ jobs:
           }
 
           git commit -m "[ADD-APP] ${DATE} provision new application(s)"
-          git push
+          if git push; then
+            echo ""
+          else
+            echo "Remote State changed.. Rebasing.."
+            git pull --rebase && git push
+          fi
 
           echo "✅ New app provisioning committed successfully for $ENV"

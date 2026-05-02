@@ -82,22 +82,6 @@ jobs:
           done
 
       - name: Commit changes
-        run: |
-          DATE=$(date +"%Y-%m-%d_%H-%M-%S")
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git add .
-          git diff --quiet && {
-            echo "No changes detected"
-            exit 0
-          }
-          git commit -m "[IMAGE UPDATE: ($DATE)] Gitops Update from build pipeline" || exit 0
-          if git push; then
-            echo "Push Successful"
-          else
-            echo "Remote State Changed. Rebasing.."
-            git pull --rebase
-            git push
-            echo "Push Successful"
-          fi
+        run: bash scripts/commit.sh  "$DIR" "Runtime IMAGE Update"
+        env:
+          DIR: "gitops/envs/$ENV"

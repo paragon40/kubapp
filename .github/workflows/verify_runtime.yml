@@ -109,3 +109,59 @@ jobs:
           else
             echo "⚠️ No previous stable tag found"
           fi
+          exit 1
+
+      - name: Create Snapshot for Commit Tag
+        run: |
+          set -euo pipefail
+          ENV="${{ env.ENV }}"
+          COMMIT="$(git rev-parse HEAD)"
+          RUN_ID="${{ github.run_id }}"
+          TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          DATE="$(date +%Y%m%d-%H%M%S)"
+          SERVICE_COUNT=$(find gitops/registry/$ENV -name "*.json" | wc -l)
+
+          DIR="snapshots/deploys"
+          FILE="$DIR/${ENV}-${DATE}.json"
+          mkdir -p "$DIR"
+
+          jq -n \
+            --arg env "$ENV" \
+            --arg commit "$COMMIT" \
+            --arg run_id "$RUN_ID" \
+            --arg services "$SERVICE_COUNT" \
+            --arg time "$TS" \
+          '{
+              env: $env,
+              commit: $commit,
+              run_id: $run_id,
+              services: ($services | tonumber),
+              timestamp: $time
+           }' > "$FILE"
+
+           echo "SNAPSHOT_FILE=$FILE" >> $GITHUB_ENV
+           echo "Snapshot created:"
+           cat "$FILE"
+
+      - name: Tag Commit as stable
+        run: |
+          set -euo pipefail
+          ENV="${{ env.ENV }}"
+          COMMIT="$(git rev-parse HEAD)"
+          TIME="$(date +%Y%m%d-%H%M%S)"
+          TAG="stable-${ENV}-${TIME}"
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git tag -a "$TAG" -m "Stable deployment: [$ENV] || Commit=$COMMIT || Run_ID=${{ github.run_id }} || time=$TIME"
+          git push origin "$TAG"
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "✅ Stable tag created: $TAG"
+
+
+      - name: Upload deployment snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-snapshot
+          path: ${{ env.SNAPSHOT_FILE }}
