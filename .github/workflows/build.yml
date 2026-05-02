@@ -394,7 +394,10 @@ jobs:
       - name: Commit Metadata
         run: |
           set -euo pipefail
-          bash scripts/commit.sh
+          bash scripts/commit.sh "$DIR" "$STATE" "From Build Pipeline"
+        env:
+          DIR: "gitops/registry"
+          STATE: "gitops/state"
 
       - name: finally
         run: |
