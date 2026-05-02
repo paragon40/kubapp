@@ -2,8 +2,8 @@ appName: admin
 namespace: dev
 replicaCount: 2
 image:
-  repository: paragon40/admin_app:fb3e3b8baaf7e1b011b467875a72063abb1074ee-1777718927
-  tag: fb3e3b8baaf7e1b011b467875a72063abb1074ee
+  repository: paragon40/admin_app:bbe6aadbf20af908193d2bd92bb879b9b5b7b7b6-1777727244
+  tag: bbe6aadbf20af908193d2bd92bb879b9b5b7b7b6
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -22,6 +22,6 @@ hpa:
   cpu: 70
 meta:
   staticFingerprint: be9cdf8b48982e22e4b67e6b6345e115a9ffde654c29143eaf57dff2b5007ecb
-  generatedAt: 2026-05-02T10:49:48Z
+  generatedAt: 2026-05-02T13:08:34Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
