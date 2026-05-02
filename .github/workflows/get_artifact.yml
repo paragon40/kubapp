@@ -1,0 +1,42 @@
+name: Inspect Artifact
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh jq
+
+      - name: Authenticate GH CLI
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Get latest successful build run
+        id: run
+        run: |
+          RUN_ID=$(gh run list \
+            --workflow "build.yml" \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      - name: Download artifact (registry-user_app)
+        run: |
+          gh run download ${{ steps.run.outputs.run_id }} \
+            --name "registry-user_app"
+
+      - name: Show artifact contents
+        run: |
+          echo "==== FILES ===="
+          ls -R
+
+          echo "==== CONTENT ===="
+          cat **/* || true

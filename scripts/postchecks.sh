@@ -8,7 +8,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REG_DIR="$ROOT/gitops/registry/$ENV"
 
 echo "=================================="
-echo "🚀 ADVANCED RUNTIME VERIFICATION"
+echo "ADVANCED RUNTIME VERIFICATION"
 echo "ENV: $ENV"
 echo "DOMAIN: $DOMAIN"
 echo "=================================="
@@ -21,8 +21,8 @@ SERVICES=$(find "$REG_DIR" -name "*.json" -exec jq -r '.service' {} \;)
 ATTEMPTS=3
 SLEEP=20
 
-SUCCESS_THRESHOLD=90   # % success required
-CANARY_REQUESTS=10     # requests per service
+SUCCESS_THRESHOLD=90
+CANARY_REQUESTS=10
 
 ########################################
 # FUNCTION: HTTP CHECK WITH METRICS

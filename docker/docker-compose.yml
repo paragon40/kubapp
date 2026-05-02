@@ -1,0 +1,12 @@
+#version: "3.9"
+
+services:
+  user:
+    build: ./user_app
+    ports:
+      - "3001:3000"
+
+  admin:
+    build: ./admin_app
+    ports:
+      - "4001:4000"
