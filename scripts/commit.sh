@@ -30,6 +30,7 @@ fi
 echo " Staging registry + state file changes..."
 git add "$STATE_FILE"
 git add "$TARGET"
+git add .
 
 ########################################
 # CHECK IF ANY REAL CHANGE EXISTS

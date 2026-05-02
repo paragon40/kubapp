@@ -1,0 +1,11 @@
+
+service:
+  name: user
+
+app:
+  port: 3000
+  healthPath: /health
+
+deploy:
+  env: dev
+

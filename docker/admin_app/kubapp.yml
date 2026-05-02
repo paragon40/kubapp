@@ -1,0 +1,10 @@
+
+service:
+  name: admin
+
+app:
+  port: 4000
+  healthPath: /health
+
+deploy:
+  env: dev
