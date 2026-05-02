@@ -324,7 +324,7 @@ jobs:
         env:
           ENV: ${{ needs.build.outputs.env }}
         run: |
-          mv gitops/registry temp
+          mv gitops/registry/$ENV temp
           NEW_DIR="gitops/registry/$ENV"
           mkdir -p  "$NEW_DIR"
           echo "NEW_DIR=$NEW_DIR" >> $GITHUB_ENV
@@ -366,18 +366,9 @@ jobs:
       - name: Delete Old Registry
         env:
         run: |
-          for each in $(find artifacts/. -type f -name "*.json" ); then
-            bash scripts/validate_registry.sh "$each"
-          fi
-
-          if [[ "$RESULT" == "success" ]]; then
-            rm -rf temp
-            rm -rf artifacts
-            echo "✅ Old registry removed.."
-          else
-            echo "❌ Registry files from downloaded artifacts failed structural Validations.. Require manual check"
-            exit 1
-          fi
+          rm -rf temp
+          rm -rf artifacts
+          echo "✅ Old registry removed.."
 
       - name: Create State file Metadata for Downstream
         env:

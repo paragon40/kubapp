@@ -1,57 +1,15 @@
-- name: Create deployment snapshot
-  run: |
-    set -euo pipefail
+      - name: Delete Old Registry
+        env:
+        run: |
+          for each in $(find artifacts/. -type f -name "*.json" ); then
+            bash scripts/validate_registry.sh "$each"
+          fi
 
-    ENV="${{ env.ENV }}"
-    COMMIT="$(git rev-parse HEAD)"
-    TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    DATE="$(date +%Y%m%d-%H%M%S)"
-
-    DIR="snapshots/deploys"
-    FILE="$DIR/${ENV}-${DATE}.json"
-
-    mkdir -p "$DIR"
-
-    jq -n \
-      --arg env "$ENV" \
-      --arg commit "$COMMIT" \
-      --arg time "$TS" \
-      '{
-        env: $env,
-        commit: $commit,
-        timestamp: $time
-      }' > "$FILE"
-
-    echo "SNAPSHOT_FILE=$FILE" >> $GITHUB_ENV
-
-    echo "📦 Snapshot created:"
-    cat "$FILE"
-
-
-- name: Create stable deployment tag
-  run: |
-    set -euo pipefail
-
-    ENV="${{ env.ENV }}"
-    COMMIT="$(git rev-parse HEAD)"
-    TIME="$(date +%Y%m%d-%H%M%S)"
-
-    TAG="stable-${ENV}-${TIME}"
-
-    git config user.name "github-actions"
-    git config user.email "github-actions@github.com"
-
-    git tag -a "$TAG" -m "Stable deployment: $ENV | $COMMIT"
-    git push origin "$TAG"
-
-    echo "TAG=$TAG" >> $GITHUB_ENV
-
-    echo "🏷 Stable tag created: $TAG"
-
-- name: Upload deployment snapshot
-  uses: actions/upload-artifact@v4
-  with:
-    name: deployment-snapshot
-    path: ${{ env.SNAPSHOT_FILE }}
-
-
+          if [[ "$RESULT" == "success" ]]; then
+            rm -rf temp
+            rm -rf artifacts
+            echo "✅ Old registry removed.."
+          else
+            echo "❌ Registry files from downloaded artifacts failed structural"
+            exit 1
+          fi
