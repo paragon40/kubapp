@@ -201,9 +201,12 @@ jobs:
 
           echo "✅ Ingress valid with $COUNT services"
 
-      ####################################################
-      # DEBUG OUTPUT
-      ####################################################
+
+      - name: commit Ingress changes
+        run: bash scripts/commit.sh "$DIR" "From Validate_ingress Workflow"
+        env:
+          DIR: "gitops/ingress"
+
       - name: Show final ingress
         run: |
           echo "========== FINAL INGRESS =========="
