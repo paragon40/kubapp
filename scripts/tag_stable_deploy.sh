@@ -2,29 +2,19 @@
 set -euo pipefail
 
 ENV="${{ env.ENV }}"
+services "$(find gitops/registry/$ENV -name '*.json' | wc -l)"
 COMMIT="$(git rev-parse HEAD)"
-TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+TIME="$(date +%Y-%m-%d_%H:%M:%S)"
+DIR="snapshot/deploys"
+file="$DIR/${TIME}.json"
 
-mkdir -p snapshot
-
-jq -n \
-  --arg env "$ENV" \
-  --arg commit "$COMMIT" \
-  --arg time "$TIME" \
-  '{
-    env: $env,
-    commit: $commit,
-    time: $time
-  }' > snapshot/state.json
-
-echo "✅ Snapshot created"
-cat snapshot/state.json
+mkdir -p "$DIR"
 
 jq -n \
   --arg env "$ENV" \
   --arg commit "$COMMIT" \
   --arg time "$TIME" \
-  --arg services "$(find gitops/registry/$ENV -name '*.json' | wc -l)" \
+  --arg services "$services"  \
   '{
     env: $env,
     commit: $commit,
@@ -32,4 +22,6 @@ jq -n \
     service_count: $services
   }'
 
+echo "✅ Snapshot created"
+cat $file
 

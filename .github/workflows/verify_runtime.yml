@@ -94,35 +94,7 @@ jobs:
           export ARGOCD_OPTS="--server $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN"
           bash scripts/postchecks.sh "${{ env.ENV }}" "kubapp.rundailytest.site"
 
-      ####################################################
-      # TAG ONLY AFTER FULL SUCCESS
-      ####################################################
-      - name: Create stable tag
-        run: |
-          set -euo pipefail
-
-          ENV="${{ env.ENV }}"
-          TAG="stable-${ENV}-$(date +%Y%m%d-%H%M%S)"
-
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git fetch --tags
-
-          git tag -a "$TAG" -m "
-          Stable deployment
-          ENV: $ENV
-          Commit: $(git rev-parse HEAD)
-          Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          "
-
-          git push origin "$TAG"
-
-          echo "✅ Stable tag created: $TAG"
-
-      ####################################################
       # FAILURE HANDLER
-      ####################################################
       - name: Suggest rollback
         if: failure()
         run: |
