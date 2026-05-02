@@ -3,15 +3,17 @@ name: Runtime Verification
 on:
   workflow_run:
     workflows: ["Runtime Image Update"]
-    types:
-      - completed
+    types: [completed]
 
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
+      ####################################################
+      # AUTH
+      ####################################################
       - name: Generate GitHub App token
         id: app-token
         uses: tibdex/github-app-token@v2
@@ -19,6 +21,9 @@ jobs:
           app_id: ${{ secrets.APP_ID_GITHUB }}
           private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
 
+      ####################################################
+      # CHECKOUT
+      ####################################################
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
@@ -26,101 +31,109 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
 
+      ####################################################
+      # INSTALL TOOLS
+      ####################################################
       - name: Install dependencies
         run: |
+          set -euo pipefail
+
           sudo apt-get update
           sudo apt-get install -y jq curl
 
-      - name: Install ArgoCD CLI
-        run: |
+          # kubectl
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+          # argocd
           curl -sSL -o argocd \
-          https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+            https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
           chmod +x argocd
           sudo mv argocd /usr/local/bin/
 
-      - name: Install jq
+      ####################################################
+      # LOAD STATE
+      ####################################################
+      - name: Load ENV from state
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y jq
 
-      - name: Retrieve Correct ENV
-        run: |
-          set -euo pipefail
           STATE_FILE="gitops/state/current.json"
+
           if [[ ! -f "$STATE_FILE" || ! -s "$STATE_FILE" ]]; then
-            echo "❌ State File: $STATE_FILE is Missing or Empty."
+            echo "❌ Missing state file"
             exit 1
           fi
 
-          STATE_ENV=$(jq -r '.env' "$STATE_FILE")
-          if [[ -z "$STATE_ENV" || "$STATE_ENV" == "null" ]]; then
-            echo "❌ ENV Source from state file Empty"
+          ENV=$(jq -r '.env' "$STATE_FILE")
+
+          if [[ -z "$ENV" || "$ENV" == "null" ]]; then
+            echo "❌ Invalid ENV in state file"
             exit 1
           fi
-          echo "Detected ENV: $STATE_ENV"
-          echo "ENV=$STATE_ENV" >> $GITHUB_ENV
 
-      - name: validate files
+          echo "ENV=$ENV" >> $GITHUB_ENV
+          echo "Detected ENV: $ENV"
+
+      ####################################################
+      # PRECHECKS
+      ####################################################
+      - name: Run prechecks
         run: |
-          set -e
-          ENV1="${{ env.ENV}}"
-          echo "ENV1=$ENV1" >> $GITHU_ENV
-          FILES=$(find gitops/registry/$ENV1 -name "*.json")
+          bash scripts/prechecks.sh "${{ env.ENV }}"
 
-          if [ -z "$FILES" ]; then
-            echo "No Registry File found"
-            exit 1
-          fi
-
-      - name: Verify ArgoCD apps
+      ####################################################
+      # VERIFY RUNTIME
+      ####################################################
+      - name: Run postchecks (deep verification)
         env:
           ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          set -e
-          ENV1="${{ env.ENV1}}"
-          for file in $(find gitops/registry/$ENV1 -name "*.json"); do
-            SERVICE=$(jq -r .service "$file")
-            ENV=$(jq -r .env "$file")
+          export ARGOCD_OPTS="--server $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN"
+          bash scripts/postchecks.sh "${{ env.ENV }}" "kubapp.rundailytest.site"
 
-            APP_NAME="${SERVICE}-${ENV}"
-            echo "Checking $APP_NAME"
+      ####################################################
+      # TAG ONLY AFTER FULL SUCCESS
+      ####################################################
+      - name: Create stable tag
+        run: |
+          set -euo pipefail
 
-            argocd app get $APP_NAME \
-              --server $ARGOCD_SERVER \
-              --auth-token $ARGOCD_AUTH_TOKEN \
-              || {
-              echo "App not found: $APP_NAME"
-              exit 1
-            }
+          ENV="${{ env.ENV }}"
+          TAG="stable-${ENV}-$(date +%Y%m%d-%H%M%S)"
 
-            argocd app get $APP_NAME --refresh \
-              --server $ARGOCD_SERVER \
-              --auth-token $ARGOCD_AUTH_TOKEN
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
-            argocd app wait $APP_NAME \
-              --health \
-              --timeout 180 \
-              --server $ARGOCD_SERVER \
-              --auth-token $ARGOCD_AUTH_TOKEN
+          git fetch --tags
 
-          done
+          git tag -a "$TAG" -m "
+          Stable deployment
+          ENV: $ENV
+          Commit: $(git rev-parse HEAD)
+          Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          "
 
-      - name: Suggest Rollback on failure
+          git push origin "$TAG"
+
+          echo "✅ Stable tag created: $TAG"
+
+      ####################################################
+      # FAILURE HANDLER
+      ####################################################
+      - name: Suggest rollback
         if: failure()
         run: |
-          ENV1="${{ env.ENV1}}"
+          ENV="${{ env.ENV }}"
           git fetch --tags
-          ENV=$(find gitops/registry/$ENV1 -name "*.json" | head -1 | xargs jq -r .env)
-          PREVIOUS_TAG=$(git tag --list "stable-${ENV}-*" --sort=-creatordate | sed -n '2p')
 
-          if [ -z "$PREVIOUS_TAG" ]; then
-            echo "No previous tag found."
-            exit 1
+          PREV=$(git tag --list "stable-${ENV}-*" --sort=-creatordate | sed -n '2p')
+
+          if [[ -n "$PREV" ]]; then
+            echo "⚠️ Rollback recommended:"
+            echo "git checkout $PREV"
+          else
+            echo "⚠️ No previous stable tag found"
           fi
-          echo "Deployment failed. Roll back safely with: $PREVIOUS_TAG"
-
-      - name: Veriyfy Complete
-        run: echo "✅ Gitops System Safe"
-
