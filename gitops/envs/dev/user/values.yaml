@@ -2,8 +2,8 @@ appName: user
 namespace: dev
 replicaCount: 2
 image:
-  repository: paragon40/user_app:d43bfe7847962a2e1e812a1e1154fd6e3e473ecf-1777714775
-  tag: d43bfe7847962a2e1e812a1e1154fd6e3e473ecf
+  repository: paragon40/user_app:fb3e3b8baaf7e1b011b467875a72063abb1074ee-1777718926
+  tag: fb3e3b8baaf7e1b011b467875a72063abb1074ee
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -22,6 +22,6 @@ hpa:
   cpu: 70
 meta:
   staticFingerprint: cdff39a56218b322471f6138cebbc268de3b6f955afd5b2c331e1d28b1101eb8
-  generatedAt: 2026-05-02T09:40:43Z
+  generatedAt: 2026-05-02T10:49:49Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
