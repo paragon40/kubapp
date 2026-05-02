@@ -1,29 +1,27 @@
 appName: admin
-
 namespace: dev
-
 replicaCount: 2
-
 image:
-  repository: codest40/url_shortener
-  tag: latest
-  pullPolicy: IfNotPresent
-
+  repository: paragon40/admin_app:d43bfe7847962a2e1e812a1e1154fd6e3e473ecf-1777714779
+  tag: d43bfe7847962a2e1e812a1e1154fd6e3e473ecf
+  pullPolicy: Always
 service:
   type: ClusterIP
   port: 80
-  targetPort: 3000
-
+  targetPort: 4000
 resources:
   requests:
     cpu: 100m
   limits:
     cpu: 300m
-
 env: {}
-
 hpa:
   enabled: false
   minReplicas: 1
   maxReplicas: 2
   cpu: 70
+meta:
+  staticFingerprint: be9cdf8b48982e22e4b67e6b6345e115a9ffde654c29143eaf57dff2b5007ecb
+  generatedAt: 2026-05-02T09:40:42Z
+  source: build-pipeline
+  runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
