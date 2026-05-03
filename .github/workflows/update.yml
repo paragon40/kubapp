@@ -76,8 +76,8 @@ jobs:
             echo "Target file: $FILE"
             echo "Image: $IMAGE"
             echo "Tag: $TAG"
-            yq e ".image.repository = strenv(IMAGE)" -i "$FILE" IMAGE="$IMAGE"
-            yq e ".image.tag = strenv(TAG)" -i "$FILE" TAG="$TAG"
+            yq e ".image.repository = \"$IMAGE\"" -i "$FILE"
+            yq e ".image.tag = \"$TAG\"" -i "$FILE"
             echo "Cat $FILE"
             cat "$FILE"
           done
