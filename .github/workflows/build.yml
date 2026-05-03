@@ -364,7 +364,6 @@ jobs:
           done
 
       - name: Delete Old Registry
-        env:
         run: |
           rm -rf temp
           rm -rf artifacts
