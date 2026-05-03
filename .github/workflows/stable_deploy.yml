@@ -34,7 +34,7 @@ jobs:
           set -euo pipefail
           TAG=$(git ls-remote --tags origin \
             | awk '{print $2}' \
-            | grep "^refs/tags/stable-${ENV}-" \
+            | grep "^refs/tags/stable-${ENV}-" || true \
             | sort -t '-' -k3,3 \
             | tail -n 1 \
             | sed 's|refs/tags/||'
