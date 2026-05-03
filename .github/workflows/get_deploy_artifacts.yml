@@ -48,20 +48,27 @@ jobs:
             --name "registry-user_app" \
             --dir artifacts
 
+      - name: Debug downloaded structure
+        run: |
+          echo "===== FULL TREE ====="
+          ls -R artifacts
+
       - name: Show artifact contents
         run: |
           set -euo pipefail
-          DIR="artifacts/registry-user_app"
-          if [[ ! -d "$DIR" ]]; then
-            echo "❌ $DIR Not found"
+          echo "===== Discovering files ====="
+          FILES=$(find artifacts -type f)
+          if [[ -z "$FILES" ]]; then
+            echo "❌ No files found in artifacts"
             exit 1
           fi
-          echo "Listing files..."
-          find "$DIR" -type f
-          while IFS= read -r each; do
-            echo "========= $each ======"
-            ls -R "$each"
-            echo "========= CONTENT ===="
-            cat "$each" || true
-          done < <(find "$DIR" -type f)
 
+          echo "✅ Files found:"
+          echo "$FILES"
+
+          for each in $FILES; do
+            echo "========= $each ======"
+            ls -l "$each"
+            echo "========= CONTENT ====="
+            cat "$each" || true
+          done
