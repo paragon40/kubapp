@@ -365,16 +365,14 @@ jobs:
 
       - name: Delete Old Registry
         run: |
-          rm -rf temp
-          rm -rf artifacts
-          echo "checking deleted folders"
-          find . artifacts -type d
-          RE=$?
-          if [[ "$RE" -eq 0 ]]; then
-            echo "Artifacts Still NOT Deleted"
-          else
-            echo "✅ Old registry removed.."
-          fi
+          rm -rf -- temp artifacts
+          for dir in artifacts temp; do
+            if [[ -d "$dir" ]]; then
+              echo "❌ $dir still exists"
+            else
+              echo "✅ $dir deleted"
+            fi
+          done
 
       - name: Create State file Metadata for Downstream
         env:
