@@ -82,6 +82,7 @@ jobs:
           done
 
       - name: Commit changes
-        run: bash scripts/commit.sh  "$DIR" "Runtime IMAGE Update"
-        env:
-          DIR: "gitops/envs/$ENV"
+        run: |
+          ENV="${{ env.ENV }}"
+          DIR="gitops/envs/$ENV"
+          bash scripts/commit.sh  "$DIR" "Runtime IMAGE Update"
