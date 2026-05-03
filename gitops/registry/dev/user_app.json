@@ -3,12 +3,12 @@
   "context": "docker/user_app",
   "image": "paragon40/user_app",
   "image2": "paragon40/user_app:latest",
-  "tag": "d0b16d80aee0a3dd32bb3dca8f7dd72e93ce7513-1777800552",
+  "tag": "3c3b95ef3561cca87d283acf742b717157d91706-1777803613",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
   "port": "3000",
   "NO_VARS": "true",
   "NO_SECRETS": "true",
-  "CREATED_AT": "2026-05-03_09-29-12"
+  "CREATED_AT": "2026-05-03_10-20-13"
 }
