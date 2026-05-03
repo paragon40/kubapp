@@ -39,6 +39,7 @@ jobs:
             | tail -n 1 \
             | sed 's|refs/tags/||')
 
+          [[ -z "$TAG" ]] || { echo "❌ No Tag For Stable Deploy Found" && exit 1 }
           echo "TAG=$TAG"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
