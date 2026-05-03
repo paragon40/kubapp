@@ -61,6 +61,7 @@ jobs:
           for file in $(find gitops/registry/$ENV1/*.json -name "*.json"); do
             SERVICE=$(jq -r .service "$file")
             IMAGE=$(jq -r .image "$file")
+            TAG=$(jq -r .tag "$file")
             ENV=$(jq -r .env "$file")
 
             if [ -z "$ENV" ] || [ "$ENV" = "null" ]; then
@@ -78,7 +79,7 @@ jobs:
             echo "Target file: $FILE"
 
             yq e ".image.repository = strenv(IMAGE)" -i "$FILE"
-
+            yq e ".image.tag = strenv(TAG)" -i "$FILE"
           done
 
       - name: Commit changes

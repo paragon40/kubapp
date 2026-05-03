@@ -15,6 +15,9 @@ DIRS=(
   "gitops/envs"
   "gitops/ingress"
   "gitops/charts"
+  "gitops/state"
+  "gitops/registry"
+
 )
 
 ############################################
