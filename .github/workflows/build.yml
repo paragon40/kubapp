@@ -62,7 +62,7 @@ jobs:
             echo "Manual build mode: $MANUAL_SERVICE"
             SERVICES=$(echo "[\"$MANUAL_SERVICE\"]" | jq -c '.')
           else
-            SERVICES=$(find docker -mindepth 1 -maxdepth 1 -type d
+            SERVICES=$(find docker -mindepth 1 -maxdepth 1 -type d \
               -not -path "*/\.*" \
               -not -name "docs" \
               -not -name "README*" \
