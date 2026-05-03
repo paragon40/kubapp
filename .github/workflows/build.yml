@@ -367,7 +367,14 @@ jobs:
         run: |
           rm -rf temp
           rm -rf artifacts
-          echo "✅ Old registry removed.."
+          echo "checking deleted folders"
+          find . artifacts -type d
+          RE=$?
+          if [[ "$RE" -eq 0 ]]; then
+            echo "Artifacts Still NOT Deleted"
+          else
+            echo "✅ Old registry removed.."
+          fi
 
       - name: Create State file Metadata for Downstream
         env:
