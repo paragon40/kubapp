@@ -109,7 +109,7 @@ jobs:
           else
             echo "⚠️ No previous stable tag found"
           fi
-          exit 1
+          exit 0
 
       - name: Create Snapshot for Commit Tag
         run: |
