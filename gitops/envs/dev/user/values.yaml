@@ -2,7 +2,7 @@ appName: user
 namespace: dev
 replicaCount: 2
 image:
-  repository: ""
+  repository: "paragon40/user_app"
   tag: ebba32ece7cb0fecd8ffdc49511bbbfba8690496-1777805256
   pullPolicy: Always
 service:
