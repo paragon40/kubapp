@@ -1,4 +1,4 @@
-name: Safe Kubernetes Cluster Cleanup
+name: Argocd Cluster Cleanup
 
 on:
   workflow_dispatch:
@@ -36,6 +36,43 @@ jobs:
       ####################################################
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      # --------------------------------
+      # 2. AWS credentials
+      # --------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Check AWS credentials
+        run: aws sts get-caller-identity
+
+      # --------------------------------
+      # 3. Setup kubeconfig (EKS access)
+      # --------------------------------
+      - name: Setup kubeconfig
+        run: |
+          set -e
+
+          aws eks update-kubeconfig \
+            --region ${{ secrets.AWS_REGION }} \
+            --name kubapp-dev
+
+          export KUBECONFIG=~/.kube/config
+
+          echo "✅ kubeconfig created"
+
+          kubectl cluster-info
+
+      - name: Check
+        run: |
+          set -e
+          echo "=== kubeconfig ==="
+          cat ~/.kube/config || true
+          echo "=== auth test ==="
+          kubectl auth can-i get pods -A || true
 
       ####################################################
       # INSTALL KUBECTL
