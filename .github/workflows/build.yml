@@ -410,6 +410,10 @@ jobs:
           DIR: "gitops/registry"
           STATE: "gitops/state"
 
+      - name: Debug
+        run: |
+          git ls-files | grep artifacts || echo "NOT TRACKED"
+
       - name: finally
         run: |
           echo "✅ Build Finished"
