@@ -174,6 +174,8 @@ jobs:
           TS="$(date +%s)"
           TM="$(date +%Y-%m-%d_%H-%M-%S)"
           NAMESPACE="$ENV"
+          IMAGE="$IMAGE_NAMESPACE/$SERVICE"
+          TAG="$GITHUB_SHA-$TS"
           IMAGE1="$IMAGE_NAMESPACE/$SERVICE:$GITHUB_SHA-$TS"
           IMAGE2="$IMAGE_NAMESPACE/$SERVICE:latest"
           echo "IMAGE1=$IMAGE1" >> $GITHUB_ENV
@@ -197,9 +199,9 @@ jobs:
           jq -n \
             --arg service "$SERVICE_NAME" \
             --arg context "$CONTEXT" \
-            --arg image1 "$IMAGE1" \
+            --arg image1 "$IMAGE" \
             --arg image2 "$IMAGE2" \
-            --arg tag "$GITHUB_SHA" \
+            --arg tag "$TAG" \
             --arg registry "$REGISTRY" \
             --arg namespace "$NAMESPACE" \
             --arg env "$ENV" \
