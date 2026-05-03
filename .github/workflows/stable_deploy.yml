@@ -35,9 +35,10 @@ jobs:
           TAG=$(git ls-remote --tags origin \
             | awk '{print $2}' \
             | grep "^refs/tags/stable-${ENV}-" || true \
-            | sort -t '-' -k3,3 \
-            | tail -n 1 \
-            | sed 's|refs/tags/||'
+            | grep -v '\^{}' \
+            | sed 's|refs/tags/||' \
+            | sort -V \
+            | tail -n 1
           )
 
           if [[ -z "$TAG" ]]; then
@@ -46,7 +47,6 @@ jobs:
           fi
 
           echo "Tag Found: $TAG"
-          echo "TAG=$TAG"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Resolve commit
@@ -85,7 +85,6 @@ jobs:
           fi
 
           echo "Found RUN_ID=$RUN_ID"
-          echo "RUN_ID=$RUN_ID"
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
       - name: List artifacts for run
