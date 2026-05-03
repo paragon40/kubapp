@@ -74,9 +74,12 @@ jobs:
 
             echo "Updating ${SERVICE}-${ENV}"
             echo "Target file: $FILE"
-
+            echo "Image: $IMAGE"
+            echo "Tag: $TAG"
             yq e ".image.repository = strenv(IMAGE)" -i "$FILE"
             yq e ".image.tag = strenv(TAG)" -i "$FILE"
+            echo "Cat $FILE"
+            cat "$FILE"
           done
 
       - name: Validate GitOps structure
