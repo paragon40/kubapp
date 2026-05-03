@@ -14,7 +14,6 @@ SERVICE_NAME="${2:-}"
 ENV="${3:-dev}"
 
 VALUES_FILE="gitops/ingress/${ENV}/values.yaml"
-
 # -----------------------------------------
 # Normalize legacy usage
 # -----------------------------------------
@@ -43,6 +42,10 @@ echo "================================="
 # -----------------------------------------
 # Preconditions
 # -----------------------------------------
+sanitize() {
+  echo "$1" | tr '_' '-' | tr '[:upper:]' '[:lower:]'
+}
+
 command -v yq >/dev/null 2>&1 || {
   echo "yq is required"
   exit 1
@@ -62,6 +65,7 @@ fi
 # ADD SERVICE
 # -----------------------------------------
 add_service() {
+  SERVICE_NAME="$(sanitize "$SERVICE_NAME")"
   EXISTS=$(yq e ".services[].name == \"$SERVICE_NAME\"" "$VALUES_FILE" | grep -c true || true)
 
   if [[ "$EXISTS" -gt 0 ]]; then
@@ -80,6 +84,7 @@ add_service() {
 # REMOVE SERVICE
 # -----------------------------------------
 remove_service() {
+  SERVICE_NAME="$(sanitize "$SERVICE_NAME")"
   EXISTS=$(yq e ".services[].name == \"$SERVICE_NAME\"" "$VALUES_FILE" | grep -c true || true)
 
   if [[ "$EXISTS" -eq 0 ]]; then

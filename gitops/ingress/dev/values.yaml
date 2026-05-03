@@ -7,11 +7,11 @@ ingress:
   annotations:
     scheme: internet-facing
     targetType: ip
-    healthcheckPath: /
+    healthcheckPath: /health
     listenPorts: '[{"HTTP":80}]'
 services:
   - name: user
   - name: admin
-  - name: url_shortener
+  - name: url-shortener
   - name: weather
-  - name: nodejs_app
+  - name: nodejs-app
