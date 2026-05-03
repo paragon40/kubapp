@@ -29,20 +29,28 @@ jobs:
             --json databaseId \
             --jq '.[0].databaseId')
 
+          [[ -n "$RUN_ID" ]] || { echo "❌ Run_id Not found" && exit 1 }
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      - name: List artifacts for run
+        run: |
+          gh api repos/${{ github.repository }}/actions/runs/${{ steps.run.outputs.run_id }}/artifacts \
+            | jq '.artifacts[] | {name, size_in_bytes, expired}'
 
       - name: Download artifact (registry-user_app)
         run: |
+          mkdir -p artifacts
           gh run download ${{ steps.run.outputs.run_id }} \
-            --name "registry-user_app"
+            --name "registry-user_app" \
+            --dir artifacts
 
       - name: Show artifact contents
         run: |
+          set -euo pipefail
           DIR="artifacts/registry-user_app"
           [[ -d "$DIR" ]] || { echo "❌ $DIR Not found" && exit 1 }
           echo "Listing files..."
           find "$DIR" -type f
-
           while IFS= read -r each; do
             echo "========= $each ======"
             ls -R "$each"
