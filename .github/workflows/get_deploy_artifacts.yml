@@ -40,9 +40,13 @@ jobs:
         run: |
           DIR="artifacts/registry-user_app"
           [[ -d "$DIR" ]] || { echo "❌ $DIR Not found" && exit 1 }
-          for each in $(find "$DIR" -type f -print); do
+          echo "Listing files..."
+          find "$DIR" -type f
+
+          while IFS= read -r each; do
             echo "========= $each ======"
             ls -R "$each"
             echo "========= CONTENT ===="
             cat "$each" || true
-          done
+          done < <(find "$DIR" -type f)
+
