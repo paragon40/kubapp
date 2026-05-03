@@ -1,14 +1,14 @@
 {
   "service": "user",
   "context": "docker/user_app",
-  "image": "paragon40/user_app:8d158e9f7e2b8451bbe859ba63606198b2f1d560-1777794876",
+  "image": "paragon40/user_app:5b97e4c137caf661f44d5b00a20927a157d4a036-1777799203",
   "image2": "paragon40/user_app:latest",
-  "tag": "8d158e9f7e2b8451bbe859ba63606198b2f1d560",
+  "tag": "5b97e4c137caf661f44d5b00a20927a157d4a036",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
   "port": "3000",
   "NO_VARS": "true",
   "NO_SECRETS": "true",
-  "CREATED_AT": "2026-05-03_07-54-36"
+  "CREATED_AT": "2026-05-03_09-06-43"
 }
