@@ -1,8 +1,8 @@
-appName: user
+appName: urlshortener
 namespace: dev
 replicaCount: 2
 image:
-  repository: paragon40/user_app
+  repository: paragon40/url_shortener
   tag: 3c3b95ef3561cca87d283acf742b717157d91706-1777803613
   pullPolicy: Always
 service:
@@ -21,7 +21,7 @@ hpa:
   maxReplicas: 2
   cpu: 70
 meta:
-  staticFingerprint: cdff39a56218b322471f6138cebbc268de3b6f955afd5b2c331e1d28b1101eb8
+  staticFingerprint: d882d65204ed4afd42b1d002d2189eff2847433e8ecf57ebe372615ceae7d8b1
   generatedAt: 2026-05-03T10:21:21Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570

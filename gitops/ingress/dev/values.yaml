@@ -15,3 +15,5 @@ services:
   - name: url-shortener
   - name: weather
   - name: nodejs-app
+  - name: nodejsapp
+  - name: urlshortener
