@@ -13,6 +13,5 @@ services:
   - name: user
   - name: admin
   - name: url_shortener
-  - name: notification
   - name: weather
   - name: nodejs_app
