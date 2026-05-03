@@ -366,6 +366,7 @@ jobs:
       - name: Delete Old Registry
         run: |
           rm -rf -- temp artifacts
+          stat artifacts || echo "artifacts truly gone"
           for dir in artifacts temp; do
             if [[ -d "$dir" ]]; then
               echo "❌ $dir still exists"
