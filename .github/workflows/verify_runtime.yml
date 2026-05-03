@@ -2,7 +2,10 @@ name: Runtime Verification
 
 on:
   workflow_run:
-    workflows: ["Runtime Image Update"]
+    workflows:
+      - "Runtime Image Update"
+      - "Add New App (GitOps Provisioning)"
+      - "Remove App"
     types: [completed]
 
 jobs:
