@@ -3,12 +3,12 @@
   "context": "docker/weather_app",
   "image": "paragon40/weather_app",
   "image2": "paragon40/weather_app:latest",
-  "tag": "d0b16d80aee0a3dd32bb3dca8f7dd72e93ce7513-1777800553",
+  "tag": "3c3b95ef3561cca87d283acf742b717157d91706-1777803611",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
   "port": "80",
   "NO_VARS": "false",
   "NO_SECRETS": "true",
-  "CREATED_AT": "2026-05-03_09-29-13"
+  "CREATED_AT": "2026-05-03_10-20-11"
 }
