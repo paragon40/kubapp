@@ -39,10 +39,10 @@ jobs:
       - name: Show artifact contents
         run: |
           DIR="artifacts/registry-user_app"
-          [[ ! -d "$DIR" ]] || { echo "❌ $DIR Not found" && exit 1 }
-          for each in $(find "$DIR" -type f); do
+          [[ -d "$DIR" ]] || { echo "❌ $DIR Not found" && exit 1 }
+          for each in $(find "$DIR" -type f -print); do
             echo "========= $each ======"
-            ls -R $each
+            ls -R "$each"
             echo "========= CONTENT ===="
             cat "$each" || true
           done
