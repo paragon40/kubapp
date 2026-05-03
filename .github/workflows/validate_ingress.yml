@@ -60,8 +60,19 @@ jobs:
       STRICT: ${{ github.event.inputs.strict || 'true' }}
 
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID_GITHUB }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
+
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          repository: paragon40/kubapp
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
 
       - name: Install tools
         run: |
