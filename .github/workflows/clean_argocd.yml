@@ -8,6 +8,10 @@ on:
         required: true
         default: "NO"
 
+permissions:
+  id-token: write
+  contents: read
+
 concurrency:
   group: cluster-cleanup
   cancel-in-progress: false
