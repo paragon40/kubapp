@@ -1,6 +1,6 @@
 
 service:
-  name: nodejs_app
+  name: nodejsapp
 
 app:
   port: 3000

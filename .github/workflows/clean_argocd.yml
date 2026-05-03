@@ -27,8 +27,9 @@ jobs:
       - name: Safety confirmation
         run: |
           set -euo pipefail
-
-          if [[ "${{ github.event.inputs.confirm }}" != "YES" ]]; then
+          CONFIRM="${{ github.event.inputs.confirm }}"
+          CONFIRM="${CONFIRM,,}"
+          if [[ "$CONFIRM" != "yes" ]]; then
             echo "❌ Cleanup aborted. You must type YES to proceed."
             exit 1
           fi

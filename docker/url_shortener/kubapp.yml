@@ -1,6 +1,6 @@
 
 service:
-  name: url_shortener
+  name: urlshortener
 
 app:
   port: 3000
