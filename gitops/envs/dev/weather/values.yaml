@@ -2,7 +2,7 @@ appName: weather
 namespace: dev
 replicaCount: 2
 image:
-  repository: paragon40/weather_app
+  repository: ""
   tag: 06bae3934b10ddabb16d41095d524d0e0b050747-1777803849
   pullPolicy: Always
 service:

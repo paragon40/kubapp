@@ -2,7 +2,7 @@ appName: admin
 namespace: dev
 replicaCount: 2
 image:
-  repository: paragon40/admin_app
+  repository: ""
   tag: 06bae3934b10ddabb16d41095d524d0e0b050747-1777803850
   pullPolicy: Always
 service:
