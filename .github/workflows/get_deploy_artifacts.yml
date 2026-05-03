@@ -1,4 +1,4 @@
-name: Inspect Deploy Artifact
+name: Inspect App Artifacts
 
 on:
   workflow_dispatch:
@@ -38,8 +38,10 @@ jobs:
 
       - name: Show artifact contents
         run: |
-          echo "==== FILES ===="
-          ls -R
-
-          echo "==== CONTENT ===="
-          cat **/* || true
+          DIR="artifact/registry-user_app"
+          for each in $(find "$DIR" -type f); then
+            echo "========= $each ======"
+            ls -R $each
+            echo "========= CONTENT ===="
+            cat "$each" || true
+          done

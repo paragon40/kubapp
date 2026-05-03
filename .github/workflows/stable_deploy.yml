@@ -82,8 +82,9 @@ jobs:
       # Show snapshot (DEPLOY STATE)
       - name: Show snapshot
         run: |
+          DIR="artifact/deployment-snapshot"
           echo "=============================="
           echo "DEPLOYMENT SNAPSHOT"
           echo "=============================="
-          cat **/*.json
+          cat "$DIR"/*.json
 
