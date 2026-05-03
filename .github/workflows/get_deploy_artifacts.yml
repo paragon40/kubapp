@@ -39,7 +39,7 @@ jobs:
       - name: Show artifact contents
         run: |
           DIR="artifact/registry-user_app"
-          for each in $(find "$DIR" -type f); then
+          for each in $(find "$DIR" -type f); do
             echo "========= $each ======"
             ls -R $each
             echo "========= CONTENT ===="
