@@ -34,9 +34,6 @@ jobs:
           https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Validate GitOps structure
-        run: ./scripts/validate_gitops.sh
-
       - name: Retrieve Currect ENV
         run: |
           set -euo pipefail
@@ -81,6 +78,9 @@ jobs:
             yq e ".image.repository = strenv(IMAGE)" -i "$FILE"
             yq e ".image.tag = strenv(TAG)" -i "$FILE"
           done
+
+      - name: Validate GitOps structure
+        run: ./scripts/validate_gitops.sh
 
       - name: Commit changes
         run: |
