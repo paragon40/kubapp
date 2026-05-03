@@ -2,8 +2,8 @@ appName: url_shortener
 namespace: dev
 replicaCount: 2
 image:
-  repository: paragon40/url_shortener:5b97e4c137caf661f44d5b00a20927a157d4a036-1777799198
-  tag: 5b97e4c137caf661f44d5b00a20927a157d4a036
+  repository: paragon40/url_shortener
+  tag: d0b16d80aee0a3dd32bb3dca8f7dd72e93ce7513-1777800553
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -22,6 +22,6 @@ hpa:
   cpu: 70
 meta:
   staticFingerprint: de292c63168971e82e48350db49ced04bfcde039b3af5feb84dad8199d454937
-  generatedAt: 2026-05-03T09:08:16Z
+  generatedAt: 2026-05-03T09:30:51Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
