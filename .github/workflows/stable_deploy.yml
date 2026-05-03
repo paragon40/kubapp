@@ -39,7 +39,7 @@ jobs:
             | tail -n 1 \
             | sed 's|refs/tags/||')
 
-          [[ -n "$TAG" ]] || { echo "❌ No Tag For Stable Deploy Found" && exit 1 }
+          [[ -n "$TAG" ]] || { echo "❌ No Tag Found For Stable Deploy" && exit 1 }
           echo "TAG=$TAG"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
@@ -71,9 +71,14 @@ jobs:
             --limit 1 \
             --json databaseId \
             --jq '.[0].databaseId')
-
+          [[ -n "$RUN_ID" ]] || { echo "❌ No Run_ID Found For Stable Deploy" && exit 1 }
           echo "RUN_ID=$RUN_ID"
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      - name: List artifacts for run
+        run: |
+          gh api repos/${{ github.repository }}/actions/runs/${{ steps.run.outputs.run_id }}/artifacts \
+            | jq '.artifacts[] | {name, size_in_bytes, expired}'
 
       - name: Download snapshot
         run: |
