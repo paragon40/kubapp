@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Install tools
         run: |
           sudo apt-get update
@@ -23,7 +26,6 @@ jobs:
       - name: Authenticate GitHub CLI
         run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
-      # 1. Get latest stable tag
       - name: Get latest stable tag
         id: tag
         env:
@@ -40,7 +42,6 @@ jobs:
           echo "TAG=$TAG"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-      # 2. Resolve commit from tag
       - name: Resolve commit
         id: commit
         run: |
@@ -48,7 +49,6 @@ jobs:
           echo "COMMIT=$COMMIT"
           echo "commit=$COMMIT" >> $GITHUB_OUTPUT
 
-      # 3. Show commit details
       - name: Show commit details
         run: |
           echo "=============================="
@@ -61,7 +61,6 @@ jobs:
 
           git show ${{ steps.commit.outputs.commit }}
 
-      # 4. Get workflow run tied to commit
       - name: Get run ID
         id: run
         run: |
@@ -75,13 +74,12 @@ jobs:
           echo "RUN_ID=$RUN_ID"
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
-      # 5. Download snapshot artifact
       - name: Download snapshot
         run: |
           gh run download ${{ steps.run.outputs.run_id }} \
             --name deployment-snapshot
 
-      # 6. Show snapshot (DEPLOY STATE)
+      # Show snapshot (DEPLOY STATE)
       - name: Show snapshot
         run: |
           echo "=============================="

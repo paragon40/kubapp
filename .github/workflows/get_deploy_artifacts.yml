@@ -1,4 +1,4 @@
-name: Inspect Artifact
+name: Inspect Deploy Artifact
 
 on:
   workflow_dispatch:
@@ -8,6 +8,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Install GitHub CLI
         run: |
           sudo apt-get update

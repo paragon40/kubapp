@@ -82,9 +82,6 @@ jobs:
             -O /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
 
-      ####################################################
-      # LOAD DATASETS
-      ####################################################
       - name: Load registry and ingress services
         id: load
         run: |
@@ -122,9 +119,6 @@ jobs:
           echo "$INGRESS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      ####################################################
-      # COMPUTE DRIFT
-      ####################################################
       - name: Compute drift
         id: diff
         run: |
@@ -152,9 +146,6 @@ jobs:
           echo "$INVALID"
           echo "=============================================="
 
-      ####################################################
-      # AUTO REGISTER MISSING SERVICES (SAFE)
-      ####################################################
       - name: Register missing services into ingress
         if: steps.diff.outputs.MISSING != '' && env.AUTO_REGISTER == 'true'
         run: |
@@ -167,9 +158,6 @@ jobs:
             bash scripts/register_new_svc.sh "$svc" "$ENV"
           done
 
-      ####################################################
-      # HANDLE INVALID SERVICES
-      ####################################################
       - name: Handle invalid services
         run: |
           set -euo pipefail
@@ -196,9 +184,6 @@ jobs:
             exit 1
           fi
 
-      ####################################################
-      # FINAL VALIDATION
-      ####################################################
       - name: Validate final ingress state
         run: |
           set -euo pipefail
