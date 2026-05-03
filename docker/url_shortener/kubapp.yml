@@ -5,6 +5,7 @@ service:
 app:
   port: 3000
   healthPath: /api/health
+  livePath: /api/live
 
 deploy:
   env: dev
