@@ -2,7 +2,7 @@ appName: urlshortener
 namespace: dev
 replicaCount: 2
 image:
-  repository: "paragon40/url_shortener"
+  repository: ""
   tag: ebba32ece7cb0fecd8ffdc49511bbbfba8690496-1777805256
   pullPolicy: Always
 service:
