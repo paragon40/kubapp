@@ -3,12 +3,12 @@
   "context": "docker/nodejs_app",
   "image": "paragon40/nodejs_app",
   "image2": "paragon40/nodejs_app:latest",
-  "tag": "3c3b95ef3561cca87d283acf742b717157d91706-1777803613",
+  "tag": "06bae3934b10ddabb16d41095d524d0e0b050747-1777803848",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
   "port": "3000",
   "NO_VARS": "false",
   "NO_SECRETS": "true",
-  "CREATED_AT": "2026-05-03_10-20-13"
+  "CREATED_AT": "2026-05-03_10-24-08"
 }
