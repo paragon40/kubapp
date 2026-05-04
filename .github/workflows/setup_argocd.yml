@@ -46,9 +46,13 @@ jobs:
 
       - name: Setup AGE key
         run: |
-          mkdir -p config/sops/age
-          echo "${{ secrets.AGE_PRIVATE_KEY }}" > config/sops/age/keys.txt
-          chmod 600 config/sops/age/keys.txt
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+          test -s ~/.config/sops/age/keys.txt || {
+            echo "❌ AGE key missing"
+            exit 1
+          }
 
       # --------------------------------
       # 3. Setup kubeconfig (EKS access)
