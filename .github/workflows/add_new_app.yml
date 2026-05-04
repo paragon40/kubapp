@@ -30,6 +30,9 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
       - name: Install jq
         run: |
           set -euo pipefail
@@ -113,6 +116,7 @@ jobs:
         working-directory: iac/infra
         run: |
           set -euo pipefail
+          terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
           CERT_ARN=$(terraform output -raw main_cert_arn)
           if [[ -z "$CERT_ARN" ]]; then
             echo "❌ Arn Certificate Not Retrieved from terraform"
