@@ -64,6 +64,10 @@ command -v yq >/dev/null 2>&1 || {
 # -----------------------------------------
 cp "$VALUES_FILE" "$TMP_FILE"
 
+yq e -i "
+  .ingress.baseDomain = \"${DOMAIN}\"
+" "$TMP_FILE"
+
 # ensure schema exists
 yq e -i '
   .services = (.services // [])

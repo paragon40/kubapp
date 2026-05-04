@@ -151,9 +151,9 @@ if command -v helm >/dev/null 2>&1; then
     if [[ -f "$chart/Chart.yaml" ]]; then
       echo "[INFO] Checking Helm chart: $chart"
 
-      helm template test "$chart" || fail "Helm template validation failed: $chart"
-      #helm template test "$chart" >/dev/null 2>&1 \
-       # || fail "Helm template validation failed: $chart"
+      #helm template test "$chart" || fail "Helm template validation failed: $chart"
+      helm template test "$chart" >/dev/null 2>&1 \
+        || fail "Helm template validation failed: $chart"
 
       echo "[INFO] ✅ Helm chart valid: $chart"
     fi
