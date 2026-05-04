@@ -155,7 +155,7 @@ jobs:
           ENV: "${{ github.event.inputs.env }}"
           DOMAIN: "${{ secrets.DOMAIN }}"
         run: |
-          set -euio pipefail
+          set -euo pipefail
           for i in {1..6}; do
             echo "Setting up route53 for Domain if new..."
             if bash scripts/sync_route53.sh; then
