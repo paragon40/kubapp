@@ -6,10 +6,26 @@ app:
   port: 3000
   healthPath: /api/health
   livePath: /api/live
+  basePath: /
+  user: urlshortener_app
 
 deploy:
   env: dev
-  user: urlshortener_app
   containerUid: 10005
+
+storage:
+  volumes:
+    - name: url_shortener_volume
+      emptyDir: {}
+
+  volumeMounts:
+    - name: url_shortener_mnt
+      mountPath: /data
+
+features:
+  topVolume:
+    enabled: true
+  tmp:
+    enabled: true
 
 

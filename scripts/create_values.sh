@@ -6,9 +6,6 @@ set -euo pipefail
 # =========================================================
 
 ARTIFACT_FILE="${1:-}"
-CONTAINER_UID="${CONTAINER_UID:-10001}"
-URL_HEALTH="${URL_HEALTH:-/health}"
-URL_LIVE="${URL_LIVE:-/live}"
 
 fail() {
   echo "❌ $1"
@@ -29,6 +26,15 @@ SERVICE=$(jq -r '.service' "$ARTIFACT_FILE")
 ENV=$(jq -r '.env' "$ARTIFACT_FILE")
 NAMESPACE=$(jq -r '.namespace' "$ARTIFACT_FILE")
 PORT=$(jq -r '.port' "$ARTIFACT_FILE")
+CONTAINER_UID=$(jq -r '.containerUid // 10001' "$ARTIFACT_FILE")
+HEALTH=$(jq -r '.healthPath // "/health"' "$ARTIFACT_FILE")
+LIVE=$(jq -r '.livePath // "/live"' "$ARTIFACT_FILE")
+BASE=$(jq -r '.basePath // ""' "$ARTIFACT_FILE")
+TMP_VOL=$(jq -r '.temp_vol // ""' "$ARTIFACT_FILE")
+MNT_VOL=$(jq -r '.mount_vol // ""' "$ARTIFACT_FILE")
+MNT_PATH=$(jq -r '.mount_path // ""' "$ARTIFACT_FILE")
+VOLUMES_ENABLED=$(jq -r '.volumes_enabled // false' "$ARTIFACT_FILE")
+TMP_ENABLED=$(jq -r '.tmp_enabled // false' "$ARTIFACT_FILE")
 
 [[ -n "$SERVICE" && "$SERVICE" != "null" ]] || fail "Missing service"
 [[ -n "$ENV" && "$ENV" != "null" ]] || fail "Missing env"
@@ -90,14 +96,24 @@ securityContext:
       drop:
         - ALL
 
+{{- if eq "'"$TMP_ENABLED"'" "true" }}
+volumes:
+  - name: ${TMP_VOL}
+    emptyDir: {}
+
+volumeMounts:
+  - name: ${MNT_VOL}
+    mountPath: ${MNT_PATH}
+{{- end }}
+
 probes:
   readiness:
-    path: ${URL_HEALTH}
+    path: ${HEALTH}
     initialDelaySeconds: 5
     periodSeconds: 10
 
   liveness:
-    path: ${URL_LIVE}
+    path: ${LIVE}
     initialDelaySeconds: 10
     periodSeconds: 15
 

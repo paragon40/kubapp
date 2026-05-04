@@ -4,20 +4,14 @@ service:
 
 app:
   port: 80
+  appUser: weather_app
   healthPath: /health
+  livePath: /live
+  basePath: /
 
 deploy:
   env: dev
-  user: weather_app
   containerUid: 10006
-
-volumeMounts:
-  - name: tmp
-    mountPath: /tmp
-
-volumes:
-  - name: tmp
-    emptyDir: {}
 
 runtime:
   env:
@@ -26,4 +20,18 @@ runtime:
     BOTH_DB: "true"
     RUN_MIGRATIONS: "true"
 
+storage:
+  volumes:
+    - name: tmp
+      emptyDir: {}
+
+  volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+
+features:
+  topVolume:
+    enabled: true
+  tmp:
+    enabled: true
 

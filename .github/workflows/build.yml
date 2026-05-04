@@ -154,6 +154,16 @@ jobs:
             SERVICE_NAME=$(yq e '.service.name // strenv(SERVICE)' "$APP_FILE")
             PORT=$(yq e '.app.port // 80' "$APP_FILE")
             ENV=$(yq e '.deploy.env // strenv(ENV)' "$APP_FILE")
+            CONTAINER_UID=$(yq e '.deploy.containerUid' "$APP_FILE")
+            BASE_PATH=$(yq e '.app.basePath' "$APP_FILE")
+            LIVE_PATH=$(yq e '.app.livePath' "$APP_FILE")
+            HEALTH_PATH=$(yq e '.app.healthPath' "$APP_FILE")
+            VOL_ENABLED=$(yq e '.features.topVolume.enabled // false' "$APP_FILE")
+            TMP_ENABLED=$(yq e '.features.tmp.enabled // false' "$APP_FILE")
+            TMP_VOLUME=$(yq e '.storage.volumes[0].name // (strenv(SERVICE) + "-vol")' "$APP_FILE")
+            MNT_VOL=$(yq e '.storage.volumeMounts[0].name // "tmp"' "$APP_FILE")
+            MNT_PATH=$(yq e '.storage.volumeMounts[0].mountPath // "/tmp"' "$APP_FILE")
+
 
             VAR_COUNT=$(yq e '.runtime.env // {} | length' "$APP_FILE")
             if [[ "$VAR_COUNT" -gt 0 ]]; then
@@ -205,9 +215,18 @@ jobs:
             --arg registry "$REGISTRY" \
             --arg namespace "$NAMESPACE" \
             --arg env "$ENV" \
-            --arg port "$PORT" \
-            --arg no_vars "$NO_VARS" \
-            --arg no_secrets "$NO_SECRETS" \
+            --argjson port "$PORT" \
+            --argjson container_uid "$CONTAINER_UID" \
+            --arg health_path "$HEALTH_PATH" \
+            --arg live_path "$LIVE_PATH" \
+            --arg base_path "$BASE_PATH" \
+            --argjson vol_enab "$(jq -n "$VOL_ENABLED")" \
+            --argjson tmp_enab "$(jq -n "$TMP_ENABLED")" \
+            --arg tmp_volume "$TMP_VOLUME" \
+            --arg mount_vol "$MNT_VOL" \
+            --arg mount_path "$MNT_PATH" \
+            --argjson no_vars "$(jq -n "$NO_VARS")" \
+            --argjson no_secrets "$(jq -n "$NO_SECRETS")" \
             --arg created_at "$TM" \
             '{
               service: $service,
@@ -219,6 +238,15 @@ jobs:
               namespace: $namespace,
               env: $env,
               port: $port,
+              containerUid: $container_uid,
+              basePath: $base_path,
+              healthPath: $health_path,
+              livePath: $live_path,
+              volumes_enabled: $vol_enab,
+              tmp_enabled: $tmp_enab,
+              tmp_volume: $tmp_volume,
+              mount_vol: $mount_vol,
+              mount_path: $mount_path,
               NO_VARS: $no_vars,
               NO_SECRETS: $no_secrets,
               CREATED_AT: $created_at
