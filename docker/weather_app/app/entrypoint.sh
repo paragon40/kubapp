@@ -31,8 +31,20 @@ fi
 # Create fallback SQLite DB if SQLite is enabled
 # ----------------------------
 if [[ "$FINAL_DB_MODE" == "sqlite_only" ]]; then
-    echo "[ENTRY] SQLite confirmed by runtime resolver"
+  echo "[ENTRY] SQLite confirmed by runtime resolver"
 
+  DB_DIR="/tmp/edgepaas"
+  if ! mkdir -p "$DB_DIR" 2>/dev/null || ! touch "$DB_DIR/.write_test" 2>/dev/null; then
+    echo "[WARN] DB_DIR not writable: $DB_DIR"
+
+    # fallback to safe in-memory storage
+    DB_DIR="/dev/shm/edgepaas"
+
+    mkdir -p "$DB_DIR"
+    touch "$DB_DIR/.write_test"
+
+    echo "[WARN] Fallback DB_DIR activated: $DB_DIR"
+  else
     mkdir -p /tmp/edgepaas
     chmod 755 /tmp/edgepaas
 
@@ -43,8 +55,8 @@ if [[ "$FINAL_DB_MODE" == "sqlite_only" ]]; then
     else
         echo "[ENTRY] /tmp/edgepaas/fallback.db already exists"
     fi
-
-    python create_sqlite_tables.py
+  fi
+  python create_sqlite_tables.py
 fi
 
 # ----------------------------
