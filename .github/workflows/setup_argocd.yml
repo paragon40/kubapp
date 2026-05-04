@@ -142,3 +142,6 @@ jobs:
 
       - name: Run GitOps bootstrap
         run: bash scripts/bootstrap_gitops.sh
+
+      - name: Ensure Route53 is synced
+        run: bash scripts/sync_route53.sh
