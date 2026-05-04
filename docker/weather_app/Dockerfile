@@ -33,17 +33,15 @@ RUN python -m pip install --upgrade pip setuptools wheel && \
 # ----------------------------
 COPY ./app /app
 
-#ARG SERVICE_NAME=weather_app
+ARG SERVICE_NAME=weather_app
 RUN addgroup -S appgroup && \
     adduser -S appuser -G appgroup
-
-USER appuser
 
 # ----------------------------
 # Ensure entrypoint is executable
 # ----------------------------
 RUN chmod +x entrypoint.sh
-
+USER ${SERVICE_NAME}
 # ----------------------------
 # Entrypoint
 # ----------------------------
