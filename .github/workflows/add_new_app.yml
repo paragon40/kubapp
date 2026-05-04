@@ -55,6 +55,8 @@ jobs:
             echo "❌ State File: $STATE_FILE is Missing or Empty. Cannot Decipher the appropriate ENV to update"
             exit 1
           fi
+          echo "State file Showing..."
+          cat "$STATE_FILE"
 
           CURRENT_RUN_ID="${{ github.event.workflow_run.id }}"
           STATE_RUN_ID=$(jq -r '.run_id' gitops/state/current.json)
@@ -122,6 +124,8 @@ jobs:
           echo "Run ID: ${{ github.event.workflow_run.id }}"
           echo "Repo: ${{ github.repository }}"
           echo "Environment: $ENV"
+          echo "YAML ENV: ${{ env.ENV }}"
+          echo "Shell ENV: $ENV"
 
       - name: Get Cert Arn From Terraform
         working-directory: iac/infra
