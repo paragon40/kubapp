@@ -184,7 +184,7 @@ module "efs" {
 module "acm" {
   source  = "./modules/acm"
   domain  = local.main_domain
-  zone_id = aws_route53_zone.main.zone_id
+  zone_id = data.aws_route53_zone.main.zone_id
   tags = merge(local.common_tags, {
     resource-type = "acm"
     layer         = "routing"
