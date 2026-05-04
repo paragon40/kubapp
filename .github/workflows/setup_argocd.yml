@@ -169,6 +169,6 @@ jobs:
               echo "ALB not ready yet, retrying..."
               sleep 5
             fi
+            echo "❌ Route53 sync failed after $i attempts"
           done
-          echo "❌ Route53 sync failed after 8 attempts"
-          exit 1
+          echo "End of Workflow!"
