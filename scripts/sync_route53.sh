@@ -19,14 +19,14 @@ echo "===================================="
 # 1. Get ALB from ingress
 # -------------------------------
 echo "Checking ingress.."
-kubectl get ingress kubapp-${ENV}-alb -n "$ENV" >/dev/null
+kubectl get ingress kubapp-$ENV-alb -n "$ENV" >/dev/null
 
 echo "Fetching ALB..."
 
 ALB=""
 
-for i in {1..30}; do
-  ALB=$(kubectl get ingress kubapp-${ENV}-alb -n "$ENV" \
+for i in {1..10}; do
+  ALB=$(kubectl get ingress kubapp-$ENV-alb -n "$ENV" \
     -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
 
   if [[ -n "$ALB" ]]; then
@@ -40,7 +40,7 @@ done
 
 if [[ -z "$ALB" ]]; then
   echo "❌ ALB never became ready"
-  kubectl describe ingress kubapp-${ENV}-alb -n "$ENV" || true
+  kubectl describe ingress kubapp-$ENV-alb -n "$ENV" || true
   exit 1
 fi
 
