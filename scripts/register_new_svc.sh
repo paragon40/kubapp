@@ -14,6 +14,8 @@ SERVICE_NAME="${2:-}"
 ENV="${3:-dev}"
 
 VALUES_FILE="gitops/ingress/${ENV}/values.yaml"
+TMP_FILE="/tmp/ingress-values-${ENV}.yaml"
+
 # -----------------------------------------
 # Normalize legacy usage
 # -----------------------------------------
@@ -25,7 +27,6 @@ if [[ -z "$SERVICE_NAME" ]]; then
   exit 1
 fi
 
-# If first arg is a service (legacy mode)
 if [[ "$ACTION" != "add" && "$ACTION" != "remove" ]]; then
   ENV="${2:-dev}"
   SERVICE_NAME="$ACTION"
@@ -37,6 +38,7 @@ echo "ACTION : $ACTION"
 echo "SERVICE: $SERVICE_NAME"
 echo "ENV    : $ENV"
 echo "FILE   : $VALUES_FILE"
+echo "TMP    : $TMP_FILE"
 echo "================================="
 
 # -----------------------------------------
@@ -56,17 +58,31 @@ command -v yq >/dev/null 2>&1 || {
   exit 1
 }
 
-# ensure services exists
-if ! yq e '.services' "$VALUES_FILE" >/dev/null 2>&1; then
-  yq e '.services = []' -i "$VALUES_FILE"
-fi
+# -----------------------------------------
+# BOOTSTRAP TEMP STATE (REBUILD MODEL)
+# -----------------------------------------
+cp "$VALUES_FILE" "$TMP_FILE"
+
+# ensure schema exists
+yq e -i '
+  .services = (.services // [])
+' "$TMP_FILE"
+
+# normalize existing entries (safe migration)
+yq e -i '
+  .services |= map(
+    .enabled = (.enabled // true) |
+    .port = (.port // 80)
+  )
+' "$TMP_FILE"
+
+SERVICE_NAME="$(sanitize "$SERVICE_NAME")"
 
 # -----------------------------------------
 # ADD SERVICE
 # -----------------------------------------
 add_service() {
-  SERVICE_NAME="$(sanitize "$SERVICE_NAME")"
-  EXISTS=$(yq e ".services[].name == \"$SERVICE_NAME\"" "$VALUES_FILE" | grep -c true || true)
+  EXISTS=$(yq e ".services[] | select(.name == \"$SERVICE_NAME\")" "$TMP_FILE" | wc -l || true)
 
   if [[ "$EXISTS" -gt 0 ]]; then
     echo "Service already exists: $SERVICE_NAME"
@@ -75,7 +91,11 @@ add_service() {
 
   echo "Adding service: $SERVICE_NAME"
 
-  yq e -i ".services += [{\"name\": \"$SERVICE_NAME\"}]" "$VALUES_FILE"
+  yq e -i ".services += [{
+    name: \"$SERVICE_NAME\",
+    port: 80,
+    enabled: true
+  }]" "$TMP_FILE"
 
   echo "Service added"
 }
@@ -84,8 +104,7 @@ add_service() {
 # REMOVE SERVICE
 # -----------------------------------------
 remove_service() {
-  SERVICE_NAME="$(sanitize "$SERVICE_NAME")"
-  EXISTS=$(yq e ".services[].name == \"$SERVICE_NAME\"" "$VALUES_FILE" | grep -c true || true)
+  EXISTS=$(yq e ".services[] | select(.name == \"$SERVICE_NAME\")" "$TMP_FILE" | wc -l || true)
 
   if [[ "$EXISTS" -eq 0 ]]; then
     echo "Service not found: $SERVICE_NAME"
@@ -94,7 +113,7 @@ remove_service() {
 
   echo "Removing service: $SERVICE_NAME"
 
-  yq e -i ".services |= map(select(.name != \"$SERVICE_NAME\"))" "$VALUES_FILE"
+  yq e -i ".services |= map(select(.name != \"$SERVICE_NAME\"))" "$TMP_FILE"
 
   echo "Service removed"
 }
@@ -115,6 +134,25 @@ case "$ACTION" in
     ;;
 esac
 
+# -----------------------------------------
+# VALIDATION (IMPORTANT SAFETY LAYER)
+# -----------------------------------------
+echo "Validating generated YAML..."
+
+yq e '.' "$TMP_FILE" >/dev/null || {
+  echo "Invalid YAML generated"
+  exit 1
+}
+
+# -----------------------------------------
+# ATOMIC REPLACE (FINAL COMMIT STEP)
+# -----------------------------------------
+echo "Applying changes atomically..."
+
+cp "$VALUES_FILE" "${VALUES_FILE}.bak"
+mv "$TMP_FILE" "$VALUES_FILE"
+
+echo "Update complete"
 echo
 echo "Updated ingress:"
 echo "---------------------------------"

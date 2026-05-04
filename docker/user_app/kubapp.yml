@@ -8,4 +8,5 @@ app:
 
 deploy:
   env: dev
-
+  user: user_app
+  containerUid: 10002
