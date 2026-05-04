@@ -17,6 +17,11 @@ spec:
         app: {{ .Values.appName }}
 
     spec:
+      securityContext:
+        runAsNonRoot: {{ .Values.securityContext.pod.runAsNonRoot }}
+        seccompProfile:
+          type: {{ .Values.securityContext.pod.seccompProfile.type | default "RuntimeDefault" }}
+
       containers:
         - name: {{ .Values.appName }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -36,3 +41,28 @@ spec:
               cpu: {{ .Values.resources.requests.cpu }}
             limits:
               cpu: {{ .Values.resources.limits.cpu }}
+
+          securityContext:
+            runAsNonRoot: {{ .Values.securityContext.container.runAsNonRoot }}
+            runAsUser: {{ .Values.securityContext.container.runAsUser | default 1000 }}
+            allowPrivilegeEscalation:  {{ .Values.securityContext.container.allowPrivilegeEscalation | default false }}
+            readOnlyRootFilesystem: {{ .Values.securityContext.container.readOnlyRootFilesystem }}
+            capabilities:
+              drop:
+          {{- range .Values.securityContext.container.capabilities.drop }}
+                - {{ . }}
+          {{- end }}
+
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path | default "/" }}
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path | default "/" }}
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}

@@ -8,6 +8,8 @@ app:
 
 deploy:
   env: dev
+  user: weather_app
+  containerUid: 10006
 
 runtime:
   env:

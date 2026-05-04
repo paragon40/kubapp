@@ -9,6 +9,7 @@ app:
 
 deploy:
   env: dev
-
+  user: urlshortener_app
+  containerUid: 10005
 
 

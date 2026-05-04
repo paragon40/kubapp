@@ -8,6 +8,8 @@ app:
 
 deploy:
   env: dev
+  user: nodejs_app
+  containerUid: 10004
 
 runtime:
   env:

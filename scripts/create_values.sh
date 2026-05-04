@@ -6,6 +6,9 @@ set -euo pipefail
 # =========================================================
 
 ARTIFACT_FILE="${1:-}"
+CONTAINER_UID="${CONTAINER_UID:-10001}"
+URL_HEALTH="${URL_HEALTH:-/health}"
+URL_LIVE="${URL_LIVE:-/live}"
 
 fail() {
   echo "❌ $1"
@@ -72,6 +75,31 @@ resources:
     cpu: 300m
 
 env: {}
+
+securityContext:
+  pod:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  container:
+    runAsUser: ${CONTAINER_UID}
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
+probes:
+  readiness:
+    path: ${URL_HEALTH}
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+  liveness:
+    path: ${URL_LIVE}
+    initialDelaySeconds: 10
+    periodSeconds: 15
 
 hpa:
   enabled: false
