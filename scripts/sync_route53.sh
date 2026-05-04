@@ -18,10 +18,10 @@ echo "===================================="
 # -------------------------------
 # 1. Get ALB from ingress
 # -------------------------------
-echo "Checking ingress.."
+echo "Checking $ENV ingress.."
 kubectl get ingress kubapp-$ENV-alb -n "$ENV" >/dev/null
 
-echo "Fetching ALB..."
+echo "Fetching $ENV ALB..."
 
 ALB=""
 

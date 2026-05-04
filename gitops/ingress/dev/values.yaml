@@ -9,7 +9,9 @@ ingress:
     scheme: internet-facing
     targetType: ip
     healthcheckPath: /health
-    listenPorts: '[{"HTTP":80},{"HTTPS":443}]'
+    listenPorts:
+      - HTTP: 80
+      - HTTPS: 443
     group: kubapp-shared
 services:
   - name: user
