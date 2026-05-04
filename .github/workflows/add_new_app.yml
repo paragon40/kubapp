@@ -110,7 +110,7 @@ jobs:
           echo "Repo: ${{ github.repository }}"
 
       - name: Get Cert Arn From Terraform
-        working_directory: iac/infra
+        working-directory: iac/infra
         run: |
           set -euo pipefail
           CERT_ARN=$(terraform output -raw main_cert_arn)
