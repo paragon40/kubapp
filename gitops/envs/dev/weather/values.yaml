@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: "paragon40/weather_app"
-  tag: 35346b7b2a4f4e14c48dd1824d8ec1b06946b8a4-1777901333
+  tag: d90a5da5b99f806852d723506aace57506ed7b13-1777928053
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -14,11 +14,7 @@ resources:
     cpu: 100m
   limits:
     cpu: 300m
-env:
-  DATABASE_URL: postgresql://kubuser:kubpassword@postgres:5432/kubapp
-  USE_SQLITE: "true"
-  BOTH_DB: "true"
-  RUN_MIGRATIONS: "true"
+env: {}
 hpa:
   enabled: false
   minReplicas: 1
@@ -26,16 +22,16 @@ hpa:
   cpu: 70
 meta:
   staticFingerprint: 033053f9f27634740e5344868cde3d60024926bbe12bba243690b82a33dec19c
-  generatedAt: 2026-05-04T13:30:08Z
+  generatedAt: 2026-05-04T20:55:41Z
   source: build-pipeline
-  runtimeHash: 5ed34709aeed0ff460b53f186304146fe8473dd9e1f8551a935e9339779d5906
+  runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 securityContext:
   pod:
     runAsNonRoot: true
     seccompProfile:
       type: RuntimeDefault
   container:
-    runAsUser: 10001
+    runAsUser: 10006
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities:

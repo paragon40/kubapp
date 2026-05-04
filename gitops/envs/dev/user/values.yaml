@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: "paragon40/user_app"
-  tag: 35346b7b2a4f4e14c48dd1824d8ec1b06946b8a4-1777901334
+  tag: d90a5da5b99f806852d723506aace57506ed7b13-1777928052
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -22,7 +22,7 @@ hpa:
   cpu: 70
 meta:
   staticFingerprint: cdff39a56218b322471f6138cebbc268de3b6f955afd5b2c331e1d28b1101eb8
-  generatedAt: 2026-05-04T13:30:08Z
+  generatedAt: 2026-05-04T20:55:41Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 securityContext:
@@ -31,7 +31,7 @@ securityContext:
     seccompProfile:
       type: RuntimeDefault
   container:
-    runAsUser: 10001
+    runAsUser: 10002
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities:
