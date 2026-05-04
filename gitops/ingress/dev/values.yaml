@@ -11,7 +11,17 @@ ingress:
     listenPorts: '[{"HTTP":80}]'
 services:
   - name: user
+    enabled: true
+    port: 80
   - name: admin
+    enabled: true
+    port: 80
   - name: weather
+    enabled: true
+    port: 80
   - name: nodejsapp
+    enabled: true
+    port: 80
   - name: urlshortener
+    enabled: true
+    port: 80
