@@ -3,10 +3,11 @@ set -euo pipefail
 
 DOMAIN="${DOMAIN:-rundailytest.online}"
 ENV="${ENV:-dev}"
-ING_FILE="${INGRESS_FILE:-}"
+ING_FILE="${INGRESS_FILE:-gitops/ingress/$ENV/values.yaml}"
 
-if [[ -f ING_FILE ]]; then
-  ING_FILE="gitops/ingress/$ENV/values.yaml"
+if [[ ! -f "$ING_FILE" ]]; then
+  echo "❌ Ingress file not found: $ING_FILE"
+  exit 1
 fi
 
 echo "===================================="
@@ -39,6 +40,8 @@ ZONE_ID=$(aws route53 list-hosted-zones-by-name \
   --query "HostedZones[?Name=='${DOMAIN}.'].Id" \
   --output text 2>/dev/null | sed 's|/hostedzone/||')
 
+ZONE_EXISTS=false
+
 # -------------------------------
 # 3. CREATE ZONE if missing
 # -------------------------------
@@ -54,41 +57,47 @@ if [[ -z "$ZONE_ID" || "$ZONE_ID" == "None" ]]; then
   echo "Created hosted zone: $ZONE_ID"
 else
   echo "Existing zone found: $ZONE_ID"
-  exit 0
+  ZONE_EXISTS=true
 fi
 
 # -------------------------------
-# 3b. Show Namecheap nameservers (ONE-TIME SETUP)
+# 3b. Show Namecheap nameservers ONLY on NEW ZONE
 # -------------------------------
-echo ""
-echo "===================================="
-echo "NAMECHEAP DELEGATION"
-echo "===================================="
+if [[ "$ZONE_EXISTS" == false ]]; then
+  echo ""
+  echo "===================================="
+  echo "NAMECHEAP DELEGATION (ONE-TIME ONLY)"
+  echo "===================================="
 
-NS=$(aws route53 get-hosted-zone \
-  --id "$ZONE_ID" \
-  --query "DelegationSet.NameServers[]" \
-  --output text)
+  NS=$(aws route53 get-hosted-zone \
+    --id "$ZONE_ID" \
+    --query "DelegationSet.NameServers[]" \
+    --output text)
 
-for ns in $NS; do
-  echo "$ns"
-done
+  for ns in $NS; do
+    echo "$ns"
+  done
 
-echo ""
-echo "👉 Paste these into Namecheap → Custom DNS"
-echo "👉 This is REQUIRED ONLY ONCE per domain"
-echo "===================================="
-echo ""
+  echo ""
+  echo "👉 Paste these into Namecheap → Custom DNS"
+  echo "👉 Required ONLY ONCE per domain"
+  echo "===================================="
+  echo ""
+fi
 
 # -------------------------------
-# 4. Define services (your GitOps truth)
+# 4. Define services (GitOps truth)
 # -------------------------------
 mapfile -t SERVICES < <(yq e '.services[].name' "$ING_FILE")
 
 # -------------------------------
-# 5. Root domain
+# 5. Root domain (FIXED: ALIAS A record)
 # -------------------------------
 echo "Updating root domain..."
+
+ALB_ZONE_ID=$(aws elbv2 describe-load-balancers \
+  --query "LoadBalancers[?DNSName=='$ALB'].CanonicalHostedZoneId" \
+  --output text)
 
 aws route53 change-resource-record-sets \
   --hosted-zone-id "$ZONE_ID" \
@@ -97,15 +106,18 @@ aws route53 change-resource-record-sets \
       \"Action\": \"UPSERT\",
       \"ResourceRecordSet\": {
         \"Name\": \"$DOMAIN\",
-        \"Type\": \"CNAME\",
-        \"TTL\": 60,
-        \"ResourceRecords\": [{\"Value\": \"$ALB\"}]
+        \"Type\": \"A\",
+        \"AliasTarget\": {
+          \"HostedZoneId\": \"$ALB_ZONE_ID\",
+          \"DNSName\": \"$ALB\",
+          \"EvaluateTargetHealth\": false
+        }
       }
     }]
   }"
 
 # -------------------------------
-# 6. Subdomains (explicit routing)
+# 6. Subdomains (CNAME → ALB)
 # -------------------------------
 echo "Updating service subdomains..."
 
