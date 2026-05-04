@@ -80,15 +80,21 @@ yq e -i '
   | .ingress.name = (.ingress.name // ("kubapp-" + env(ENV) + "-alb"))
   | .ingress.className = (.ingress.className // "alb")
   | .ingress.enableSubdomainRouting = (.ingress.enableSubdomainRouting // true)
-  | .ingress.annotations.listenPorts =
-    (
-      (.ingress.annotations.listenPorts // [
-        {"HTTP": 80},
-        {"HTTPS": 443}
-      ])
-    )
+  | .ingress.annotations.listenPorts = [
+      {"HTTP": 80},
+      {"HTTPS": 443}
+    ]
 ' "$TMP_FILE"
 
+if yq e '.ingress.annotations.listenPorts | tag' "$TMP_FILE" | grep -q '!!str'; then
+  echo "❌ listenPorts is STRING-ENCODED (invalid ALB format)"
+  exit 1
+fi
+
+if yq e '.ingress.annotations.listenPorts | type' "$TMP_FILE" | grep -q '!!str'; then
+  echo "❌ listenPorts must NOT be a string"
+  exit 1
+fi
 # ensure services array
 yq e -i '.services = (.services // [])' "$TMP_FILE"
 
@@ -131,18 +137,24 @@ validate_schema() {
 validate_listen_ports() {
   echo "Validating listenPorts..."
 
-  HTTP=$(yq e '.ingress.annotations.listenPorts[] | select(has("HTTP")) | .HTTP' "$TMP_FILE" 2>/dev/null || true)
-  HTTPS=$(yq e '.ingress.annotations.listenPorts[] | select(has("HTTPS")) | .HTTPS' "$TMP_FILE" 2>/dev/null || true)
+  TYPE=$(yq e '.ingress.annotations.listenPorts | type' "$TMP_FILE")
 
-  if [[ -n "$HTTP" && "$HTTP" != "80" ]]; then
-    echo "❌ HTTP must be 80"
+  if [[ "$TYPE" != "!!seq" ]]; then
+    echo "❌ listenPorts must be a YAML array (sequence)"
     exit 1
   fi
 
-  if [[ -n "$HTTPS" && "$HTTPS" != "443" ]]; then
-    echo "❌ HTTPS must be 443"
-    exit 1
-  fi
+  HTTP_COUNT=$(yq e '.ingress.annotations.listenPorts[] | select(has("HTTP")) | .HTTP' "$TMP_FILE" | wc -l)
+  HTTPS_COUNT=$(yq e '.ingress.annotations.listenPorts[] | select(has("HTTPS")) | .HTTPS' "$TMP_FILE" | wc -l)
+
+  [[ "$HTTP_COUNT" -eq 1 ]] || { echo "❌ HTTP must exist exactly once"; exit 1; }
+  [[ "$HTTPS_COUNT" -eq 1 ]] || { echo "❌ HTTPS must exist exactly once"; exit 1; }
+
+  HTTP=$(yq e '.ingress.annotations.listenPorts[] | select(has("HTTP")) | .HTTP' "$TMP_FILE" | head -n1)
+  HTTPS=$(yq e '.ingress.annotations.listenPorts[] | select(has("HTTPS")) | .HTTPS' "$TMP_FILE" | head -n1)
+
+  [[ "$HTTP" == "80" ]] || { echo "❌ HTTP must be 80"; exit 1; }
+  [[ "$HTTPS" == "443" ]] || { echo "❌ HTTPS must be 443"; exit 1; }
 
   echo "✅ listenPorts valid"
 }
