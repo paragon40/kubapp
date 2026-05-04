@@ -6,8 +6,8 @@ echo "[BOOTSTRAP] Initializing environment..."
 # ----------------------------
 # Default raw values
 # ----------------------------
-USE_SQLITE="${USE_SQLITE:-false}"
-BOTH_DB="${BOTH_DB:-false}"
+USE_SQLITE="${USE_SQLITE:-true}"
+BOTH_DB="${BOTH_DB:-true}"
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-true}"
 
 DATABASE_URL_SQLITE="${DATABASE_URL_SQLITE:-sqlite:////tmp/edgepaas/fallback.db}"
