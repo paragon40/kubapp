@@ -1,6 +1,6 @@
 resource "aws_acm_certificate" "kubapp" {
-  domain_name               = var.root_domain
-  subject_alternative_names = ["*.${var.root_domain}"]
+  domain_name               = var.domain
+  subject_alternative_names = ["*.${var.domain}"]
 
   validation_method = "DNS"
   tags = var.tags
