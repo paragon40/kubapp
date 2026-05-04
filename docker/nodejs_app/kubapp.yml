@@ -4,11 +4,13 @@ service:
 
 app:
   port: 3000
-  healthPath: api/health
+  appUser: nodejs_app
+  healthPath: /api/health
+  livePath: /api/live
+  basePath: /
 
 deploy:
   env: dev
-  user: nodejs_app
   containerUid: 10004
 
 runtime:
@@ -17,3 +19,19 @@ runtime:
     REDIS_HOST: redis-service
     REDIS_PORT: "6379"
     LOG_LEVEL: info
+
+storage:
+  volumes:
+    - name: nodejs_volume
+      emptyDir: {}
+
+  volumeMounts:
+    - name: nodejs_mnt
+      mountPath: /data
+
+features:
+  topVolume:
+    enabled: true
+  tmp:
+    enabled: true
+

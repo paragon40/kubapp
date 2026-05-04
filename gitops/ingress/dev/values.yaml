@@ -4,11 +4,14 @@ ingress:
   className: alb
   baseDomain: rundailytest.online
   enableSubdomainRouting: true
+  certificateArn: xxx
   annotations:
     scheme: internet-facing
     targetType: ip
     healthcheckPath: /health
-    listenPorts: '[{"HTTP":80}]'
+    listenPorts: '[{"HTTP":80},{"HTTPS":443}]'
+    group: kubapp-shared
+
 services:
   - name: user
     enabled: true

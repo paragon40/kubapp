@@ -4,12 +4,14 @@ metadata:
   name: {{ .Values.ingress.name }}
   namespace: {{ .Values.namespace }}
   annotations:
-    kubernetes.io/ingress.class: alb
+    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
     alb.ingress.kubernetes.io/scheme: {{ .Values.ingress.annotations.scheme }}
     alb.ingress.kubernetes.io/target-type: {{ .Values.ingress.annotations.targetType }}
-    alb.ingress.kubernetes.io/listen-ports: '{{ .Values.ingress.annotations.listenPorts }}'
+    alb.ingress.kubernetes.io/listen-ports: '{{ toJson .Values.ingress.annotations.listenPorts }}'
     alb.ingress.kubernetes.io/healthcheck-path: {{ .Values.ingress.annotations.healthcheckPath }}
-    alb.ingress.kubernetes.io/group.name: kubapp-shared
+    alb.ingress.kubernetes.io/group.name: {{ .Values.ingress.annotations.group }}
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn }}
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
 
 spec:
   ingressClassName: {{ .Values.ingress.className }}
