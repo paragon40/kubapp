@@ -34,8 +34,10 @@ RUN python -m pip install --upgrade pip setuptools wheel && \
 COPY ./app /app
 
 ARG SERVICE_NAME=weather_app
+
 RUN addgroup -S ${SERVICE_NAME} && \
     adduser -S ${SERVICE_NAME} -G ${SERVICE_NAME}
+
 USER ${SERVICE_NAME}
 
 # ----------------------------
