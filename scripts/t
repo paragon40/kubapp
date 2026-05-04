@@ -1,0 +1,8 @@
+git fetch origin main
+git reset --hard origin/main
+
+# apply your changes again (regenerate files)
+
+git add .
+git commit -m "CI update"
+git push origin main       

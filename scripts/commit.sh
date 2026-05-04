@@ -101,21 +101,58 @@ git status --short
 git commit -m "$COMMIT_MSG"
 
 ########################################
-# SAFE PUSH (REBASE PROTECTED)
+# SAFE PUSH (REBASE + RECOVERY)
 ########################################
-echo "Pushing to $BRANCH (with rebase protection)..."
+echo "Pushing to $BRANCH (with protection)..."
 
 for i in {1..3}; do
+  echo ">> Attempt $i"
+
   if git push origin HEAD:$BRANCH; then
     echo "✅ Push succeeded"
     exit 0
   fi
 
-  echo "⚠️ Push failed (attempt $i) — resolving..."
+  echo "⚠️ Push failed — trying rebase..."
 
-  git fetch origin "$BRANCH"
-  git rebase "origin/$BRANCH"
+  if git fetch origin "$BRANCH" && git rebase "origin/$BRANCH"; then
+    if git push origin HEAD:$BRANCH; then
+      echo "✅ Push succeeded after rebase"
+      exit 0
+    fi
+  else
+    echo "⚠️ Rebase failed"
+    git rebase --abort || true
+  fi
+
+  # Phase 3: fallback (last attempt only)
+  if [[ "$i" -eq 3 ]]; then
+    echo "❌ Final attempt — using recovery strategy"
+
+    TMP_DIR=$(mktemp -d)
+
+    # Save generated state (adjust if needed)
+    cp -r gitops "$TMP_DIR/" || true
+
+    git fetch origin "$BRANCH"
+    git reset --hard "origin/$BRANCH"
+
+    # Restore
+    cp -r "$TMP_DIR/gitops/"* gitops/ || true
+
+    git add .
+    git commit -m "CI recovery commit" || true
+
+    if git push origin HEAD:$BRANCH; then
+      echo "✅ Push succeeded after recovery"
+      exit 0
+    fi
+  fi
+
+  echo "🔁 Retrying..."
+  sleep 2
 done
 
 echo "❌ Failed to push after retries"
 exit 1
+
