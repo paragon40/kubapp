@@ -2,6 +2,13 @@ name: Argocd And Gitops Bootstrap
 
 on:
   workflow_dispatch:
+    inputs:
+      env:
+        description: Environment
+        required: true
+        default: dev
+        type: choice
+        options: [dev, prod]
 
 permissions:
   id-token: write
@@ -144,4 +151,7 @@ jobs:
         run: bash scripts/bootstrap_gitops.sh
 
       - name: Ensure Route53 is synced
+        env:
+          ENV: "${{ github.event.inputs.env }}"
+          DOMAIN: "${{ secrets.DOMAIN }}"
         run: bash scripts/sync_route53.sh

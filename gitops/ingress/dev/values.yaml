@@ -2,7 +2,7 @@ namespace: dev
 ingress:
   name: kubapp-dev-alb
   className: alb
-  baseDomain: rundailytest.duckdns.org
+  baseDomain: rundailytest.online
   enableSubdomainRouting: true
   annotations:
     scheme: internet-facing
