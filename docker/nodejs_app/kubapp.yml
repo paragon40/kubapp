@@ -31,7 +31,7 @@ storage:
 
 features:
   topVolume:
-    enabled: true
+    enabled: false
   tmp:
-    enabled: true
+    enabled: false
 

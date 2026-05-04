@@ -36,7 +36,7 @@ COMPUTED_FP=$(echo -n "$SERVICE_NAME|$TAG|$ENV|$PORT" | sha256sum | awk '{print 
 
 if [[ "$EXPECTED_FP" != "$COMPUTED_FP" ]]; then
   echo ""
-  echo "🚨 STRUCTURAL DRIFT DETECTED"
+  echo "STRUCTURAL DRIFT DETECTED"
   echo "-----------------------------------"
   echo "Expected fingerprint : $EXPECTED_FP"
   echo "Current computed     : $COMPUTED_FP"
@@ -67,7 +67,7 @@ if [[ -n "$STORED_RUNTIME" && "$STORED_RUNTIME" != "$RUNTIME_HASH" ]]; then
   echo "⚠️ RUNTIME DRIFT DETECTED"
   echo "-----------------------------------"
 
-  echo "📌 Cause:"
+  echo "Cause:"
   echo "- env or secret injection changed"
   echo ""
 

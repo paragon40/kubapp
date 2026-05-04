@@ -26,6 +26,8 @@ SERVICE=$(jq -r '.service' "$ARTIFACT_FILE")
 ENV=$(jq -r '.env' "$ARTIFACT_FILE")
 NAMESPACE=$(jq -r '.namespace' "$ARTIFACT_FILE")
 PORT=$(jq -r '.port' "$ARTIFACT_FILE")
+IMAGE=$(jq -r '.image' "$ARTIFACT_FILE")
+TAG=$(jq -r '.tag' "$ARTIFACT_FILE")
 CONTAINER_UID=$(jq -r '.containerUid // 10001' "$ARTIFACT_FILE")
 HEALTH=$(jq -r '.healthPath // "/health"' "$ARTIFACT_FILE")
 LIVE=$(jq -r '.livePath // "/live"' "$ARTIFACT_FILE")
@@ -40,6 +42,8 @@ TMP_ENABLED=$(jq -r '.tmp_enabled // false' "$ARTIFACT_FILE")
 [[ -n "$ENV" && "$ENV" != "null" ]] || fail "Missing env"
 [[ -n "$NAMESPACE" && "$NAMESPACE" != "null" ]] || fail "Missing namespace"
 [[ -n "$PORT" && "$PORT" != "null" ]] || fail "Missing port"
+[[ -n "$IMAGE" && "$IMAGE" != "null" ]] || fail "Missing image"
+[[ -n "$TAG" && "$TAG" != "null" ]] || fail "Missing tag"
 
 TARGET_DIR="gitops/envs/$ENV/$SERVICE"
 TARGET_FILE="$TARGET_DIR/values.yaml"
@@ -96,16 +100,6 @@ securityContext:
       drop:
         - ALL
 
-{{- if eq "'"$TMP_ENABLED"'" "true" }}
-volumes:
-  - name: ${TMP_VOL}
-    emptyDir: {}
-
-volumeMounts:
-  - name: ${MNT_VOL}
-    mountPath: ${MNT_PATH}
-{{- end }}
-
 probes:
   readiness:
     path: ${HEALTH}
@@ -128,6 +122,19 @@ meta:
   generatedAt: $DATE
   source: build-pipeline
 EOF
+
+if [[ "$TMP_ENABLED" == "true" && -n "$TMP_VOL" && -n "$MNT_VOL" && -n "$MNT_PATH" ]]; then
+cat >> /tmp/static-values.yaml <<EOF
+
+volumes:
+  - name: ${TMP_VOL}
+    emptyDir: {}
+
+volumeMounts:
+  - name: ${MNT_VOL}
+    mountPath: ${MNT_PATH}
+EOF
+fi
 
 ####################################################
 # APPLY STRATEGY (SAFE + IDENTITY PRESERVING)
