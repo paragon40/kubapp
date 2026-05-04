@@ -110,6 +110,8 @@ jobs:
           echo "Repo: ${{ github.repository }}"
 
       - name: Create values + inject vars + ingress registration
+        env:
+          DOMAIN: "${{ secrets.DOMAIN }}"
         run: |
           set -euo pipefail
           ENV="${{ env.ENV }}"
