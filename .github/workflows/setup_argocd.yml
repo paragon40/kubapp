@@ -160,7 +160,7 @@ jobs:
           DOMAIN: "${{ secrets.DOMAIN }}"
         run: |
           set -euo pipefail
-          for i in {1..6}; do
+          for i in {1..8}; do
             echo "Setting up route53 for Domain if new..."
             if bash scripts/sync_route53.sh; then
               echo "✅ Success on attempt $i"
@@ -169,6 +169,6 @@ jobs:
               echo "ALB not ready yet, retrying..."
               sleep 5
             fi
-            echo "❌ Route53 sync failed after retries"
-            exit 1
           done
+          echo "❌ Route53 sync failed after 8 attempts"
+          exit 1
