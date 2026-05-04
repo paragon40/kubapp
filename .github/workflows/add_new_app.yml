@@ -15,6 +15,10 @@ on:
         type: choice
         options: [dev, prod]
 
+permissions:
+  id-token: write
+  contents: read
+
 concurrency:
   group: add-new-app
   cancel-in-progress: false
