@@ -37,17 +37,22 @@ variable "kubernetes_v" {
 }
 
 variable "CERT_ARN" {
-  description = "ACM certificate ARN"
+  description = "ACM certificate ARN (test)"
+  type        = string
+}
+
+variable "main_domain" {
+  description = "Main domain automatically provisioned via acm (used in k8s)"
   type        = string
 }
 
 variable "root_domain" {
-  description = "Base domain"
+  description = "Domain from manually set up route53 (for test)"
   type        = string
 }
 
 variable "subdomain" {
-  description = "Service subdomain"
+  description = "Service subdomain for test"
   type        = string
 }
 
