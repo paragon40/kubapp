@@ -42,3 +42,14 @@ securityContext:
       drop:
         - ALL
 
+probes:
+  readiness:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+  liveness:
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 20
+
