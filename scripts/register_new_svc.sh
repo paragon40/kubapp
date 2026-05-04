@@ -80,6 +80,13 @@ yq e -i '
   | .ingress.name = (.ingress.name // ("kubapp-" + env(ENV) + "-alb"))
   | .ingress.className = (.ingress.className // "alb")
   | .ingress.enableSubdomainRouting = (.ingress.enableSubdomainRouting // true)
+  | .ingress.annotations.listenPorts =
+    (
+      (.ingress.annotations.listenPorts // [
+        {"HTTP": 80},
+        {"HTTPS": 443}
+      ])
+    )
 ' "$TMP_FILE"
 
 # ensure services array
