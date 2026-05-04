@@ -3,7 +3,7 @@
   "context": "docker/nodejs_app",
   "image": "paragon40/nodejs_app",
   "image2": "paragon40/nodejs_app:latest",
-  "tag": "872c4f59b288f083591bf7d051c7dfccdfb205b8-1777910873",
+  "tag": "cbf34795053636b09d286ecf10ace02f7767e418-1777913088",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -12,12 +12,12 @@
   "basePath": "/",
   "healthPath": "/api/health",
   "livePath": "/api/live",
-  "volumes_enabled": true,
-  "tmp_enabled": true,
+  "volumes_enabled": false,
+  "tmp_enabled": false,
   "tmp_volume": "nodejs_volume",
   "mount_vol": "nodejs_mnt",
   "mount_path": "/data",
   "NO_VARS": false,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-04_16-07-53"
+  "CREATED_AT": "2026-05-04_16-44-48"
 }
