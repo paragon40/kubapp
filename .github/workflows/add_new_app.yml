@@ -116,6 +116,7 @@ jobs:
         working-directory: iac/infra
         run: |
           set -euo pipefail
+          ENV="${{ env.ENV }}"
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
           CERT_ARN=$(terraform output -raw main_cert_arn)
           if [[ -z "$CERT_ARN" ]]; then
