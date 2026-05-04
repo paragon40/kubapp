@@ -12,7 +12,7 @@ set -euo pipefail
 ACTION="${1:-}"
 SERVICE_NAME="${2:-}"
 ENV="${3:-dev}"
-DOMAIN="${DOMAIN:-kubapp.rundailytest.site}"
+DOMAIN="${DOMAIN:-kubapp.rundailytest.online}"
 
 VALUES_FILE="gitops/ingress/${ENV}/values.yaml"
 TMP_FILE="/tmp/ingress-values-${ENV}.yaml"
