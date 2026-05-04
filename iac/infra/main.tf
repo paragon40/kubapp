@@ -9,7 +9,7 @@ data "aws_eks_cluster_auth" "this" {
 data "aws_caller_identity" "current" {}
 
 data "aws_route53_zone" "main" {
-  name         = var.root_domain
+  name         = var.main_domain
   private_zone = false
 }
 
@@ -182,8 +182,9 @@ module "efs" {
 # ACM
 ############################################
 module "acm" {
-  source = "./modules/acm"
-  domain = local.main_domain
+  source  = "./modules/acm"
+  domain  = local.main_domain
+  zone_id = aws_route53_zone.main.zone_id
   tags = merge(local.common_tags, {
     resource-type = "acm"
     layer         = "routing"
