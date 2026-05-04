@@ -29,6 +29,18 @@ if [[ -z "$SERVICE_NAME" ]]; then
   exit 1
 fi
 
+[[ -n "$ACTION" ]] || { echo "❌ ACTION required"; exit 1; }
+[[ -n "$SERVICE_NAME" ]] || { echo "❌ SERVICE_NAME required"; exit 1; }
+[[ -n "$ENV" ]] || { echo "❌ ENV required"; exit 1; }
+[[ -n "$DOMAIN" ]] || { echo "❌ DOMAIN required"; exit 1; }
+[[ -n "$CERT_ARN" ]] || { echo "❌ CERT_ARN required"; exit 1; }
+[[ -f "$VALUES_FILE" ]] || { echo "❌ $VALUES_FILE Does NOT exist"; exit 1; }
+
+[[ "$PORT" =~ ^[0-9]+$ && "$PORT" -ge 1 && "$PORT" -le 65535 ]] || {
+  echo "❌ Invalid PORT: $PORT"
+  exit 1
+}
+
 if [[ "$ACTION" != "add" && "$ACTION" != "remove" ]]; then
   ENV="${2:-dev}"
   SERVICE_NAME="$ACTION"

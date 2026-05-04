@@ -179,6 +179,18 @@ module "efs" {
 }
 
 ############################################
+# ACM
+############################################
+module "acm" {
+  source = "./modules/acm"
+  domain = local.main_domain
+  tags = merge(local.common_tags, {
+    resource-type = "acm"
+    layer         = "routing"
+  })
+}
+
+############################################
 # ECR
 ############################################
 #module "ecr" {

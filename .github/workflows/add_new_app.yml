@@ -109,9 +109,21 @@ jobs:
           echo "Run ID: ${{ github.event.workflow_run.id }}"
           echo "Repo: ${{ github.repository }}"
 
+      - name: Get Cert Arn From Terraform
+        working_directory: iac/infra
+        run: |
+          set -euo pipefail
+          CERT_ARN=$(terraform output -raw main_cert_arn)
+          if [[ -z "$CERT_ARN" ]]; then
+            echo "❌ Arn Certificate Not Retrieved from terraform"
+            exit 1
+          fi
+          echo "CERT_ARN=$CERT_ARN" >> $GITHUB_ENV
+
       - name: Create values + inject vars + ingress registration
         env:
           DOMAIN: "${{ secrets.DOMAIN }}"
+          CERT_ARN: "${{ env.CERT_ARN }}"
         run: |
           set -euo pipefail
           ENV="${{ env.ENV }}"

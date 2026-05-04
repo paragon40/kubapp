@@ -7,6 +7,8 @@ locals {
     : "${var.env}.${var.subdomain}.${var.root_domain}"
   )
 
+  main_domain = var.main_domain
+
   # GLOBAL TRACE ID 
   trace_id = "${var.project}-${var.env}-${local.cluster_name}"
 
