@@ -3,7 +3,11 @@ set -euo pipefail
 
 DOMAIN="${DOMAIN:-rundailytest.online}"
 ENV="${ENV:-dev}"
-ING_FILE="${INGRESS_FILE:-gitops/ingress/dev/values.yaml}"
+ING_FILE="${INGRESS_FILE:-}"
+
+if [[ -f ING_FILE ]]; then
+  ING_FILE="gitops/ingress/$ENV/values.yaml"
+fi
 
 echo "===================================="
 echo "Route53 Auto-Provision + Sync"
@@ -79,7 +83,7 @@ echo ""
 # -------------------------------
 # 4. Define services (your GitOps truth)
 # -------------------------------
-SERVICES=$(yq e '.services[].name' "$ING_FILE")
+mapfile -t SERVICES < <(yq e '.services[].name' "$ING_FILE")
 
 # -------------------------------
 # 5. Root domain
@@ -105,7 +109,7 @@ aws route53 change-resource-record-sets \
 # -------------------------------
 echo "Updating service subdomains..."
 
-for svc in $SERVICES; do
+for svc in "${SERVICES[@]}"; do
   FQDN="$svc.$DOMAIN"
 
   echo "→ $FQDN"
