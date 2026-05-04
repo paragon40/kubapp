@@ -22,7 +22,7 @@ concurrency:
 jobs:
   provision:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Generate GitHub App token
@@ -118,8 +118,10 @@ jobs:
 
       - name: Debug workflow run
         run: |
+          ENV="${{ env.ENV }}"
           echo "Run ID: ${{ github.event.workflow_run.id }}"
           echo "Repo: ${{ github.repository }}"
+          echo "Environment: $ENV"
 
       - name: Get Cert Arn From Terraform
         working-directory: iac/infra
