@@ -123,6 +123,10 @@ meta:
   source: build-pipeline
 EOF
 
+echo "Checks for $SERVICE volume config.."
+echo "tmp_enabled: $TMP_ENABLED"
+echo "vol_enabled: $VOLUMES_ENABLED"
+
 if [[ "$TMP_ENABLED" == "true" && -n "$TMP_VOL" && -n "$MNT_VOL" && -n "$MNT_PATH" ]]; then
 cat >> /tmp/static-values.yaml <<EOF
 
