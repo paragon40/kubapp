@@ -20,7 +20,7 @@ spec:
       {{- if .Values.storage }}
       {{- if .Values.storage.volumes }}
       volumes:
-{{ toYaml .Values.storage.volumes | indent 6 }}
+    {{ toYaml .Values.storage.volumes | indent 4 }}
       {{- end }}
       {{- end }}
       securityContext:
@@ -30,12 +30,12 @@ spec:
 
       containers:
         - name: {{ .Values.appName }}
-      {{- if .Values.storage }}
+          {{- if .Values.storage }}
           volumeMounts:
-      {{- if .Values.storage.volumeMounts }}
-      {{ toYaml .Values.storage.volumeMounts | indent 12 }}
-      {{- end }}
-      {{- end }}
+          {{- if .Values.storage.volumeMounts }}
+      {{ toYaml .Values.storage.volumeMounts | indent 8 }}
+          {{- end }}
+          {{- end }}
 
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
