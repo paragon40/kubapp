@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: "paragon40/url_shortener"
-  tag: 9699433ccfe255aeeefa960c40967f2ce928c911-1777976032
+  tag: fd47fdc8ba4635dd33fc87a2fb9d50b12036edb1-1777977323
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -22,7 +22,7 @@ hpa:
   cpu: 70
 meta:
   staticFingerprint: d882d65204ed4afd42b1d002d2189eff2847433e8ecf57ebe372615ceae7d8b1
-  generatedAt: 2026-05-05T10:15:23Z
+  generatedAt: 2026-05-05T10:36:49Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 securityContext:
@@ -48,8 +48,8 @@ probes:
     periodSeconds: 15
 storage:
   volumes:
-    - name: url_shortener_volume
+    - name: urlshortener-volume
       emptyDir: {}
   volumeMounts:
-    - name: url_shortener_mnt
+    - name: urlshortener-mnt
       mountPath: /data
