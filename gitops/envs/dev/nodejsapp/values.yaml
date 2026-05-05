@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: "paragon40/nodejs_app"
-  tag: e50e9148791f4c70517b671fda5113b51eb9da04-1777933875
+  tag: 1955407a9b26743bbf5cfb4f5799fcbac1bdcb65-1777965110
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -22,7 +22,7 @@ hpa:
   cpu: 70
 meta:
   staticFingerprint: 741778c54be115a02f8b4b9e662483e03f36b2c42b6ef7faac2395a58adad34f
-  generatedAt: 2026-05-04T22:32:40Z
+  generatedAt: 2026-05-05T07:13:29Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 securityContext:
