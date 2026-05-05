@@ -3,7 +3,7 @@
   "context": "docker/nodejs_app",
   "image": "paragon40/nodejs_app",
   "image2": "paragon40/nodejs_app:latest",
-  "tag": "fd47fdc8ba4635dd33fc87a2fb9d50b12036edb1-1777977314",
+  "tag": "ffc62c313ab9cecc1e24f39ec9f00cdc00b2d95d-1778001270",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -19,5 +19,5 @@
   "mount_path": "/data",
   "NO_VARS": false,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-05_10-35-14"
+  "CREATED_AT": "2026-05-05_17-14-30"
 }
