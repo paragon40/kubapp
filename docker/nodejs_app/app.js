@@ -26,6 +26,10 @@ app.get("/api/health", (req, res) => {
   );
 });
 
+app.get("/api/live", (req, res) => {
+  res.status(200).send("OK");
+});
+
 // USER route
 app.get("/user", (req, res) => {
   res.json(
