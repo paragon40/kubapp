@@ -22,11 +22,11 @@ runtime:
 
 storage:
   volumes:
-    - name: nodejs_volume
+    - name: nodejs-volume
       emptyDir: {}
 
   volumeMounts:
-    - name: nodejs_mnt
+    - name: nodejs-mnt
       mountPath: /data
 
 features:

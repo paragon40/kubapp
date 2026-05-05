@@ -15,11 +15,11 @@ deploy:
 
 storage:
   volumes:
-    - name: url_shortener_volume
+    - name: urlshortener-volume
       emptyDir: {}
 
   volumeMounts:
-    - name: url_shortener_mnt
+    - name: urlshortener-mnt
       mountPath: /data
 
 features:
