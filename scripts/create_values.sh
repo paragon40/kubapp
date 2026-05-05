@@ -81,8 +81,10 @@ service:
 resources:
   requests:
     cpu: 100m
+    memory: 128Mi
   limits:
     cpu: 300m
+    memory: 256Mi
 
 env: {}
 
@@ -111,11 +113,17 @@ probes:
     initialDelaySeconds: 10
     periodSeconds: 15
 
+  startup:
+    path: ${HEALTH}
+    failureThreshold: 30
+    periodSeconds: 5
+
 hpa:
   enabled: false
   minReplicas: 1
   maxReplicas: 2
   cpu: 70
+  memory: 70
 
 meta:
   staticFingerprint: $STATIC_FP

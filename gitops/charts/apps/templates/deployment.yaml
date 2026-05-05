@@ -46,8 +46,10 @@ spec:
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
             limits:
               cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
 
           securityContext:
             runAsNonRoot: {{ .Values.securityContext.container.runAsNonRoot }}
@@ -64,16 +66,29 @@ spec:
           {{- end }}
           {{- end }}
 
+          {{- if .Values.probes.readiness }}
           readinessProbe:
             httpGet:
               path: {{ .Values.probes.readiness.path | default "/" }}
-              port: {{ .Values.service.targetPort }}
+              port: {{ .Values.probes.readiness.httpGet.port | default .Values.service.targetPort }}
             initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          {{- end }}
 
+          {{- if .Values.probes.liveness }}
           livenessProbe:
             httpGet:
               path: {{ .Values.probes.liveness.path | default "/" }}
-              port: {{ .Values.service.targetPort }}
+              port: {{ .Values.probes.liveness.httpGet.port | default .Values.service.targetPort }}
             initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          {{- end }}
+
+          {{- if .Values.probes.startup }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.startup.path | default "/" }}
+              port: {{ .Values.probes.startup.httpGet.port | default .Values..service.targetPort }}
+            initialDelaySeconds: {{ .Values.probes.startup.failureThreshold }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+          {{- end }}
