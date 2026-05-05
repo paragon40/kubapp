@@ -4,11 +4,11 @@ import os
 from logging.handlers import RotatingFileHandler
 
 # Decide log path based on environment
-if os.getenv("AWS", "AZURE").lower() in ("true", "yes", "1"):
-    LOG_PATH = "/opt/edgepaas/app/logger.log"
+if os.getenv("CI", "GITHUB", "AWS", "AZURE").lower() in ("true", "yes", "1"):
+    LOG_PATH = "/tmp/edgepaas/app/logger.log"
 else:
     # Expand $HOME for local/development
-    LOG_PATH = os.path.join(os.path.expanduser("~"), "edgepaas", "logs", "logger.log")
+    LOG_PATH = os.path.join(os.path.expanduser("~"), "tmp", "edgepaas", "logs", "logger.log")
 
 # Ensure directory exists
 os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
