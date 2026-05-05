@@ -3,7 +3,7 @@
   "context": "docker/url_shortener",
   "image": "paragon40/url_shortener",
   "image2": "paragon40/url_shortener:latest",
-  "tag": "9699433ccfe255aeeefa960c40967f2ce928c911-1777976032",
+  "tag": "fd47fdc8ba4635dd33fc87a2fb9d50b12036edb1-1777977323",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -14,10 +14,10 @@
   "livePath": "/api/live",
   "volumes_enabled": true,
   "tmp_enabled": true,
-  "tmp_volume": "url_shortener_volume",
-  "mount_vol": "url_shortener_mnt",
+  "tmp_volume": "urlshortener-volume",
+  "mount_vol": "urlshortener-mnt",
   "mount_path": "/data",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-05_10-13-52"
+  "CREATED_AT": "2026-05-05_10-35-23"
 }

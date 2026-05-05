@@ -3,7 +3,7 @@
   "context": "docker/weather_app",
   "image": "paragon40/weather_app",
   "image2": "paragon40/weather_app:latest",
-  "tag": "9699433ccfe255aeeefa960c40967f2ce928c911-1777976037",
+  "tag": "fd47fdc8ba4635dd33fc87a2fb9d50b12036edb1-1777977321",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -14,10 +14,10 @@
   "livePath": "/live",
   "volumes_enabled": true,
   "tmp_enabled": true,
-  "tmp_volume": "edgepaas_vol",
-  "mount_vol": "edgepaas_mnt",
+  "tmp_volume": "edgepaas-vol",
+  "mount_vol": "edgepaas-mnt",
   "mount_path": "/tmp",
   "NO_VARS": false,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-05_10-13-57"
+  "CREATED_AT": "2026-05-05_10-35-21"
 }

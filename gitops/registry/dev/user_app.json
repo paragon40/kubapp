@@ -3,7 +3,7 @@
   "context": "docker/user_app",
   "image": "paragon40/user_app",
   "image2": "paragon40/user_app:latest",
-  "tag": "9699433ccfe255aeeefa960c40967f2ce928c911-1777976038",
+  "tag": "fd47fdc8ba4635dd33fc87a2fb9d50b12036edb1-1777977314",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -14,10 +14,10 @@
   "livePath": "/live",
   "volumes_enabled": true,
   "tmp_enabled": true,
-  "tmp_volume": "user_volume",
-  "mount_vol": "user_mnt",
+  "tmp_volume": "user-volume",
+  "mount_vol": "user-mnt",
   "mount_path": "/data",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-05_10-13-58"
+  "CREATED_AT": "2026-05-05_10-35-14"
 }
