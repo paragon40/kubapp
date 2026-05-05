@@ -32,7 +32,7 @@ CONTAINER_UID=$(jq -r '.containerUid // 10001' "$ARTIFACT_FILE")
 HEALTH=$(jq -r '.healthPath // "/health"' "$ARTIFACT_FILE")
 LIVE=$(jq -r '.livePath // "/live"' "$ARTIFACT_FILE")
 BASE=$(jq -r '.basePath // ""' "$ARTIFACT_FILE")
-TMP_VOL=$(jq -r '.temp_vol // ""' "$ARTIFACT_FILE")
+TMP_VOL=$(jq -r '.tem_volume // ""' "$ARTIFACT_FILE")
 MNT_VOL=$(jq -r '.mount_vol // ""' "$ARTIFACT_FILE")
 MNT_PATH=$(jq -r '.mount_path // ""' "$ARTIFACT_FILE")
 VOLUMES_ENABLED=$(jq -r '.volumes_enabled // false' "$ARTIFACT_FILE")
@@ -126,6 +126,9 @@ EOF
 echo "Checks for $SERVICE volume config.."
 echo "tmp_enabled: $TMP_ENABLED"
 echo "vol_enabled: $VOLUMES_ENABLED"
+echo "Temp Vol: $TMP_VOL"
+echo "Mount Vol: $MNT_VOL"
+echo "Mount Path: $MNT_PATH"
 
 if [[ "$TMP_ENABLED" == "true" && -n "$TMP_VOL" && -n "$MNT_VOL" && -n "$MNT_PATH" ]]; then
 cat >> /tmp/static-values.yaml <<EOF
