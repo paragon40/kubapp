@@ -16,11 +16,11 @@ deploy:
 
 storage:
   volumes:
-    - name: user_volume
+    - name: user-volume
       emptyDir: {}
 
   volumeMounts:
-    - name: user_mnt
+    - name: user-mnt
       mountPath: /data
 
 features:

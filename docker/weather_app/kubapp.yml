@@ -22,11 +22,11 @@ runtime:
 
 storage:
   volumes:
-    - name: edgepaas_vol
+    - name: edgepaas-vol
       emptyDir: {}
 
   volumeMounts:
-    - name: edgepaas_mnt
+    - name: edgepaas-mnt
       mountPath: /tmp
 
 features:
