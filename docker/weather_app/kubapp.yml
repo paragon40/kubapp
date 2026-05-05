@@ -15,7 +15,7 @@ deploy:
 
 runtime:
   env:
-    DATABASE_URL: postgresql://kubuser:kubpassword@postgres:5432/kubappp
+    DATABASE_URL: postgresql://kubuser:kubpassword@postgres:5432/kubapp
     USE_SQLITE: "true"
     BOTH_DB: "true"
     RUN_MIGRATIONS: "true"
