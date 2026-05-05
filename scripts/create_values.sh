@@ -152,7 +152,8 @@ if [[ -f "$TARGET_FILE" ]]; then
 
   # safer merge: preserve runtime-managed sections
   yq eval-all '
-    select(fileIndex == 0) * select(fileIndex == 1)
+    select(fileIndex == 0) * select(fileIndex == 1) |
+    . as $item ireduce ({}; . *+ $item)
   ' "$TARGET_FILE" /tmp/static-values.yaml > /tmp/merged.yaml
 
   mv /tmp/merged.yaml "$TARGET_FILE"
