@@ -30,7 +30,7 @@ IMAGE=$(yq e '.image.repository' "$FILE")
 TAG=$(yq e '.image.tag' "$FILE")
 PORT=$(yq e '.service.targetPort' "$FILE")
 
-EXPECTED_FP=$(yq e '.meta.fingerprint' "$FILE")
+EXPECTED_FP=$(yq e '.meta.staticFingerprint' "$FILE")
 
 COMPUTED_FP=$(echo -n "$SERVICE_NAME|$TAG|$ENV|$PORT" | sha256sum | awk '{print $1}')
 

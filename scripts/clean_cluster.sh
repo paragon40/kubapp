@@ -3,7 +3,8 @@ set -euo pipefail
 
 REGION="${AWS_REGION:-us-east-1}"
 TF_CREATED_NS=${TF_CREATED_NS:-()}
-eval "TF_CREATED_NS=$TF_CREATED_NS"
+# eval "TF_CREATED_NS=$TF_CREATED_NS"
+IFS=' ' read -r -a TF_CREATED_NS <<< "$TF_CREATED_NS"
 
 echo "======================================"
 echo " Kubernetes SAFE CLEANUP START"
@@ -54,8 +55,8 @@ for ns in $ALL_NS; do
   echo ">> Cleaning namespace: $ns"
 
   if [[ "$ns" == "ingress" ]]; then
-    echo "Ensure ingress particularly is deleted to avoid lb madness"
-    kubectl delete ns "$n"
+    echo "Ensuring ingress particularly is deleted to avoid lb madness..."
+    kubectl delete ns "$ns"
     kubectl get ingress -A > ingress.txt
     echo "Show Result"
     cat ingress.txt
