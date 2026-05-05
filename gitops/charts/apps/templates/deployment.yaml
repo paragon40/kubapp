@@ -17,6 +17,12 @@ spec:
         app: {{ .Values.appName }}
 
     spec:
+      {{- if .Values.storage }}
+      {{- if .Values.storage.volumes }}
+      volumes:
+{{ toYaml .Values.storage.volumes | indent 6 }}
+      {{- end }}
+      {{- end }}
       securityContext:
         runAsNonRoot: {{ .Values.securityContext.pod.runAsNonRoot }}
         seccompProfile:
@@ -24,6 +30,13 @@ spec:
 
       containers:
         - name: {{ .Values.appName }}
+      {{- if .Values.storage }}
+          volumeMounts:
+      {{- if .Values.storage.volumeMounts }}
+      {{ toYaml .Values.storage.volumeMounts | indent 12 }}
+      {{- end }}
+      {{- end }}
+
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
 
@@ -66,3 +79,4 @@ spec:
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+
