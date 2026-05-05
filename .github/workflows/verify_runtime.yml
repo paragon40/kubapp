@@ -24,15 +24,27 @@ jobs:
           app_id: ${{ secrets.APP_ID_GITHUB }}
           private_key: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
 
-      ####################################################
-      # CHECKOUT
-      ####################################################
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           repository: paragon40/kubapp
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
+
+      - name: Setup kubeconfig
+        run: |
+          set -e
+
+          aws eks update-kubeconfig \
+            --region ${{ secrets.AWS_REGION }} \
+            --name kubapp-dev
+
+          export KUBECONFIG=~/.kube/config
+
+          echo "✅ kubeconfig created"
+
+          kubectl cluster-info
+
 
       ####################################################
       # INSTALL TOOLS
