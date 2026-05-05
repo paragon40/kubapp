@@ -126,13 +126,14 @@ EOF
 if [[ "$TMP_ENABLED" == "true" && -n "$TMP_VOL" && -n "$MNT_VOL" && -n "$MNT_PATH" ]]; then
 cat >> /tmp/static-values.yaml <<EOF
 
-volumes:
-  - name: ${TMP_VOL}
-    emptyDir: {}
+storage:
+  volumes:
+    - name: ${TMP_VOL}
+      emptyDir: {}
 
-volumeMounts:
-  - name: ${MNT_VOL}
-    mountPath: ${MNT_PATH}
+  volumeMounts:
+    - name: ${MNT_VOL}
+      mountPath: ${MNT_PATH}
 EOF
 fi
 
