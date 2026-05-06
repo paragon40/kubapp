@@ -3,7 +3,7 @@
   "context": "docker/chat_bot",
   "image": "paragon40/chat_bot",
   "image2": "paragon40/chat_bot:latest",
-  "tag": "e3095da04e72baa9e5b851d679d75ec4d87a0f25-1778058732",
+  "tag": "ff0299cd230580b282a14f7cbfcf8b8291ea24a3-1778059233",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -19,5 +19,5 @@
   "mount_path": "/data",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-06_09-12-12"
+  "CREATED_AT": "2026-05-06_09-20-33"
 }
