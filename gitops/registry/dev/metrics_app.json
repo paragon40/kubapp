@@ -3,7 +3,7 @@
   "context": "docker/metrics_app",
   "image": "paragon40/metrics_app",
   "image2": "paragon40/metrics_app:latest",
-  "tag": "c3a9c703fc6901e959d1ad16fc83a7b9ab7dc973-1778072732",
+  "tag": "f989682fd030e7d6f9676ad77dc9c0e4c417d8eb-1778080414",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -12,12 +12,12 @@
   "basePath": "/",
   "healthPath": "/health",
   "livePath": "/live",
-  "volumes_enabled": false,
-  "tmp_enabled": false,
-  "tmp_volume": "metrics",
-  "mount_vol": "metruc",
+  "volumes_enabled": true,
+  "tmp_enabled": true,
+  "tmp_volume": "vol-metrics",
+  "mount_vol": "mount-metrics",
   "mount_path": "/data",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-06_13-05-32"
+  "CREATED_AT": "2026-05-06_15-13-34"
 }
