@@ -73,11 +73,15 @@ jobs:
           CURRENT_RUN_ID="${{ github.event.workflow_run.id }}"
           STATE_RUN_ID=$(jq -r '.run_id' gitops/state/current.json)
           STATE_TS=$(jq -r '.timestamp' gitops/state/current.json)
-
+          WORKFLOW="${{ github.event_name }}"
           if [[ "$STATE_RUN_ID" != "$CURRENT_RUN_ID" ]]; then
-            echo "⚠️ State file is stale or from another run"
-            echo "State: $STATE_RUN_ID | Current: $CURRENT_RUN_ID"
-            exit 1
+            if [[ "$WORKFLOW" == 'workflow_dispatch' ]]; then
+              echo "Manual trigger detected — skipping stale check"
+            else
+              echo "⚠️ State file is stale or from another run"
+              echo "State: $STATE_RUN_ID | Current: $CURRENT_RUN_ID"
+              exit 1
+            fi
           fi
 
           MAX_AGE=12000
