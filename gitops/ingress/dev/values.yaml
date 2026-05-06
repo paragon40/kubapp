@@ -14,13 +14,7 @@ ingress:
       - HTTPS: 443
     group: kubapp-shared
 services:
-  - name: user
-    enabled: true
-    port: 80
   - name: weather
-    enabled: true
-    port: 80
-  - name: nodejsapp
     enabled: true
     port: 80
   - name: urlshortener
