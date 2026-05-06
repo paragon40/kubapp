@@ -35,6 +35,11 @@ fi
 [[ -n "$DOMAIN" ]] || { echo "❌ DOMAIN required"; exit 1; }
 [[ -n "$CERT_ARN" ]] || { echo "❌ CERT_ARN required"; exit 1; }
 [[ -f "$VALUES_FILE" ]] || { echo "❌ $VALUES_FILE Does NOT exist"; exit 1; }
+export SERVICE_NAME="$SERVICE_NAME"
+export PORT="$PORT"
+export DOMAIN="$DOMAIN"
+export CERT_ARN="$CERT_ARN"
+export ENV="$ENV"
 
 [[ "$PORT" =~ ^[0-9]+$ && "$PORT" -ge 1 && "$PORT" -le 65535 ]] || {
   echo "❌ Invalid PORT: $PORT"
@@ -75,9 +80,9 @@ cp "$VALUES_FILE" "$TMP_FILE"
 # INGRESS DYNAMIC CONFIGURATION
 # -------------------------------
 yq e -i '
-  .ingress.baseDomain = env(DOMAIN)
-  | .ingress.certificateArn = env(CERT_ARN)
-  | .ingress.name = (.ingress.name // ("kubapp-" + env(ENV) + "-alb"))
+  .ingress.baseDomain = strenv(DOMAIN)
+  | .ingress.certificateArn = strenv(CERT_ARN)
+  | .ingress.name = (.ingress.name // ("kubapp-" + strenv(ENV) + "-alb"))
   | .ingress.className = (.ingress.className // "alb")
   | .ingress.enableSubdomainRouting = (.ingress.enableSubdomainRouting // true)
   | .ingress.annotations.listenPorts = [
@@ -175,33 +180,33 @@ validate_https_requirements() {
 # =========================================
 
 add_service() {
-  EXISTS=$(yq e ".services[] | select(.name == \"$SERVICE_NAME\")" "$TMP_FILE" | wc -l || true)
+  EXISTS=$(yq e ".services[] | select(.name == strenv(SERVICE_NAME)) | .name" "$TMP_FILE" | wc -l)
 
-  [[ "$EXISTS" -gt 0 ]] && {
+  if [[ "$EXISTS" -gt 0 ]]; then
     echo "Service already exists: $SERVICE_NAME"
     return 0
-  }
+  fi
 
   echo "Adding service: $SERVICE_NAME"
 
-  yq e -i ".services += [{
-    name: \"$SERVICE_NAME\",
-    port: $PORT,
-    enabled: true
-  }]" "$TMP_FILE"
+  yq e -i '.services += [{
+    "name": strenv(SERVICE_NAME),
+    "port": env(PORT),
+    "enabled": true
+  }]' "$TMP_FILE"
 }
 
 remove_service() {
-  EXISTS=$(yq e ".services[] | select(.name == \"$SERVICE_NAME\")" "$TMP_FILE" | wc -l || true)
+  EXISTS=$(yq e ".services[] | select(.name == strenv(SERVICE_NAME)) | .name" "$TMP_FILE" | wc -l)
 
-  [[ "$EXISTS" -eq 0 ]] && {
+  if [[ "$EXISTS" -eq 0 ]]; then
     echo "Service not found: $SERVICE_NAME"
     return 0
-  }
+  fi
 
   echo "Removing service: $SERVICE_NAME"
 
-  yq e -i ".services |= map(select(.name != \"$SERVICE_NAME\"))" "$TMP_FILE"
+  yq e -i '.services |= map(select(.name != strenv(SERVICE_NAME)))' "$TMP_FILE"
 }
 
 # =========================================
