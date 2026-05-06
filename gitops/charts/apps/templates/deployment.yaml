@@ -70,26 +70,29 @@ spec:
           {{- $r := .Values.probes.readiness }}
           readinessProbe:
             httpGet:
-              path: {{ $r.httpGet.path | default "/" }}
+              path: {{ (and $r.httpGet $r.httpGet.path) | default "/"  }}
               port: {{ (and $r.httpGet $r.httpGet.port) | default .Values.service.targetPort }}
             initialDelaySeconds: {{ $r.initialDelaySeconds }}
             periodSeconds: {{ $r.periodSeconds }}
           {{- end }}
 
           {{- if .Values.probes.liveness }}
+          {{- $l := .Values.probes.liveness }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.probes.liveness.path | default "/" }}
-              port: {{ default .Values.service.targetPort (dig "probes" "liveness" "httpGet" "port" .Values) }}
-            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+              path: {{ (and $l.httpGet $l.httpGet.path) | default "/" }}
+              port: {{ (and $l.httpGet $l.httpGet.port) | default .Values.service.targetPort }}
+            initialDelaySeconds: {{ $l.initialDelaySeconds }}
+            periodSeconds: {{ $l.periodSeconds }}
           {{- end }}
 
           {{- if .Values.probes.startup }}
+          {{- $s := .Values.probes.startup }}
           startupProbe:
             httpGet:
-              path: {{ .Values.probes.startup.path | default "/" }}
-              port: {{ default .Values.service.targetPort (dig "probes" "startup" "httpGet" "port" .Values) }}
-            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
-            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+              path: {{ (and $s.httpGet $s.httpGet.path) | default "/" }}
+              port: {{ (and $s.httpGet $s.httpGet.port) | default .Values.service.targetPort }}
+            failureThreshold: {{ $s.failureThreshold }}
+            periodSeconds: {{ $s.periodSeconds }}
           {{- end }}
+
