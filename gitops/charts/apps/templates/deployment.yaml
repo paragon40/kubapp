@@ -67,12 +67,13 @@ spec:
           {{- end }}
 
           {{- if .Values.probes.readiness }}
+          {{- $r := .Values.probes.readiness }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.probes.readiness.path | default "/" }}
-              port: {{ default .Values.service.targetPort (dig "probes" "liveness" "httpGet" "port" .Values) }}
-            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+              path: {{ $r.httpGet.path | default "/" }}
+              port: {{ (and $r.httpGet $r.httpGet.port) | default .Values.service.targetPort }}
+            initialDelaySeconds: {{ $r.initialDelaySeconds }}
+            periodSeconds: {{ $r.periodSeconds }}
           {{- end }}
 
           {{- if .Values.probes.liveness }}
