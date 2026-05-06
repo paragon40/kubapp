@@ -88,7 +88,7 @@ spec:
           startupProbe:
             httpGet:
               path: {{ .Values.probes.startup.path | default "/" }}
-              port: {{ .Values.probes.startup.httpGet.port | default .Values..service.targetPort }}
+              port: {{ .Values.probes.startup.httpGet.port | default .Values.service.targetPort }}
             initialDelaySeconds: {{ .Values.probes.startup.failureThreshold }}
             periodSeconds: {{ .Values.probes.startup.periodSeconds }}
           {{- end }}
