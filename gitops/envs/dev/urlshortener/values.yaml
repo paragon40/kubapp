@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: "paragon40/url_shortener"
-  tag: bd9563051dc75a5454a9d8f1d58ae3a828a46697-1778062984
+  tag: c3a9c703fc6901e959d1ad16fc83a7b9ab7dc973-1778072740
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -25,7 +25,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: d882d65204ed4afd42b1d002d2189eff2847433e8ecf57ebe372615ceae7d8b1
-  generatedAt: 2026-05-06T12:21:02Z
+  generatedAt: 2026-05-06T13:07:23Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 securityContext:

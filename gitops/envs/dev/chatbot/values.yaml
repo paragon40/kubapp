@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: paragon40/chat_bot
-  tag: bd9563051dc75a5454a9d8f1d58ae3a828a46697-1778062978
+  tag: c3a9c703fc6901e959d1ad16fc83a7b9ab7dc973-1778072738
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -56,7 +56,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: def604b97c2b41f7538b782a321adfea6b59beeaa3d9e1510c30e813586f6823
-  generatedAt: 2026-05-06T12:21:02Z
+  generatedAt: 2026-05-06T13:07:24Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
