@@ -17,9 +17,6 @@ services:
   - name: user
     enabled: true
     port: 80
-  - name: admin
-    enabled: true
-    port: 80
   - name: weather
     enabled: true
     port: 80
