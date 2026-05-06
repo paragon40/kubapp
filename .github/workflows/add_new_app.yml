@@ -15,8 +15,7 @@ on:
         type: choice
         options: [dev, prod]
 env:
-  STATE_FILE: "${{ gitops/state/current.json }}"
-  TMP_STATE: "${{ gitops/state/tf.json }}"
+  STATE_FILE: ${{ github.workspace }}/gitops/state/current.json
 
 permissions:
   id-token: write
