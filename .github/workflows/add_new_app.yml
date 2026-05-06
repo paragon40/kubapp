@@ -51,16 +51,6 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Debug workflow run
-        run: |
-          ENV="${{ env.ENV }}"
-          echo "Run ID: ${{ github.event.workflow_run.id }}"
-          echo "Repo: ${{ github.repository }}"
-          echo "Environment: $ENV"
-          echo "YAML ENV: ${{ env.ENV }}"
-          echo "Shell ENV: $ENV"
-          echo  "TF_STATE FILE: ${{ env.TMP_STATE }}"
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
@@ -155,7 +145,7 @@ jobs:
           else
             echo "System Not Already running, going test mode to ensure workflow s updated"
             echo "Retriving Test cert"
-            bash ../../scripts/get_cert.sh
+            bash ../../scripts/get_cert.sh "$DOMAIN"
           fi
           echo "CERT Found: $CERT_ARN"
           echo "CERT_ARN=$CERT_ARN" >> $GITHUB_ENV
