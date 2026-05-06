@@ -14,6 +14,9 @@ on:
         default: dev
         type: choice
         options: [dev, prod]
+env:
+  STATE_FILE: "${{ gitops/state/current.json }}"
+  TMP_STATE: "${{ gitops/state/tf.json }}"
 
 permissions:
   id-token: write
@@ -49,6 +52,16 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
+      - name: Debug workflow run
+        run: |
+          ENV="${{ env.ENV }}"
+          echo "Run ID: ${{ github.event.workflow_run.id }}"
+          echo "Repo: ${{ github.repository }}"
+          echo "Environment: $ENV"
+          echo "YAML ENV: ${{ env.ENV }}"
+          echo "Shell ENV: $ENV"
+          echo  "TF_STATE FILE: ${{ env.TMP_STATE }}"
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
@@ -60,7 +73,7 @@ jobs:
 
       - name: Get Current Env
         run: |
-          STATE_FILE="gitops/state/current.json"
+          STATE_FILE="${{ env.STATE_FILE }}"
           if [[ ! -f "$STATE_FILE" || ! -s "$STATE_FILE" ]]; then
             echo "❌ State File: $STATE_FILE is Missing or Empty. Cannot Decipher the appropriate ENV to update"
             exit 1
@@ -128,26 +141,24 @@ jobs:
           echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
           chmod 600 ~/.config/sops/age/keys.txt
 
-      - name: Debug workflow run
-        run: |
-          ENV="${{ env.ENV }}"
-          echo "Run ID: ${{ github.event.workflow_run.id }}"
-          echo "Repo: ${{ github.repository }}"
-          echo "Environment: $ENV"
-          echo "YAML ENV: ${{ env.ENV }}"
-          echo "Shell ENV: $ENV"
-
       - name: Get Cert Arn From Terraform
         working-directory: iac/infra
         run: |
           set -euo pipefail
           ENV="${{ env.ENV }}"
-          terraform init -reconfigure -backend-config="envs/$ENV/backend.hcl"
-          CERT_ARN=$(terraform output -raw main_cert_arn)
-          if [[ -z "$CERT_ARN" ]]; then
-            echo "❌ Arn Certificate Not Retrieved from terraform"
-            exit 1
+          DOMAIN="${{ secrets.TEST_DOMAIN }}"
+          if terraform init -reconfigure -backend-config="envs/$ENV/backend.hcl"; then
+            CERT_ARN=$(terraform output -raw main_cert_arn)
+            if [[ -z "$CERT_ARN" ]]; then
+              echo "❌ Arn Certificate Not Retrieved from terraform"
+              exit 1
+            fi
+          else
+            echo "System Not Already running, going test mode to ensure workflow s updated"
+            echo "Retriving Test cert"
+            bash scripts/get_cert.sh
           fi
+          echo "CERT Found: $CERT_ARN"
           echo "CERT_ARN=$CERT_ARN" >> $GITHUB_ENV
 
       - name: Create values + inject vars + ingress registration

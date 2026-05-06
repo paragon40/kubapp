@@ -97,6 +97,9 @@ def live():
 def ready():
     return {"status": "ready"}
 
+@router.get("/favicon.ico")
+def fav():
+    return {"status": "ok"}
 
 # -----------------------------
 # SIMULATION (HTML OUTPUT)
