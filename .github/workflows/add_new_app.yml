@@ -155,7 +155,7 @@ jobs:
           else
             echo "System Not Already running, going test mode to ensure workflow s updated"
             echo "Retriving Test cert"
-            bash scripts/get_cert.sh
+            bash ../../scripts/get_cert.sh
           fi
           echo "CERT Found: $CERT_ARN"
           echo "CERT_ARN=$CERT_ARN" >> $GITHUB_ENV

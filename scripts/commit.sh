@@ -141,7 +141,7 @@ for i in {1..3}; do
     cp -r "$TMP_DIR/gitops/"* gitops/ || true
 
     git add .
-    git commit -m "CI recovery commit" || true
+    git commit -m "[$TS] CI recovery commit" || true
 
     if git push origin HEAD:$BRANCH; then
       echo "✅ Push succeeded after recovery"
