@@ -37,15 +37,20 @@ securityContext:
     capabilities:
       drop:
         - ALL
+
 probes:
   readiness:
     path: /health
+    port: 8080
     initialDelaySeconds: 5
     periodSeconds: 10
+
   liveness:
     path: /live
+    port: 8080
     initialDelaySeconds: 10
     periodSeconds: 15
+
 storage:
   volumes:
     - name: edgepaas-vol

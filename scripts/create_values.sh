@@ -104,17 +104,23 @@ securityContext:
 
 probes:
   readiness:
-    path: ${HEALTH}
+    httpGet:
+      path: ${HEALTH}
+      port: ${PORT}
     initialDelaySeconds: 5
     periodSeconds: 10
 
   liveness:
-    path: ${LIVE}
+    httpGet:
+      path: ${LIVE}
+      port: ${PORT}
     initialDelaySeconds: 10
     periodSeconds: 15
 
   startup:
-    path: ${HEALTH}
+    httpGet:
+      path: ${HEALTH}
+      port: ${PORT}
     failureThreshold: 30
     periodSeconds: 5
 
