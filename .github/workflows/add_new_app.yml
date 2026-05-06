@@ -22,7 +22,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: add-new-app
+  group: using-commit
   cancel-in-progress: false
 
 jobs:

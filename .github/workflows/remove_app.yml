@@ -3,7 +3,8 @@ name: Remove App
 on:
   workflow_dispatch:
     inputs:
-      service:
+      services:
+        description: "Comma or space separated services "
         required: true
       env:
         description: Environment
@@ -15,10 +16,66 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: using-commit
+  cancel-in-progress: false
+
 jobs:
   remove:
-    uses: ./.github/workflows/runner.yml
-    with:
-      script: scripts/remove_app.sh
-      args: "${{ inputs.service }} ${{ inputs.env }}"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+          # install yq
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh
+
+      - name: Remove services (loop)
+        run: |
+          set -euo pipefail
+
+          ENV="${{ inputs.env }}"
+          RAW="${{ inputs.services }}"
+
+          echo "ENV: $ENV"
+          echo "INPUT SERVICES: $RAW"
+
+          # normalize input (comma → space; no dublipcate)
+          [[ -n "$RAW" ]] || { echo "❌ services input empty"; exit 1; }
+          SERVICES=$(echo "$RAW" | tr ',' ' ' | xargs -n1 | sort -u | xargs)
+          [[ -n "$SERVICES" ]] || { echo "❌ no valid services after parsing"; exit 1; }
+
+          for svc in $SERVICES; do
+            echo "---------------------------------"
+            echo "Removing service: $svc"
+            echo "---------------------------------"
+
+            bash scripts/remove_app.sh "$svc" "$ENV"
+          done
+
+      - name: Validate GitOps
+        run: bash scripts/validate_gitops.sh
+
+      - name: Commit changes
+        run: |
+          set -euo pipefail
+          DIR="gitops"
+          MSG="[REMOVE]: services (${{ inputs.services }}) in ${{ inputs.env }}"
+          bash scripts/commit.sh "$DIR" "$MSG"
+
+      - name: Confirm Failute
+        if: failure()
+        run: |
+          echo "❌ Workflow Didnt Complete.."
+
 

@@ -305,6 +305,9 @@ jobs:
   commit:
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: using-commit
+      cancel-in-progress: false
 
     steps:
       - name: Generate GitHub App token
@@ -451,3 +454,4 @@ jobs:
       - name: finally
         run: |
           echo "✅ Build Finished"
+
