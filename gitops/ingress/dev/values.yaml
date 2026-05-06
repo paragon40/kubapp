@@ -4,7 +4,7 @@ ingress:
   className: alb
   baseDomain: rundailytest.online
   enableSubdomainRouting: true
-  certificateArn: arn:aws:acm:us-east-1:198200019771:certificate/4be5e107-d195-4274-8226-701c8c712279
+  certificateArn: arn:aws:acm:us-east-1:198200019771:certificate/a98757d4-69b3-4a6b-a01e-407622169dcc
   annotations:
     scheme: internet-facing
     targetType: ip
@@ -29,3 +29,9 @@ services:
   - name: urlshortener
     enabled: true
     port: 80
+  - name: metrics
+    port: 80
+    enabled: true
+  - name: chatbot
+    port: 80
+    enabled: true

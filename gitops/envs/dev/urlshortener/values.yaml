@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: "paragon40/url_shortener"
-  tag: fd47fdc8ba4635dd33fc87a2fb9d50b12036edb1-1777977323
+  tag: bd9563051dc75a5454a9d8f1d58ae3a828a46697-1778062984
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -12,17 +12,20 @@ service:
 resources:
   requests:
     cpu: 100m
+    memory: 128Mi
   limits:
     cpu: 300m
+    memory: 256Mi
 env: {}
 hpa:
   enabled: false
   minReplicas: 1
   maxReplicas: 2
   cpu: 70
+  memory: 70
 meta:
   staticFingerprint: d882d65204ed4afd42b1d002d2189eff2847433e8ecf57ebe372615ceae7d8b1
-  generatedAt: 2026-05-05T10:36:49Z
+  generatedAt: 2026-05-06T12:21:02Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 securityContext:
@@ -42,10 +45,22 @@ probes:
     path: /api/health
     initialDelaySeconds: 5
     periodSeconds: 10
+    httpGet:
+      path: /api/health
+      port: 3000
   liveness:
     path: /api/live
     initialDelaySeconds: 10
     periodSeconds: 15
+    httpGet:
+      path: /api/live
+      port: 3000
+  startup:
+    httpGet:
+      path: /api/health
+      port: 3000
+    failureThreshold: 30
+    periodSeconds: 5
 storage:
   volumes:
     - name: urlshortener-volume

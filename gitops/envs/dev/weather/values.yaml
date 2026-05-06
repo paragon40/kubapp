@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: "paragon40/weather_app"
-  tag: fd47fdc8ba4635dd33fc87a2fb9d50b12036edb1-1777977321
+  tag: bd9563051dc75a5454a9d8f1d58ae3a828a46697-1778062983
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -12,17 +12,20 @@ service:
 resources:
   requests:
     cpu: 100m
+    memory: 128Mi
   limits:
     cpu: 300m
+    memory: 256Mi
 env: {}
 hpa:
   enabled: false
   minReplicas: 1
   maxReplicas: 2
   cpu: 70
+  memory: 70
 meta:
   staticFingerprint: 033053f9f27634740e5344868cde3d60024926bbe12bba243690b82a33dec19c
-  generatedAt: 2026-05-05T10:36:49Z
+  generatedAt: 2026-05-06T12:21:02Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 securityContext:
@@ -37,20 +40,29 @@ securityContext:
     capabilities:
       drop:
         - ALL
-
 probes:
   readiness:
     path: /health
     port: 8080
     initialDelaySeconds: 5
     periodSeconds: 10
-
+    httpGet:
+      path: /health
+      port: 80
   liveness:
     path: /live
     port: 8080
     initialDelaySeconds: 10
     periodSeconds: 15
-
+    httpGet:
+      path: /live
+      port: 80
+  startup:
+    httpGet:
+      path: /health
+      port: 80
+    failureThreshold: 30
+    periodSeconds: 5
 storage:
   volumes:
     - name: edgepaas-vol
