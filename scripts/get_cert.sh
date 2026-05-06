@@ -70,5 +70,5 @@ fi
 
 echo "✅ DOMAIN EXISTS IN ACM: $DOMAIN"
 echo "CERTIFICATE ARN:"
-echo "$FOUND"
+echo "CERT_ARN=$FOUND"
 # export CERT_ARN="$FOUND"
