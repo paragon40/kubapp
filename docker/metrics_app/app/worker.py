@@ -7,13 +7,14 @@ def run():
     while True:
         time.sleep(random.randint(2, 5))
 
-        logger.logger.info(
+        logger.stdout_logger.info(
             "background task",
-            extra={
-                "extra_data": {
-                    "status": random.choice(["ok", "fail"])
-                }
-            }
+            extra={"extra_data": {"status": "ok"}}
+        )
+
+        logger.file_logger.info(
+            "background task",
+            extra={"extra_data": {"status": "ok"}}
         )
 
 def start():

@@ -9,7 +9,6 @@ import uuid
 
 router = APIRouter()
 
-
 # -----------------------------
 # UI (NO JINJA - PURE HTML)
 # -----------------------------
@@ -104,16 +103,13 @@ def fav():
 # -----------------------------
 # SIMULATION (HTML OUTPUT)
 # -----------------------------
-@router.get("/simulate", response_class=HTMLResponse)
+@router.get("/simulate")
 def simulate(load: int = 10, error_rate: float = 0.2, delay: float = 0.1):
-
     endpoint = "/simulate"
     metrics.ACTIVE.inc()
     start = time.time()
 
     request_id = str(uuid.uuid4())
-
-    results = []
 
     try:
         for i in range(load):
@@ -127,24 +123,23 @@ def simulate(load: int = 10, error_rate: float = 0.2, delay: float = 0.1):
                 "error": is_error
             }
 
+            # -------------------------
+            # STDOUT (FLUENT BIT)
+            # -------------------------
             if is_error:
-                logger.logger.error("simulated error", extra={"extra_data": data})
-                metrics.ERRORS.labels(endpoint=endpoint).inc()
-                results.append(f"<li>❌ ERROR iteration {i}</li>")
+                logger.stdout_logger.error("error event", extra={"extra_data": data})
             else:
-                logger.logger.info("processed", extra={"extra_data": data})
-                results.append(f"<li>✅ OK iteration {i}</li>")
+                logger.stdout_logger.info("processed event", extra={"extra_data": data})
 
-        return f"""
-        <h3>Simulation Result</h3>
-        <ul>
-            {''.join(results)}
-        </ul>
-        """
+            # -------------------------
+            # FILE LOG (/data mount)
+            # -------------------------
+            logger.file_logger.info("file log event", extra={"extra_data": data})
+
+        return {"status": "done", "load": load}
 
     finally:
         duration = time.time() - start
         metrics.REQUESTS.labels(endpoint=endpoint).inc()
         metrics.LATENCY.labels(endpoint=endpoint).observe(duration)
         metrics.ACTIVE.dec()
-

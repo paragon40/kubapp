@@ -16,16 +16,16 @@ deploy:
 
 storage:
   volumes:
-    - name: metrics
+    - name: vol-metrics
       emptyDir: {}
 
   volumeMounts:
-    - name: metruc
+    - name: mount-metrics
       mountPath: /data
 
 features:
   topVolume:
-    enabled: false
+    enabled: true
   tmp:
-    enabled: false
+    enabled: true
 
