@@ -1,6 +1,3 @@
-locals {
-  oidc_provider = replace(var.oidc_provider_url, "https://", "")
-}
 
 resource "aws_iam_policy" "efs_csi_policy" {
   name = "${var.cluster_name}-EFSCSIDriverPolicy"

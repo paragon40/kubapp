@@ -178,34 +178,74 @@ resource "helm_release" "efs_csi" {
   ]
 }
 
+
 resource "helm_release" "fluentbit" {
   name      = "fluent-bit"
   namespace = "kube-system"
 
   repository = "https://fluent.github.io/helm-charts"
   chart      = "fluent-bit"
+  version    = "0.47.0"
 
-  version         = "0.47.0"
   timeout         = 1200
   wait            = true
   cleanup_on_fail = true
 
   values = [
     yamlencode({
-      cloudWatch = {
-        enabled         = true
-        region          = var.region
-        logGroupName    = local.app_logs
-        logStreamPrefix = "fluentbit"
-      },
+
       serviceAccount = {
         create = false
         name   = "fluent-bit"
-      },
+      }
+
       nodeSelector = {
         "eks.amazonaws.com/compute-type" = "ec2"
-      },
+      }
+
       podLabels = local.logs_labels
+
+      config = {
+
+        service = <<-EOF
+          [SERVICE]
+              Flush         1
+              Daemon        Off
+              Log_Level     info
+              Parsers_File  parsers.conf
+        EOF
+
+        inputs = <<-EOF
+          [INPUT]
+              Name              tail
+              Path              /var/log/containers/*.log
+              Parser            cri
+              Tag               kube.*
+              Refresh_Interval  5
+              Mem_Buf_Limit     50MB
+              Skip_Long_Lines   On
+        EOF
+
+        filters = <<-EOF
+          [FILTER]
+              Name                kubernetes
+              Match               kube.*
+              Merge_Log           On
+              Keep_Log            Off
+              K8S-Logging.Parser  On
+              K8S-Logging.Exclude Off
+        EOF
+
+        outputs = <<-EOF
+          [OUTPUT]
+              Name                cloudwatch_logs
+              Match               kube.*
+              region              ${var.region}
+              log_group_name      ${local.app_logs}
+              log_stream_prefix   kubernetes-
+              auto_create_group   true
+        EOF
+      }
     })
   ]
 
@@ -215,54 +255,127 @@ resource "helm_release" "fluentbit" {
   ]
 }
 
-#resource "helm_release" "kube_prometheus_stack" {
-#  name      = "kube-prometheus-stack"
-#  namespace = kubernetes_namespace_v1.this["monitoring"].metadata[0].name
 
-#  repository = "https://prometheus-community.github.io/helm-charts"
-#  chart      = "kube-prometheus-stack"
+resource "helm_release" "kube_prometheus_stack" {
+  name      = "kube-prometheus-stack"
+  namespace = kubernetes_namespace_v1.this["monitoring"].metadata[0].name
 
-#  version = "58.0.0"
-#  timeout = 2000
-#  wait    = true
-#  cleanup_on_fail = true
+  repository = "https://prometheus-community.github.io/helm-charts"
+  chart      = "kube-prometheus-stack"
+  version    = "58.0.0"
 
-#  values = [
-#    yamlencode({
-#      global = {
-#        podLabels = local.monitoring_labels
-#      }
-#      grafana = {
-#        service = {
-#          type = "LoadBalancer"
-#        }
-#        podLabels = local.monitoring_labels
-#      }
-#      prometheus = {
-#        prometheusSpec = {
-#          podMetadata = {
-#            labels = local.monitoring_labels
-#          }
-#        }
-#      }
+  timeout         = 2000
+  wait            = true
+  cleanup_on_fail = true
 
-#      alertmanager = {
-#        alertmanagerSpec = {
-#          podMetadata = {
-#            labels = local.monitoring_labels
-#          }
-#        }
-#      }
-#      nodeSelector = {
-#        "eks.amazonaws.com/compute-type" = "ec2"
-#      }
-#    })
-#  ]
+  values = [
+    yamlencode({
 
-#  depends_on = [
-#    helm_release.efs_csi,
-#    helm_release.fluentbit,
-#    helm_release.argocd,
-#    kubernetes_namespace_v1.monitoring
-#  ]
-#}
+      global = {
+        podLabels = local.monitoring_labels
+      }
+
+      # GRAFANA
+      grafana = {
+        admin = {
+          existingSecret = "grafana-admin"
+          userKey        = "admin-user"
+          passwordKey    = "admin-password"
+        }
+
+        grafana.ini = {
+          auth.anonymous = {
+            enabled  = true
+            org_role = "Admin"
+          }
+        }
+
+        service = {
+          type = "LoadBalancer"
+        }
+
+        persistence = {
+          enabled      = true
+          storageClass = kubernetes_storage_class.efs.metadata[0].name
+          accessModes  = ["ReadWriteMany"]
+          size         = "10Gi"
+        }
+
+        podLabels = local.monitoring_labels
+      }
+
+      # PROMETHEUS
+      ############################
+      prometheus = {
+        prometheusSpec = {
+
+          # HOW LONG METRICS LIVE
+          retention = "7d"
+
+          # HARD DISK LIMIT SAFETY NET
+          retentionSize = "15GB"
+
+          storageSpec = {
+            volumeClaimTemplate = {
+              spec = {
+                storageClassName = kubernetes_storage_class.efs.metadata[0].name
+                accessModes      = ["ReadWriteMany"]
+
+                resources = {
+                  requests = {
+                    storage = "20Gi"
+                  }
+                }
+              }
+            }
+          }
+
+          podMetadata = {
+            labels = local.monitoring_labels
+          }
+        }
+      }
+
+      # ALERTMANAGER
+      alertmanager = {
+        alertmanagerSpec = {
+
+          retention = "120h"
+
+          storage = {
+            volumeClaimTemplate = {
+              spec = {
+                storageClassName = kubernetes_storage_class.efs.metadata[0].name
+                accessModes      = ["ReadWriteMany"]
+
+                resources = {
+                  requests = {
+                    storage = "5Gi"
+                  }
+                }
+              }
+            }
+          }
+
+          podMetadata = {
+            labels = local.monitoring_labels
+          }
+        }
+      }
+
+      # NODE SELECTION
+      nodeSelector = {
+        "eks.amazonaws.com/compute-type" = "ec2"
+      }
+    })
+  ]
+
+  depends_on = [
+    helm_release.efs_csi,
+    helm_release.fluentbit,
+    helm_release.argocd,
+    kubernetes_namespace_v1.this["monitoring"]
+  ]
+}
+
+

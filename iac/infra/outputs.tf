@@ -3,6 +3,10 @@ output "lb_controller_role_arn" {
   value = module.iam_irsa.lb_controller_role_arn
 }
 
+output "app_pods_role_arn" {
+  value = module.iam_irsa.app_pods_role_arn
+}
+
 output "fluentbit_role_arn" {
   value = module.iam_irsa.fluentbit_role_arn
 }
@@ -21,24 +25,6 @@ output "efs_dns_name" {
 
 output "efs_security_group_id" {
   value = module.efs.efs_security_group_id
-}
-
-output "efs_user_app_ap_id" {
-  value = module.efs.efs_access_points["user"].id
-}
-
-output "efs_admin_app_ap_id" {
-  value = module.efs.efs_access_points["admin"].id
-}
-
-output "efs_monitoring_app_ap_id" {
-  value = module.efs.efs_access_points["monitoring"].id
-}
-
-output "efs_access_point_arns" {
-  value = {
-    for k, v in module.efs.efs_access_points : k => v.arn
-  }
 }
 
 output "vpc_id" {

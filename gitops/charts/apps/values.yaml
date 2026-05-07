@@ -53,3 +53,14 @@ probes:
     initialDelaySeconds: 10
     periodSeconds: 20
 
+serviceAccount:
+  create: true
+  name: default-sa
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456:role/defautl-role
+
+serviceMonitor:
+  enabled: false
+  path: /metrics
+  interval: 30s
+

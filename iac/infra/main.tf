@@ -166,16 +166,16 @@ module "logging" {
 module "efs" {
   source = "./modules/efs"
 
-  vpc_id            = module.network.vpc_id
-  vpc_cidr          = "10.0.0.0/16"
-  name_prefix       = local.name_prefix
-  cluster_name      = local.cluster_name
-  efs_access_points = local.efs_access_points
-  subnet_ids        = module.network.private_subnet_ids
+  vpc_id       = module.network.vpc_id
+  vpc_cidr     = "10.0.0.0/16"
+  name_prefix  = local.name_prefix
+  cluster_name = local.cluster_name
+  subnet_ids   = module.network.private_subnet_ids
   tags = merge(local.common_tags, {
     resource-type = "efs"
     layer         = "storage"
   })
+  #efs_access_points = local.efs_access_points
 }
 
 ############################################

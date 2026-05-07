@@ -48,6 +48,7 @@ for ns in $ALL_NS; do
   # skip terraform-managed namespaces
   for tf_ns in "${TF_CREATED_NS[@]}"; do
     if [[ "$ns" == "$tf_ns" ]]; then
+      echo "Skipping Terraform-managed Namespace: $tf_ns"
       continue 2
     fi
   done

@@ -23,10 +23,10 @@ variable "cluster_name" {
   type = string
 }
 
-variable "efs_access_points" {
-  type = map(object({
-    path = string
-    uid  = number
-    gid  = number
-  }))
-}
+#variable "efs_access_points" {
+#  type = map(object({
+#    path = string
+#    uid  = number
+#    gid  = number
+#  }))
+#}
