@@ -163,6 +163,7 @@ jobs:
             TMP_VOLUME=$(yq e '.storage.volumes[0].name // (strenv(SERVICE) + "-vol")' "$APP_FILE")
             MNT_VOL=$(yq e '.storage.volumeMounts[0].name // "tmp"' "$APP_FILE")
             MNT_PATH=$(yq e '.storage.volumeMounts[0].mountPath // "/tmp"' "$APP_FILE")
+            SVC_MONITOR_ENAB=$(yq e '.features.serviceMonitor.enabled // false' "$APP_FILE")
 
 
             VAR_COUNT=$(yq e '.runtime.env // {} | length' "$APP_FILE")
@@ -220,6 +221,7 @@ jobs:
             --arg health_path "$HEALTH_PATH" \
             --arg live_path "$LIVE_PATH" \
             --arg base_path "$BASE_PATH" \
+            --argjson svc_monitor_enab "$(jq -n "$SVC_MONITOR_ENAB")" \
             --argjson vol_enab "$(jq -n "$VOL_ENABLED")" \
             --argjson tmp_enab "$(jq -n "$TMP_ENABLED")" \
             --arg tmp_volume "$TMP_VOLUME" \
@@ -242,6 +244,7 @@ jobs:
               basePath: $base_path,
               healthPath: $health_path,
               livePath: $live_path,
+              svc_monitor_enabled: $svc_monitor_enab,
               volumes_enabled: $vol_enab,
               tmp_enabled: $tmp_enab,
               tmp_volume: $tmp_volume,

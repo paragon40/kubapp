@@ -2,10 +2,11 @@
 set -euo pipefail
 
 # =========================================================
-# STATIC VALUES BUILDER (GITOPS SAFE)
+# STATIC VALUES BUILDER
 # =========================================================
 
 ARTIFACT_FILE="${1:-}"
+ROLE_ARN="${IRSA_ARN:{IRSA_ARN}}"
 
 fail() {
   echo "❌ $1"
@@ -37,13 +38,19 @@ MNT_VOL=$(jq -r '.mount_vol // ""' "$ARTIFACT_FILE")
 MNT_PATH=$(jq -r '.mount_path // ""' "$ARTIFACT_FILE")
 VOLUMES_ENABLED=$(jq -r '.volumes_enabled // false' "$ARTIFACT_FILE")
 TMP_ENABLED=$(jq -r '.tmp_enabled // false' "$ARTIFACT_FILE")
+SVC_MONITOR_ENAB=$(jq -r '.svc_monitor_enabled // false' "$ARTIFACT_FILE")
 
-[[ -n "$SERVICE" && "$SERVICE" != "null" ]] || fail "Missing service"
-[[ -n "$ENV" && "$ENV" != "null" ]] || fail "Missing env"
-[[ -n "$NAMESPACE" && "$NAMESPACE" != "null" ]] || fail "Missing namespace"
-[[ -n "$PORT" && "$PORT" != "null" ]] || fail "Missing port"
-[[ -n "$IMAGE" && "$IMAGE" != "null" ]] || fail "Missing image"
-[[ -n "$TAG" && "$TAG" != "null" ]] || fail "Missing tag"
+ARR=("SERVICE" "ENV" "NAMESPACE" "ROLE_ARN" "PORT" "IMAGE" "TAG" "CONTAINER_UID" "HEALTH" "LIVE" "TMP_ENABLED" "VOLUMES_ENABLED" "SVC_MONITOR_ENAB")
+for var in "${ARR[@]}"; do
+  value="${!var}"
+
+  if [[ -z "$value" ]]; then
+    echo "❌ $var required"
+    exit 1
+  fi
+
+  export "$var=$value"
+done
 
 TARGET_DIR="gitops/envs/$ENV/$SERVICE"
 TARGET_FILE="$TARGET_DIR/values.yaml"
@@ -65,6 +72,16 @@ DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 cat > /tmp/static-values.yaml <<EOF
 appName: $SERVICE
 namespace: $NAMESPACE
+
+serviceAccount:
+  create: true
+  name: ${SERVICE}-sa
+  roleArn: $ROLE_ARN
+
+serviceMonitor:
+  enabled: $SVC_MONITOR_ENAB
+  path: /metrics
+  interval: 30s
 
 replicaCount: 2
 
