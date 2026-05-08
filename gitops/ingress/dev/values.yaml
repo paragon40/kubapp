@@ -17,12 +17,6 @@ services:
   - name: weather
     enabled: true
     port: 80
-  - name: urlshortener
-    enabled: true
-    port: 80
   - name: metrics
-    port: 80
-    enabled: true
-  - name: chatbot
     port: 80
     enabled: true
