@@ -40,6 +40,9 @@ resource "aws_iam_role" "efs_csi_role" {
         Condition = {
           StringLike = {
             "${local.oidc_provider}:sub" = "system:serviceaccount:kube-system:efs-csi-*"
+          }
+
+          StringEquals = {
             "${local.oidc_provider}:aud" = "sts.amazonaws.com"
           }
         }
