@@ -39,7 +39,8 @@ resource "aws_iam_role" "efs_csi_role" {
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
           StringLike = {
-            "${local.oidc_provider}:sub" = "system:serviceaccount:kube-system:efs-csi-*"
+            "${local.oidc_provider}:sub" = "system:serviceaccount:kube-system:efs-csi-controller-sa"
+            "${local.oidc_provider}:aud" = "sts.amazonaws.com"
           }
         }
       }
