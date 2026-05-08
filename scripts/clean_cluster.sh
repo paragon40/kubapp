@@ -45,14 +45,6 @@ for ns in $ALL_NS; do
       ;;
   esac
 
-  # skip terraform-managed namespaces
-  for tf_ns in "${TF_CREATED_NS[@]}"; do
-    if [[ "$ns" == "$tf_ns" ]]; then
-      echo "Skipping Terraform-managed Namespace: $tf_ns"
-      continue 2
-    fi
-  done
-
   echo ">> Cleaning namespace: $ns"
 
   if [[ "$ns" == "ingress" ]]; then
@@ -66,6 +58,15 @@ for ns in $ALL_NS; do
   kubectl delete all --all -n "$ns" --ignore-not-found || true
   kubectl delete ingress --all -n "$ns" --ignore-not-found || true
   kubectl delete pvc --all -n "$ns" --ignore-not-found || true
+
+  # skip terraform-managed namespaces
+  for tf_ns in "${TF_CREATED_NS[@]}"; do
+    if [[ "$ns" == "$tf_ns" ]]; then
+      echo "Skipping Terraform-managed Namespace: $tf_ns"
+      continue 2
+    fi
+  done
+
   kubectl delete ns "$ns" || true
 done
 
