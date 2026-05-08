@@ -44,6 +44,7 @@ resource "kubernetes_config_map_v1" "cluster_readiness" {
 resource "null_resource" "mark_cluster_ready" {
   depends_on = [
     helm_release.argocd,
+    helm_release.kube_prometheus_stack,
     kubernetes_config_map_v1.cluster_readiness
   ]
 
