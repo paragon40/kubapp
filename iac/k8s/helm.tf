@@ -283,8 +283,8 @@ resource "helm_release" "kube_prometheus_stack" {
           passwordKey    = "admin-password"
         }
 
-        grafana.ini = {
-          auth.anonymous = {
+        "grafana.ini" = {
+          "auth.anonymous" = {
             enabled  = true
             org_role = "Admin"
           }
