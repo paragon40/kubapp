@@ -6,7 +6,7 @@ set -euo pipefail
 # =========================================================
 
 ARTIFACT_FILE="${1:-}"
-ROLE_ARN="${IRSA_ARN:{$IRSA_ARN}}"
+ROLE_ARN="${IRSA_ARN:-}"
 
 fail() {
   echo "❌ $1"
