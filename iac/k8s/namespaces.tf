@@ -6,7 +6,14 @@ resource "kubernetes_namespace_v1" "this" {
 
     labels = merge(
       local.k8s_labels,
-      each.value,
+
+      {
+        component = each.value.component
+        workload  = each.value.workload
+      },
+
+      each.value.labels,
+
       {
         namespace = each.key
       }
