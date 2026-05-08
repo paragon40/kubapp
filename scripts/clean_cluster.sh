@@ -3,8 +3,8 @@ set -euo pipefail
 
 REGION="${AWS_REGION:-us-east-1}"
 TF_CREATED_NS=${TF_CREATED_NS:-()}
-# eval "TF_CREATED_NS=$TF_CREATED_NS"
-IFS=' ' read -r -a TF_CREATED_NS <<< "$TF_CREATED_NS"
+eval "TF_CREATED_NS=$TF_CREATED_NS"
+#IFS=' ' read -r -a TF_CREATED_NS <<< "$TF_CREATED_NS"
 
 echo "======================================"
 echo " Kubernetes SAFE CLEANUP START"

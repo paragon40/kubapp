@@ -15,4 +15,3 @@ resource "kubernetes_storage_class" "efs" {
   reclaim_policy      = "Retain"
   volume_binding_mode = "Immediate"
 }
-
