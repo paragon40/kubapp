@@ -1,17 +1,24 @@
-name: Remove App
+name: Remove Orphan Apps
 
 on:
   workflow_dispatch:
     inputs:
       services:
-        description: "Comma or space separated services "
-        required: true
+        description: "Optional manual override (leave empty for auto reconciliation)"
+        required: false
       env:
         description: Environment
         required: true
         default: dev
         type: choice
         options: [dev, prod]
+
+  push:
+    branches:
+      - main
+    paths:
+      - "envs/**"
+      - "gitops/ingress/**"
 
 permissions:
   contents: write
@@ -28,40 +35,100 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup dependencies
+      - name: Setup tools
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
 
-          # install yq
           wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
 
-      - name: Make scripts executable
-        run: chmod +x scripts/*.sh
-
-      - name: Remove services (loop)
+      - name: Safety checks
         run: |
           set -euo pipefail
 
-          ENV="${{ inputs.env }}"
-          RAW="${{ inputs.services }}"
+          ENV="${{ github.event.inputs.env || 'dev' }}"
 
-          echo "ENV: $ENV"
-          echo "INPUT SERVICES: $RAW"
+          echo "ENV=$ENV"
 
-          # normalize input (comma → space; no dublipcate)
-          [[ -n "$RAW" ]] || { echo "❌ services input empty"; exit 1; }
-          SERVICES=$(echo "$RAW" | tr ',' ' ' | xargs -n1 | sort -u | xargs)
-          [[ -n "$SERVICES" ]] || { echo "❌ no valid services after parsing"; exit 1; }
+          # HARD BLOCK PROD AUTO DELETION ON PUSH
+          if [[ "${{ github.event_name }}" == "push" && "$ENV" == "prod" ]]; then
+            echo "❌ PROD automatic cleanup blocked on push"
+            exit 1
+          fi
 
-          for svc in $SERVICES; do
-            echo "---------------------------------"
-            echo "Removing service: $svc"
-            echo "---------------------------------"
+      - name: Resolve mode
+        id: mode
+        run: |
+          if [[ "${{ github.event.inputs.services }}" != "" ]]; then
+            echo "mode=manual" >> $GITHUB_OUTPUT
+          else
+            echo "mode=auto" >> $GITHUB_OUTPUT
+          fi
 
-            bash scripts/remove_app.sh "$svc" "$ENV"
+      # RECONCILIATION ENGINE
+      - name: Remove Orphan Apps
+        run: |
+          set -euo pipefail
+
+          ENV="${{ github.event.inputs.env || 'dev' }}"
+          ING_FILE="gitops/ingress/${ENV}/values.yaml"
+
+          echo "=============================="
+          echo " ORPHAN APP CLEANUP ENGINE"
+          echo " ENV: $ENV"
+          echo " MODE: ${{ steps.mode.outputs.mode }}"
+          echo "=============================="
+
+          # extract valid apps from ingress (source of truth)
+          VALID_APPS=$(yq '.services[].name' "$ING_FILE")
+
+          echo "Valid apps from ingress:"
+          echo "$VALID_APPS"
+          echo ""
+
+          # get deployed apps
+          APP_DIRS=$(ls envs/$ENV || true)
+
+          for app in $APP_DIRS; do
+
+            APP_PATH="envs/$ENV/$app"
+
+            # must be folder with values.yaml
+            if [[ ! -f "$APP_PATH/values.yaml" ]]; then
+              continue
+            fi
+
+            # CHECK IF IN INGRESS (STRICT MATCH)
+            if echo "$VALID_APPS" | grep -qx "$app"; then
+              echo "KEEP: $app exists in ingress"
+              continue
+            fi
+
+            echo "ORPHAN DETECTED: $app"
+
+            if [[ "$ENV" == "prod" ]]; then
+              echo "❌ BLOCKED: cannot delete $app in prod"
+              continue
+            fi
+
+            echo "Deleting FULL app folder: $APP_PATH"
+
+            rm -rf "$APP_PATH"
+
           done
+
+      - name: Check Ingress
+        run: |
+          set -euo pipefail
+
+          echo "Validating ingress files..."
+
+          for f in gitops/ingress/*/values.yaml; do
+            yq '.' "$f" > /dev/null
+          done
+
+          echo "✅ Validation passed"
 
       - name: Validate GitOps
         run: bash scripts/validate_gitops.sh
@@ -77,5 +144,4 @@ jobs:
         if: failure()
         run: |
           echo "❌ Workflow Didnt Complete.."
-
 
