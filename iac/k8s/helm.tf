@@ -153,6 +153,16 @@ resource "helm_release" "efs_csi" {
     value = kubernetes_service_account_v1.efs_csi.metadata[0].name
   }
 
+  set {
+    name  = "node.serviceAccount.create"
+    value = "false"
+  }
+
+  set {
+    name  = "node.serviceAccount.name"
+    value = kubernetes_service_account_v1.efs_csi.metadata[0].name
+  }
+
   timeout         = 900
   wait            = true
   cleanup_on_fail = true

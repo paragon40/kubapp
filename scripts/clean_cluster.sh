@@ -67,6 +67,7 @@ for ns in $ALL_NS; do
     fi
   done
 
+  echo "Deleting Namespace: $ns"
   kubectl delete ns "$ns" || true
 done
 
