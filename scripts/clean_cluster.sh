@@ -22,9 +22,7 @@ fi
 # HELPERS
 ########################################
 
-sleep_safe() {
-  sleep "${1:-3}"
-}
+sleep_safe() { sleep "${1:-3}"; }
 
 count_resources() {
   kubectl get "$1" -n "$2" --no-headers 2>/dev/null | wc -l || true
@@ -33,8 +31,7 @@ count_resources() {
 patch_finalizers_ns() {
   local ns=$1
   echo ">> Removing namespace finalizers: $ns"
-  kubectl patch ns "$ns" \
-    -p '{"spec":{"finalizers":[]}}' --type=merge >/dev/null 2>&1 || true
+  kubectl patch ns "$ns" -p '{"spec":{"finalizers":[]}}' --type=merge >/dev/null 2>&1 || true
 }
 
 patch_finalizers_objects() {
@@ -47,6 +44,25 @@ patch_finalizers_objects() {
   done
 }
 
+########################################
+# SAFE FORCE DELETE (NO HANG VERSION)
+########################################
+nuke_as_last_option() {
+  local ns="$1"
+  local type="$2"
+
+  echo "🔥 NUCLEAR MISSILE MODE Finally: $type in $ns"
+
+  for obj in $(kubectl get "$type" -n "$ns" -o name 2>/dev/null || true); do
+    echo "   → force deleting $obj"
+    kubectl delete "$obj" -n "$ns" \
+      --grace-period=0 --force --ignore-not-found || true
+  done
+}
+
+########################################
+# TIMEBOXED DELETE ENGINE (CORE FIX)
+########################################
 safe_delete_loop() {
   local ns=$1
   local type=$2
@@ -57,28 +73,39 @@ safe_delete_loop() {
   SECONDS=0
 
   while true; do
-    kubectl delete "$type" --all -n "$ns" --ignore-not-found >/dev/null 2>&1 || true
+
+    kubectl delete "$type" -n "$ns" --all --ignore-not-found >/dev/null 2>&1 || true
     sleep_safe 3
 
     remaining=$(count_resources "$type" "$ns")
 
     if [[ "$remaining" -eq 0 ]]; then
       echo "✅ $type cleaned in $ns"
-      break
+      return 0
     fi
 
-    echo "⚠️ $type still remaining in $ns: $remaining"
+    echo "⚠️ $type remaining: $remaining"
 
+    # TIMEOUT ESCALATION
     if (( SECONDS > timeout )); then
-      echo "Timeout reached for $type in $ns"
 
-      echo ">> Inspecting stuck $type..."
-      kubectl get "$type" -n "$ns" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true
-      echo ""
+      echo "⛔ TIMEOUT reached for $type in $ns"
 
+      echo ">> Step 1: Inspect"
+      kubectl get "$type" -n "$ns" || true
+
+      echo ">> Step 2: Remove finalizers"
       patch_finalizers_objects "$ns" "$type"
 
-      echo ">> Retrying $type cleanup..."
+      sleep_safe 3
+
+      remaining=$(count_resources "$type" "$ns")
+
+      if [[ "$remaining" -gt 0 ]]; then
+        echo "🔥 Step 3: FORCE NUKE triggered"
+        nuke_as_last_option "$ns" "$type"
+      fi
+
       SECONDS=0
     fi
 
@@ -87,17 +114,22 @@ safe_delete_loop() {
 }
 
 ########################################
-# ARGOCD CLEANUP (ROOT CONTROLLERS FIRST)
+# ARGOCD HARD STOP (CRITICAL FIX)
 ########################################
 
-echo ">> Deleting ArgoCD ApplicationSets..."
-kubectl delete applicationsets.argoproj.io --all -n argocd --ignore-not-found || true
+echo ">> STOPPING ArgoCD RECONCILIATION FIRST"
 
-echo ">> Deleting ArgoCD Applications..."
+kubectl delete applicationsets.argoproj.io --all -n argocd --ignore-not-found || true
 kubectl delete applications.argoproj.io --all -n argocd --ignore-not-found || true
 
+# extra safety: kill finalizers if stuck apps remain
+for app in $(kubectl get applications.argoproj.io -n argocd -o name 2>/dev/null || true); do
+  kubectl patch "$app" -n argocd \
+    -p '{"metadata":{"finalizers":[]}}' --type=merge || true
+done
+
 ########################################
-# NAMESPACE LOOP
+# MAIN LOOP
 ########################################
 
 ALL_NS=$(kubectl get ns -o jsonpath='{.items[*].metadata.name}')
@@ -113,19 +145,23 @@ for ns in $ALL_NS; do
 
   echo ""
   echo "=============================="
-  echo " CLEANING NAMESPACE: $ns"
+  echo " CLEANING: $ns"
   echo "=============================="
 
   ########################################
-  # RESOURCE CLEANUP LOOP
+  # RESOURCE ORDER (IMPORTANT)
   ########################################
 
-  safe_delete_loop "$ns" "all" 40
+  safe_delete_loop "$ns" "applications.argoproj.io" 30
   safe_delete_loop "$ns" "ingress" 40
   safe_delete_loop "$ns" "svc" 30
   safe_delete_loop "$ns" "secret" 30
   safe_delete_loop "$ns" "pvc" 60
+  safe_delete_loop "$ns" "all" 50
 
+  ########################################
+  # TF SAFE SKIP
+  ########################################
   for tf_ns in "${TF_CREATED_NS[@]}"; do
     if [[ "$ns" == "$tf_ns" ]]; then
       echo "Skipping Terraform-managed namespace: $ns"
@@ -134,54 +170,53 @@ for ns in $ALL_NS; do
   done
 
   ########################################
-  # FINAL NAMESPACE DELETE LOOP
+  # NAMESPACE DELETE (FINAL SAFE ESCALATION)
   ########################################
 
   echo ">> Deleting namespace: $ns"
 
   SECONDS=0
-
   kubectl delete ns "$ns" --ignore-not-found || true
 
   while kubectl get ns "$ns" >/dev/null 2>&1; do
 
     status=$(kubectl get ns "$ns" -o jsonpath='{.status.phase}' 2>/dev/null || true)
 
-    echo "⚠️ Namespace $ns still exists (status: $status)"
+    echo "⚠️ $ns still exists ($status)"
 
     if [[ "$status" == "Terminating" ]]; then
       patch_finalizers_ns "$ns"
     fi
 
     if (( SECONDS > 60 )); then
-      echo "Hard timeout reached for namespace $ns"
+      echo "🔥 FINAL NUKE OF NAMESPACE"
+
+      kubectl get all -n "$ns" -o name | xargs -r kubectl delete -n "$ns" --force --grace-period=0 || true
+      patch_finalizers_ns "$ns" || true
       break
     fi
 
     sleep_safe 5
   done
 
-  echo "✅ Namespace cleaned: $ns"
+  echo "✅ Done: $ns"
 
 done
 
 ########################################
-# INGRESS CHECK
+# FINAL CHECKS
 ########################################
 
 echo ""
-echo ">> Final ingress check:"
+echo ">> Remaining ingress:"
 kubectl get ingress -A || true
 
-########################################
-# FINAL STATE
-########################################
-
 echo ""
-echo ">> Final namespaces:"
+echo ">> Remaining namespaces:"
 kubectl get ns
 
 echo ""
 echo "======================================"
-echo " CLEANUP COMPLETE (RECONCILED STATE)"
+echo " CLEANUP COMPLETE (ROBUST MODE)"
 echo "======================================"
+
