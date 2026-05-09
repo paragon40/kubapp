@@ -133,6 +133,8 @@ jobs:
 
       - name: Get Metadata from Terraform
         working-directory: iac/infra
+        env:
+          ENV: "${{ github.event.inputs.env }}"
         run: |
           set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
