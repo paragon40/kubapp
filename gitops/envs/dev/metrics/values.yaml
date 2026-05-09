@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: paragon40/metrics_app
-  tag: 5dffc5f292ebb26dc2fd285f6f36b6deabaa671a-1778254853
+  tag: b209d68c97771169e6cd1562a7996023ba71dfaf-1778322704
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -29,6 +29,7 @@ securityContext:
     capabilities:
       drop:
         - ALL
+    runAsNonRoot: true
 probes:
   readiness:
     httpGet:
@@ -56,21 +57,21 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 6eb65282886a0603f8c86255c84251d376fa95d72df49a6392d9bc346965da9f
-  generatedAt: 2026-05-08T15:42:29Z
+  generatedAt: 2026-05-09T11:27:34Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
   volumes:
-    - name: vol-metrics
+    - name: metrics
       emptyDir: {}
   volumeMounts:
-    - name: mount-metrics
+    - name: metrics
       mountPath: /data
 serviceAccount:
   create: true
   name: metrics-sa
   roleArn: arn:aws:iam::198200019771:role/kubapp-dev-app-pods-role
 serviceMonitor:
-  enabled: false
+  enabled: true
   path: /metrics
   interval: 30s
