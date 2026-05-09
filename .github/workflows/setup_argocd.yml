@@ -80,22 +80,16 @@ jobs:
         run: |
           set -e
 
-          SECRET_FILE=$(find gitops/secrets -type f -name "github-repo-secret.yaml" | head -n 1)
-          DECRYPTED="decrypted.yaml"
+          SECRET_FILES=$(find gitops/secrets -type f -name "*.yaml" -print)
+          for one in SECRET_FILES; do
+            DECRYPTED="decrypted.yaml"
 
-          if [ -n "$SECRET_FILE" ]; then
-            echo "Decrypting secret file: $SECRET_FILE"
-            sops -d "$SECRET_FILE" > "$DECRYPTED"
-            kubectl apply --validate=false -f "$DECRYPTED"
-            echo "✅ ArgoCD secret applied from Sops"
-          else
-            echo "❌ No encrypted secret files found. Generating one"
-            mkdir -p gitops/secrets
-            BASE_FILE="gitops/secrets/github-repo-secret.yaml"
-            python3 scripts/apply_argo_secret.py
-            kubectl apply --validate=false -f "$BASE_FILE"
-            echo "✅ ArgoCD secret applied from Script"
-          fi
+            if [ -n "$one" ]; then
+              echo "Decrypting secret file: $one"
+              sops -d "$one" > "$DECRYPTED"
+              kubectl apply --validate=false -f "$DECRYPTED"
+              echo "✅ $one ArgoCD secret applied from Sops"
+            fi
         env:
            PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
            APP_ID: ${{ secrets.APP_ID_GITHUB }}
