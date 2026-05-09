@@ -1,14 +1,22 @@
-appName: metrics
+appName: admin
 namespace: dev
+serviceAccount:
+  create: true
+  name: admin-sa
+  roleArn: arn:aws:iam::198200019771:role/kubapp-dev-app-pods-role
+serviceMonitor:
+  enabled: false
+  path: /metrics
+  interval: 30s
 replicaCount: 2
 image:
-  repository: paragon40/metrics_app
+  repository: paragon40/admin_app
   tag: 16a8f4a40efd77f398853175700fff9409e9cf79-1778330907
   pullPolicy: Always
 service:
   type: ClusterIP
   port: 80
-  targetPort: 8080
+  targetPort: 4000
 resources:
   requests:
     cpu: 100m
@@ -23,30 +31,30 @@ securityContext:
     seccompProfile:
       type: RuntimeDefault
   container:
-    runAsUser: 10009
+    runAsNonRoot: true
+    runAsUser: 10003
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities:
       drop:
         - ALL
-    runAsNonRoot: true
 probes:
   readiness:
     httpGet:
       path: /health
-      port: 8080
+      port: 4000
     initialDelaySeconds: 5
     periodSeconds: 10
   liveness:
     httpGet:
       path: /live
-      port: 8080
+      port: 4000
     initialDelaySeconds: 10
     periodSeconds: 15
   startup:
     httpGet:
       path: /health
-      port: 8080
+      port: 4000
     failureThreshold: 30
     periodSeconds: 5
 hpa:
@@ -56,22 +64,14 @@ hpa:
   cpu: 70
   memory: 70
 meta:
-  staticFingerprint: 6eb65282886a0603f8c86255c84251d376fa95d72df49a6392d9bc346965da9f
+  staticFingerprint: be9cdf8b48982e22e4b67e6b6345e115a9ffde654c29143eaf57dff2b5007ecb
   generatedAt: 2026-05-09T12:49:58Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
   volumes:
-    - name: metrics
+    - name: admin
       emptyDir: {}
   volumeMounts:
-    - name: metrics
+    - name: admin
       mountPath: /data
-serviceAccount:
-  create: true
-  name: metrics-sa
-  roleArn: arn:aws:iam::198200019771:role/kubapp-dev-app-pods-role
-serviceMonitor:
-  enabled: true
-  path: /metrics
-  interval: 30s
