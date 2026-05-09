@@ -154,7 +154,7 @@ resource "helm_release" "fluentbit" {
       }
 
       nodeSelector = {
-        "eks.amazonaws.com/compute-type" = "ec2"
+        "kubernetes.io/os" = "linux"
       }
 
       podLabels = local.logs_labels
@@ -324,7 +324,7 @@ resource "helm_release" "kube_prometheus_stack" {
 
       # NODE SELECTION
       nodeSelector = {
-        "eks.amazonaws.com/compute-type" = "ec2"
+        "kubernetes.io/os" = "linux"
       }
     })
   ]
