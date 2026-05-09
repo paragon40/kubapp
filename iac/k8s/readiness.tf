@@ -70,3 +70,22 @@ EOT
   }
 }
 
+resource "null_resource" "wait_for_lb_webhook" {
+  depends_on = [helm_release.lb_controller]
+
+  provisioner "local-exec" {
+    command = <<EOT
+echo "Waiting for AWS LB webhook..."
+
+kubectl wait --for=condition=available deployment \
+  aws-load-balancer-controller \
+  -n kube-system \
+  --timeout=10m
+
+kubectl get endpoints -n kube-system aws-load-balancer-webhook-service
+
+echo "LB webhook ready"
+EOT
+  }
+}
+

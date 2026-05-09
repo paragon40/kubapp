@@ -205,6 +205,7 @@ resource "helm_release" "fluentbit" {
 
   depends_on = [
     aws_eks_addon.efs_csi,
+    null_resource.wait_for_lb_webhook,
     kubernetes_service_account_v1.fluentbit
   ]
 }
