@@ -19,7 +19,7 @@ storage:
       emptyDir: {}
 
   volumeMounts:
-    - name: chat-vol
+    - name: chatbot-vol
       mountPath: /data
 
 features:

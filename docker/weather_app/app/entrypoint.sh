@@ -63,7 +63,7 @@ fi
 # ----------------------------
 # Decide Port
 # ----------------------------
-PORT="${CONTAINER_PORT:-80}"
+PORT="${CONTAINER_PORT:-8080}"
 if [[ "$local_env" == "dev" ]]; then
     PORT="${CONTAINER_PORT:-8090}"
 fi
