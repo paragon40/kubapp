@@ -18,7 +18,6 @@ resource "kubernetes_storage_class" "efs" {
   parameters = {
     provisioningMode = "efs-ap"
     fileSystemId     = local.efs_id
-    accessPointId    = aws_efs_access_point.grafana.id
     directoryPerms   = "700"
     basePath         = "/dynamic_provisioning"
 
