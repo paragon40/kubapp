@@ -70,7 +70,7 @@ variable "fargate_workloads" {
       role = "customers"
     }
 
-    monitoring = {
+    fargate-monitoring = {
       role = "observe"
     }
   }
