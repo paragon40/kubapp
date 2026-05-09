@@ -3,7 +3,7 @@
   "context": "docker/metrics_app",
   "image": "paragon40/metrics_app",
   "image2": "paragon40/metrics_app:latest",
-  "tag": "b391b94788f20dc26e19a19ef482cda0f631df05-1778263768",
+  "tag": "b209d68c97771169e6cd1562a7996023ba71dfaf-1778322704",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -15,10 +15,10 @@
   "svc_monitor_enabled": true,
   "volumes_enabled": true,
   "tmp_enabled": true,
-  "tmp_volume": "vol-metrics",
-  "mount_vol": "mount-metrics",
+  "tmp_volume": "metrics",
+  "mount_vol": "metrics",
   "mount_path": "/data",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-08_18-09-28"
+  "CREATED_AT": "2026-05-09_10-31-44"
 }
