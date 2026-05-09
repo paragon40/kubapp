@@ -81,15 +81,13 @@ jobs:
           set -e
 
           SECRET_FILES=$(find gitops/secrets -type f -name "*.yaml" -print)
-          for one in $SECRET_FILES; do
-            DECRYPTED="decrypted.yaml"
-
-            if [ -n "$one" ]; then
+          while IFS= read -r one; do
+              DECRYPTED="decrypted-$(basename "$one")"
               echo "Decrypting secret file: $one"
               sops -d "$one" > "$DECRYPTED"
               kubectl apply --validate=false -f "$DECRYPTED"
               echo "✅ $one ArgoCD secret applied from Sops"
-            fi
+          done <<< "$SECRET_FILES"
         env:
            PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
            APP_ID: ${{ secrets.APP_ID_GITHUB }}
