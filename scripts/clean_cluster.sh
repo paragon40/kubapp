@@ -123,7 +123,6 @@ for ns in $ALL_NS; do
   safe_delete_loop "$ns" "all" 40
   safe_delete_loop "$ns" "ingress" 40
   safe_delete_loop "$ns" "svc" 30
-  safe_delete_loop "$ns" "configmap" 30
   safe_delete_loop "$ns" "secret" 30
   safe_delete_loop "$ns" "pvc" 60
 
