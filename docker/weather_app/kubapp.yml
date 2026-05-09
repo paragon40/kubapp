@@ -3,7 +3,7 @@ service:
   name: weather
 
 app:
-  port: 80
+  port: 8080
   appUser: weather_app
   healthPath: /health
   livePath: /live
