@@ -51,18 +51,3 @@ resource "kubernetes_service_account_v1" "fluentbit" {
   }
 }
 
-resource "kubernetes_service_account_v1" "efs_csi" {
-  metadata {
-    name      = "efs-csi-controller-sa"
-    namespace = "kube-system"
-
-    labels = merge(local.k8s_labels, {
-      component = "storage"
-      workload  = "efs"
-    })
-    annotations = {
-      "eks.amazonaws.com/role-arn" = local.efs_role_arn
-      "trace.aws/role"             = "efs-csi"
-    }
-  }
-}

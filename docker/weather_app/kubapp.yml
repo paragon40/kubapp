@@ -26,7 +26,7 @@ storage:
       emptyDir: {}
 
   volumeMounts:
-    - name: edgepaas-mnt
+    - name: edgepaas-vol
       mountPath: /tmp
 
 features:

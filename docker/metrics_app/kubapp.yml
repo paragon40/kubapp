@@ -16,11 +16,11 @@ deploy:
 
 storage:
   volumes:
-    - name: vol-metrics
+    - name: metrics
       emptyDir: {}
 
   volumeMounts:
-    - name: mount-metrics
+    - name: metrics
       mountPath: /data
 
 features:

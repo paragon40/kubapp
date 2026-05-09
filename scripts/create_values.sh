@@ -112,6 +112,7 @@ securityContext:
       type: RuntimeDefault
 
   container:
+    runAsNonRoot: true
     runAsUser: ${CONTAINER_UID}
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true

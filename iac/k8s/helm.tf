@@ -133,62 +133,6 @@ resource "helm_release" "argocd" {
   ]
 }
 
-
-resource "helm_release" "efs_csi" {
-  name      = "aws-efs-csi-driver"
-  namespace = "kube-system"
-
-  repository = "https://kubernetes-sigs.github.io/aws-efs-csi-driver/"
-  chart      = "aws-efs-csi-driver"
-
-  version = "2.5.0"
-
-  set {
-    name  = "controller.serviceAccount.create"
-    value = "false"
-  }
-
-  set {
-    name  = "controller.serviceAccount.name"
-    value = kubernetes_service_account_v1.efs_csi.metadata[0].name
-  }
-
-  set {
-    name  = "node.serviceAccount.create"
-    value = "false"
-  }
-
-  set {
-    name  = "node.serviceAccount.name"
-    value = kubernetes_service_account_v1.efs_csi.metadata[0].name
-  }
-
-  timeout         = 900
-  wait            = true
-  cleanup_on_fail = true
-
-  values = [
-    yamlencode({
-      node = {
-        nodeSelector = {
-          "eks.amazonaws.com/compute-type" = "ec2"
-        }
-        podLabels = local.k8s_labels
-      }
-      controller = {
-        podLabels = local.k8s_labels
-      }
-    })
-  ]
-
-  depends_on = [
-    helm_release.lb_controller,
-    helm_release.external_dns,
-    kubernetes_service_account_v1.efs_csi
-  ]
-}
-
-
 resource "helm_release" "fluentbit" {
   name      = "fluent-bit"
   namespace = "kube-system"
@@ -260,7 +204,7 @@ resource "helm_release" "fluentbit" {
   ]
 
   depends_on = [
-    helm_release.efs_csi,
+    aws_eks_addon.efs_csi,
     kubernetes_service_account_v1.fluentbit
   ]
 }
@@ -381,7 +325,7 @@ resource "helm_release" "kube_prometheus_stack" {
   ]
 
   depends_on = [
-    helm_release.efs_csi,
+    aws_eks_addon.efs_csi,
     helm_release.fluentbit,
     helm_release.argocd,
     kubernetes_namespace_v1.this["monitoring"]
