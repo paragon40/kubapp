@@ -1,3 +1,13 @@
+data "aws_eks_cluster" "this" {
+  name = local.cluster_name
+}
+
+data "aws_eks_addon_version" "efs" {
+  addon_name         = "aws-efs-csi-driver"
+  kubernetes_version = data.aws_eks_cluster.this.version
+  most_recent        = true
+}
+
 resource "kubernetes_storage_class" "efs" {
   metadata {
     name = "efs-sc"
@@ -21,7 +31,7 @@ resource "kubernetes_storage_class" "efs" {
 resource "aws_eks_addon" "efs_csi" {
   cluster_name             = var.cluster_name
   addon_name               = "aws-efs-csi-driver"
-  addon_version            = data.aws_eks_addon_version.latest.version
+  addon_version            = data.aws_eks_addon_version.efs.version
   service_account_role_arn = local.efs_role_arn
 
   resolve_conflicts = "OVERWRITE"

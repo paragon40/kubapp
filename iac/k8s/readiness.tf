@@ -9,7 +9,7 @@ resource "null_resource" "wait_for_active_eks" {
 }
 
 resource "null_resource" "wait_for_efs_csi" {
-  depends_on = [helm_release.efs_csi]
+  depends_on = [aws_eks_addon.efs_csi]
 
   provisioner "local-exec" {
     command = <<EOT
