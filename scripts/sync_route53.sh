@@ -1,40 +1,75 @@
 #!/bin/bash
 set -euo pipefail
 
+# -------------------------------
+# CONFIG
+# -------------------------------
 DOMAIN="${DOMAIN:-rundailytest.online}"
 ENV="${ENV:-dev}"
 ING_FILE="${INGRESS_FILE:-gitops/ingress/$ENV/values.yaml}"
+AWS_REGION="${AWS_REGION:-$(aws configure get region)}"
+CERT_ARN="${CERT_ARN:-}"
+
+echo "===================================="
+echo "Route53 Auto-Provision + Sync"
+echo "DOMAIN: $DOMAIN"
+echo "ENV: $ENV"
+echo "AWS_REGION: $AWS_REGION"
+echo "===================================="
+
+# -------------------------------
+# PRECHECKS
+# -------------------------------
+if [[ -z "$AWS_REGION" ]]; then
+  echo "❌ AWS region not set"
+  exit 1
+fi
+
+if [[ -z "$CERT_ARN" ]]; then
+  echo "❌ CERT_ARN not provided"
+  exit 1
+fi
 
 if [[ ! -f "$ING_FILE" ]]; then
   echo "❌ Ingress file not found: $ING_FILE"
   exit 1
 fi
 
-echo "===================================="
-echo "Route53 Auto-Provision + Sync"
-echo "DOMAIN: $DOMAIN"
-echo "===================================="
+# -------------------------------
+# CERT VALIDATION (HARD GUARANTEE)
+# -------------------------------
+echo "Validating ACM certificate..."
+
+CERT_STATUS=$(aws acm describe-certificate \
+  --region "$AWS_REGION" \
+  --certificate-arn "$CERT_ARN" \
+  --query "Certificate.Status" \
+  --output text 2>/dev/null || true)
+
+if [[ "$CERT_STATUS" != "ISSUED" ]]; then
+  echo "❌ Certificate not valid in region or not issued: $CERT_ARN"
+  exit 1
+fi
+
+echo "✅ Certificate OK"
 
 # -------------------------------
-# 1. Get ALB from ingress
+# GET ALB FROM K8S
 # -------------------------------
-echo "Checking $ENV ingress.."
-kubectl get ingress kubapp-$ENV-alb -n "$ENV" >/dev/null
-
-echo "Fetching $ENV ALB..."
+echo "Fetching ALB from ingress..."
 
 ALB=""
 
-for i in {1..10}; do
+for i in {1..15}; do
   ALB=$(kubectl get ingress kubapp-$ENV-alb -n "$ENV" \
     -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
 
   if [[ -n "$ALB" ]]; then
-    echo "ALB ready: $ALB"
+    echo "✅ ALB ready: $ALB"
     break
   fi
 
-  echo "ALB not ready yet ($i/30)"
+  echo "⏳ Waiting for ALB ($i/15)"
   sleep 10
 done
 
@@ -44,12 +79,31 @@ if [[ -z "$ALB" ]]; then
   exit 1
 fi
 
-echo "ALB: $ALB"
+# -------------------------------
+# VERIFY ALB EXISTS IN AWS
+# -------------------------------
+ALB_ARN=$(aws elbv2 describe-load-balancers \
+  --region "$AWS_REGION" \
+  --query "LoadBalancers[?DNSName=='$ALB'].LoadBalancerArn | [0]" \
+  --output text)
+
+if [[ -z "$ALB_ARN" || "$ALB_ARN" == "None" ]]; then
+  echo "❌ ALB not found in AWS ELBv2 API"
+  exit 1
+fi
+
+ALB_ZONE_ID=$(aws elbv2 describe-load-balancers \
+  --region "$AWS_REGION" \
+  --load-balancer-arns "$ALB_ARN" \
+  --query "LoadBalancers[0].CanonicalHostedZoneId" \
+  --output text)
+
+echo "✅ ALB verified in AWS"
 
 # -------------------------------
-# 2. Check hosted zone
+# HOSTED ZONE
 # -------------------------------
-echo "Checking hosted zone..."
+echo "Checking Route53 hosted zone..."
 
 ZONE_ID=$(aws route53 list-hosted-zones-by-name \
   --dns-name "$DOMAIN" \
@@ -58,11 +112,8 @@ ZONE_ID=$(aws route53 list-hosted-zones-by-name \
 
 ZONE_EXISTS=false
 
-# -------------------------------
-# 3. CREATE ZONE if missing
-# -------------------------------
 if [[ -z "$ZONE_ID" || "$ZONE_ID" == "None" ]]; then
-  echo "Hosted zone not found → creating..."
+  echo "Creating hosted zone..."
 
   CREATE_OUTPUT=$(aws route53 create-hosted-zone \
     --name "$DOMAIN" \
@@ -70,50 +121,40 @@ if [[ -z "$ZONE_ID" || "$ZONE_ID" == "None" ]]; then
 
   ZONE_ID=$(echo "$CREATE_OUTPUT" | jq -r '.HostedZone.Id' | sed 's|/hostedzone/||')
 
-  echo "Created hosted zone: $ZONE_ID"
+  echo "✅ Hosted zone created: $ZONE_ID"
 else
-  echo "Existing zone found: $ZONE_ID"
+  echo "✅ Existing zone: $ZONE_ID"
   ZONE_EXISTS=true
 fi
 
 # -------------------------------
-# 3b. Show Namecheap nameservers ONLY on NEW ZONE
+# NAMECHEAP INFO (ONLY FIRST TIME)
 # -------------------------------
 if [[ "$ZONE_EXISTS" == false ]]; then
   echo ""
   echo "===================================="
-  echo "NAMECHEAP DELEGATION (ONE-TIME ONLY)"
+  echo "NAMECHEAP DELEGATION (ONCE ONLY)"
   echo "===================================="
 
-  NS=$(aws route53 get-hosted-zone \
+  aws route53 get-hosted-zone \
     --id "$ZONE_ID" \
     --query "DelegationSet.NameServers[]" \
-    --output text)
-
-  for ns in $NS; do
-    echo "$ns"
-  done
+    --output text
 
   echo ""
-  echo "👉 Paste these into Namecheap → Custom DNS"
-  echo "👉 Required ONLY ONCE per domain"
+  echo "👉 Add these to Namecheap DNS"
   echo "===================================="
-  echo ""
 fi
 
 # -------------------------------
-# 4. Define services (GitOps truth)
+# SERVICES FROM GITOPS
 # -------------------------------
 mapfile -t SERVICES < <(yq e '.services[].name' "$ING_FILE")
 
 # -------------------------------
-# 5. Root domain (FIXED: ALIAS A record)
+# ROOT DOMAIN
 # -------------------------------
 echo "Updating root domain..."
-
-ALB_ZONE_ID=$(aws elbv2 describe-load-balancers \
-  --query "LoadBalancers[?DNSName=='$ALB'].CanonicalHostedZoneId" \
-  --output text)
 
 aws route53 change-resource-record-sets \
   --hosted-zone-id "$ZONE_ID" \
@@ -133,14 +174,12 @@ aws route53 change-resource-record-sets \
   }"
 
 # -------------------------------
-# 6. Subdomains (CNAME → ALB)
+# SUBDOMAINS
 # -------------------------------
-echo "Updating service subdomains..."
+echo "Updating subdomains..."
 
 for svc in "${SERVICES[@]}"; do
   FQDN="$svc.$DOMAIN"
-
-  echo "→ $FQDN"
 
   aws route53 change-resource-record-sets \
     --hosted-zone-id "$ZONE_ID" \
@@ -155,8 +194,10 @@ for svc in "${SERVICES[@]}"; do
         }
       }]
     }"
+
+  echo "→ $FQDN updated"
 done
 
 echo "===================================="
-echo "DNS FULL SYNC COMPLETE"
+echo "DNS SYNC COMPLETE"
 echo "===================================="

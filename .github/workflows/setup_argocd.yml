@@ -131,10 +131,26 @@ jobs:
       - name: Run GitOps bootstrap
         run: bash scripts/bootstrap_gitops.sh
 
+      - name: Get Metadata from Terraform
+        working-directory: iac/infra
+        run: |
+          set -euo pipefail
+          terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
+          CERT_ARN=$(terraform output -raw main_cert_arn || true)
+          if [[ -z "$CERT_ARN" ]]; then
+            echo "❌ CERT ARN is empty"
+            exit 1
+          fi
+
+          echo "CERT_ARN Found: $CERT_ARN"
+          echo "CERT_ARN=$CERT_ARN" >> $GITHUB_ENV
+
       - name: Ensure Route53 is synced
         env:
           ENV: "${{ github.event.inputs.env }}"
           DOMAIN: "${{ secrets.DOMAIN }}"
+          CERT_ARN: "${{ env.CERT_ARN }}"
+          AWS_REGION: "${{ env.AWS_REGION }}"
         run: |
           set -euo pipefail
           for i in {1..8}; do
