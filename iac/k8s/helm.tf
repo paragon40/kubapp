@@ -232,6 +232,10 @@ resource "helm_release" "kube_prometheus_stack" {
 
       # GRAFANA
       grafana = {
+        initChownData = {
+          enabled = false
+        }
+
         admin = {
           existingSecret = "grafana-admin"
           userKey        = "admin-user"
