@@ -4,7 +4,7 @@ import os
 from logging.handlers import RotatingFileHandler
 
 # Decide log path based on environment
-if os.getenv("CI", "GITHUB", "AWS", "AZURE").lower() in ("true", "yes", "1"):
+if os.getenv("CI", "GITHUB").lower() in ("true", "yes", "1"):
     LOG_PATH = "/tmp/edgepaas/app/logger.log"
 else:
     # Expand $HOME for local/development
