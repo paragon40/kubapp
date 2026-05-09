@@ -1,29 +1,31 @@
 
 service:
-  name: admin
+  name: chatbot
 
 app:
-  port: 4000
-  appUser: admin_app
+  port: 5000
+  appUser: chatbot_app
   healthPath: /health
   livePath: /live
   basePath: /
 
 deploy:
   env: dev
-  containerUid: 10003
+  containerUid: 10007
 
 storage:
   volumes:
-    - name: admin-volume
+    - name: chatbot-vol
       emptyDir: {}
 
   volumeMounts:
-    - name: admin-mnt
+    - name: chat-vol
       mountPath: /data
 
 features:
   topVolume:
     enabled: true
   tmp:
+    enabled: true
+  serviceMonitor:
     enabled: true

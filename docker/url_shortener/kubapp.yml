@@ -19,7 +19,7 @@ storage:
       emptyDir: {}
 
   volumeMounts:
-    - name: urlshortener-mnt
+    - name: urlshortener-volume
       mountPath: /data
 
 features:
