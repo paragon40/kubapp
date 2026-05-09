@@ -3,12 +3,12 @@ namespace: dev
 replicaCount: 2
 image:
   repository: "paragon40/weather_app"
-  tag: 44f5ebe9ba012477928c414d133c43c23aadb5c1-1778328070
+  tag: ab42d0047ae2abd0f0fd18273eb422d89bbad029-1778330494
   pullPolicy: Always
 service:
   type: ClusterIP
   port: 80
-  targetPort: 80
+  targetPort: 8080
 resources:
   requests:
     cpu: 100m
@@ -24,8 +24,8 @@ hpa:
   cpu: 70
   memory: 70
 meta:
-  staticFingerprint: 033053f9f27634740e5344868cde3d60024926bbe12bba243690b82a33dec19c
-  generatedAt: 2026-05-09T12:02:30Z
+  staticFingerprint: 1f3b831b2cf66454cfd85ffc89c9a88645d5eae258e7587330db355c10509795
+  generatedAt: 2026-05-09T12:42:55Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 securityContext:
@@ -49,7 +49,7 @@ probes:
     periodSeconds: 10
     httpGet:
       path: /health
-      port: 80
+      port: 8080
   liveness:
     path: /live
     port: 8080
@@ -57,11 +57,11 @@ probes:
     periodSeconds: 15
     httpGet:
       path: /live
-      port: 80
+      port: 8080
   startup:
     httpGet:
       path: /health
-      port: 80
+      port: 8080
     failureThreshold: 30
     periodSeconds: 5
 storage:
