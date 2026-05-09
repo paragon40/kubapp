@@ -3,7 +3,7 @@
   "context": "docker/chat_bot",
   "image": "paragon40/chat_bot",
   "image2": "paragon40/chat_bot:latest",
-  "tag": "16a8f4a40efd77f398853175700fff9409e9cf79-1778330905",
+  "tag": "499d3609c7f2fde19b07cbcc072991aa063d08be-1778331815",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -16,9 +16,9 @@
   "volumes_enabled": true,
   "tmp_enabled": true,
   "tmp_volume": "chatbot-vol",
-  "mount_vol": "chat-vol",
+  "mount_vol": "chatbot-vol",
   "mount_path": "/data",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-09_12-48-25"
+  "CREATED_AT": "2026-05-09_13-03-35"
 }
