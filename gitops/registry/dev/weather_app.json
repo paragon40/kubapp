@@ -3,11 +3,11 @@
   "context": "docker/weather_app",
   "image": "paragon40/weather_app",
   "image2": "paragon40/weather_app:latest",
-  "tag": "44f5ebe9ba012477928c414d133c43c23aadb5c1-1778328070",
+  "tag": "ab42d0047ae2abd0f0fd18273eb422d89bbad029-1778330494",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
-  "port": 80,
+  "port": 8080,
   "containerUid": 10006,
   "basePath": "/",
   "healthPath": "/health",
@@ -20,5 +20,5 @@
   "mount_path": "/tmp",
   "NO_VARS": false,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-09_12-01-10"
+  "CREATED_AT": "2026-05-09_12-41-34"
 }
