@@ -81,7 +81,7 @@ jobs:
           set -e
 
           SECRET_FILES=$(find gitops/secrets -type f -name "*.yaml" -print)
-          for one in SECRET_FILES; do
+          for one in $SECRET_FILES; do
             DECRYPTED="decrypted.yaml"
 
             if [ -n "$one" ]; then
