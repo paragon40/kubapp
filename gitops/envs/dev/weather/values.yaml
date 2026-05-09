@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: "paragon40/weather_app"
-  tag: 16a8f4a40efd77f398853175700fff9409e9cf79-1778330907
+  tag: 499d3609c7f2fde19b07cbcc072991aa063d08be-1778331818
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -25,7 +25,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 1f3b831b2cf66454cfd85ffc89c9a88645d5eae258e7587330db355c10509795
-  generatedAt: 2026-05-09T12:49:59Z
+  generatedAt: 2026-05-09T13:05:13Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 securityContext:

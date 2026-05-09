@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/nodejs_app
-  tag: 16a8f4a40efd77f398853175700fff9409e9cf79-1778330907
+  tag: 499d3609c7f2fde19b07cbcc072991aa063d08be-1778331817
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -65,6 +65,6 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 741778c54be115a02f8b4b9e662483e03f36b2c42b6ef7faac2395a58adad34f
-  generatedAt: 2026-05-09T12:49:58Z
+  generatedAt: 2026-05-09T13:05:13Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570

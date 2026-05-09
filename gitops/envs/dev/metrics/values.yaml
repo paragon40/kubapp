@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: paragon40/metrics_app
-  tag: 16a8f4a40efd77f398853175700fff9409e9cf79-1778330907
+  tag: 499d3609c7f2fde19b07cbcc072991aa063d08be-1778331822
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -57,7 +57,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 6eb65282886a0603f8c86255c84251d376fa95d72df49a6392d9bc346965da9f
-  generatedAt: 2026-05-09T12:49:58Z
+  generatedAt: 2026-05-09T13:05:13Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
