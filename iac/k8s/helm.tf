@@ -250,10 +250,10 @@ resource "helm_release" "kube_prometheus_stack" {
         }
 
         persistence = {
-          enabled      = true
-          storageClass = kubernetes_storage_class.efs.metadata[0].name
-          accessModes  = ["ReadWriteMany"]
-          size         = "10Gi"
+          enabled          = true
+          storageClassName = kubernetes_storage_class.efs.metadata[0].name
+          accessModes      = ["ReadWriteMany"]
+          size             = "10Gi"
         }
 
         podLabels = local.monitoring_labels
