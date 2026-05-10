@@ -110,7 +110,13 @@ jobs:
         run: bash scripts/cleanup_logs.sh
 
       - name: Verify Cleanups
-        run: bash scripts/cleanup_logs.sh
+        env:
+          CLUSTER_NAME: "kubapp-dev"
+          AWS_REGION: "${{ secrets.AWS_REGION }}"
+        run: bash scripts/verify_cleanup.sh
 
       - name: Final cleaning if still exists
+        env:
+          CLUSTER_NAME: "kubapp-dev"
+          AWS_REGION: "${{ secrets.AWS_REGION }}"
         run: bash scripts/clean_final.sh
