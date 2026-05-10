@@ -47,8 +47,8 @@ $RECYCLE.BIN/
 
 secrets.yml
 secrets.yaml
-! docker/**/secrets.yaml
-! docker/**/secrets.yml
+! docker/**/*secrets*
+! docker/**/*secrets*
 
 vault.yml
 vault.yaml
