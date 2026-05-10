@@ -169,20 +169,10 @@ jobs:
       - name: Commit changes
         run: |
           set -euo pipefail
-
-          if git diff --quiet; then
-            echo "No changes"
-            exit 0
-          fi
-
-          git config user.name "kubapp-bot"
-          git config user.email "kubapp-bot@users.noreply.github.com"
-
-          git add envs/
-
-          git commit -m "[REMOVE]: orphan cleanup (${{ github.event.inputs.env }})"
-
-          git push
+          ENV="${{ github.event.inputs.env }}"
+          MSG="[REMOVE-APP]: orphan cleanup in $ENV"
+          DIR="gitops/envs"
+          bash scripts/commit.sh "$DIR" "$MSG"
 
       - name: Confirm Failure
         if: failure()
