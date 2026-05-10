@@ -253,7 +253,8 @@ echo "RESOURCE SETS : $LEFTOVER_COUNT"
 echo "=================================================="
 
 # Export to GitHub Actions
-if [[ -n "${GITHUB_ENV:-}" ]]; then
+if [[ -n "${GITHUB_ENV:-}" || "$CI" != "null" ]]; then
+  echo "Github Env Discovered"
   {
     echo "LEFTOVERS=$LEFTOVERS"
     echo "LEFTOVER_COUNT=$LEFTOVER_COUNT"
