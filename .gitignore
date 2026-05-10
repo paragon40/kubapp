@@ -45,11 +45,6 @@ $RECYCLE.BIN/
 *.pfx
 *.p12
 
-secrets.yml
-secrets.yaml
-! docker/**/*secrets*
-! docker/**/*secrets*
-
 vault.yml
 vault.yaml
 
