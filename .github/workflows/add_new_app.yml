@@ -248,20 +248,18 @@ jobs:
             # Inject runtime env + encrypted secrets
             ####################################################
             echo "Preparing runtime env + secrets..."
-            bash scripts/set_app_secret.sh "$file"
+            if [[ "$NO_SECRETS" == "false" ]]; then
+              bash scripts/create_secrets.sh "$file"
+              echo "✅ Secrets for $SERVICE Updated!"
+            else
+              echo "$SERVICE has No secrets"
+            fi
 
             ####################################################
             # Register app in shared ingress
             ####################################################
             echo "Registering ingress route..."
             bash scripts/register_new_svc.sh "$SERVICE" "$ENV"
-
-            if [[ "$NO_SECRETS" == "false" ]]; then
-              echo "Send Secrets in k8s"
-              bash scripts/create_secrets.sh "$file"
-            else
-              echo "$SERVICE has No secrets"
-            fi
 
             echo "✅ Provision complete for: $SERVICE - $ENV"
           done
