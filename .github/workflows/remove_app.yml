@@ -17,7 +17,7 @@ on:
     branches:
       - main
     paths:
-      - "envs/**"
+      - "gitops/envs/**"
       - "gitops/ingress/**"
 
 permissions:
