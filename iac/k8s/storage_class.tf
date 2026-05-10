@@ -18,7 +18,7 @@ resource "kubernetes_storage_class" "efs" {
   parameters = {
     provisioningMode = "efs-ap"
     fileSystemId     = local.efs_id
-    directoryPerms   = "700"
+    directoryPerms   = "777"
     basePath         = "/dynamic_provisioning"
 
   }
