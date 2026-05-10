@@ -145,7 +145,7 @@ jobs:
           NO_VARS=true
           NO_SECRETS=true
 
-          # ensure strict mode safety
+          # strict mode safety
           : "${NO_SECRETS:=true}"
 
           if [[ -n "$APP_FILE" && -s "$APP_FILE" ]]; then

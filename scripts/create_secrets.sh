@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =========================================================
+# CREATE / UPDATE KUBERNETES SECRET FROM SOPS FILE
+#
+# Usage:
+#   create_secret.sh <artifact-json>
+#
+# Requirements:
+#   - artifact JSON contains:
+#       .service
+#       .namespace
+#       .NO_SECRETS
+#   - Secret source file:
+#       docker/<service>/secrets.enc.yaml
+#       OR
+#       docker/<service>/secrets.enc.yml
+#
+# Supported encrypted file format:
+#
+# secrets:
+#   DB_PASSWORD: supersecret
+#   API_KEY: xxxxx
+#
+# This script:
+#   1. Reads artifact metadata.
+#   2. Exits immediately if NO_SECRETS=true.
+#   3. Finds encrypted secret file.
+#   4. Decrypts with sops.
+#   5. Extracts .secrets.
+#   6. Creates/updates Kubernetes Secret:
+#        <service>-secret
+#
+# Result:
+#   Secret is applied directly to Kubernetes.
+#   No secret values are written to artifacts or values.yaml.
+# =========================================================
+
+ARTIFACT_FILE="${1:-}"
+
+fail() {
+  echo "❌ $1"
+  exit 1
+}
+
+require() {
+  command -v "$1" >/dev/null 2>&1 || fail "Missing dependency: $1"
+}
+
+[[ -n "$ARTIFACT_FILE" ]] || fail "Usage: create_secret.sh <artifact-json>"
+[[ -f "$ARTIFACT_FILE" ]] || fail "Artifact file not found: $ARTIFACT_FILE"
+case "$ARTIFACT_FILE" in
+  gitops/*)
+    echo "✅ Artifact is within GitOps scope: $ARTIFACT_FILE"
+    ;;
+  *)
+    fail "❌ Security violation: artifact must be inside gitops/* (got: $ARTIFACT_FILE)"
+    ;;
+esac
+
+require jq
+require yq
+require sops
+require kubectl
+
+# =========================================================
+# LOAD ARTIFACT METADATA
+# =========================================================
+SERVICE=$(jq -r '.service' "$ARTIFACT_FILE")
+NAMESPACE=$(jq -r '.namespace' "$ARTIFACT_FILE")
+NO_SECRETS=$(jq -r '.NO_SECRETS // true' "$ARTIFACT_FILE")
+
+[[ -n "$SERVICE" && "$SERVICE" != "null" ]] || fail "Invalid service in artifact"
+[[ -n "$NAMESPACE" && "$NAMESPACE" != "null" ]] || fail "Invalid namespace in artifact"
+
+echo "======================================"
+echo " Secret Deployment"
+echo " Service   : $SERVICE"
+echo " Namespace : $NAMESPACE"
+echo "======================================"
+
+# =========================================================
+# EXIT IF NO SECRETS
+# =========================================================
+if [[ "$NO_SECRETS" == "true" ]]; then
+  echo "No secrets defined for $SERVICE"
+  exit 0
+fi
+
+# =========================================================
+# LOCATE ENCRYPTED SECRET FILE
+# =========================================================
+SECRET_FILE=""
+
+for file in \
+  "docker/$SERVICE/secrets.yaml" \
+  "docker/$SERVICE/secrets.yml"  \
+  "docker/$SERVICE/secret.yaml" \
+  "docker/$SERVICE/secret.yml"
+do
+  if [[ -f "$file" && -s "$file" ]]; then
+    SECRET_FILE="$file"
+    break
+  fi
+done
+
+[[ -n "$SECRET_FILE" ]] || fail "NO_SECRETS=false but encrypted secret file not found"
+
+echo "Using encrypted file: $SECRET_FILE"
+
+# =========================================================
+# DECRYPT
+# =========================================================
+TMP_DEC=$(mktemp)
+TMP_SECRET=$(mktemp)
+
+cleanup() {
+  rm -f "$TMP_DEC" "$TMP_SECRET"
+}
+trap cleanup EXIT
+
+sops -d "$SECRET_FILE" > "$TMP_DEC"
+
+# =========================================================
+# VALIDATE STRUCTURE
+# Expected:
+# secrets:
+#   KEY: VALUE
+# =========================================================
+COUNT=$(yq e '.secrets // {} | length' "$TMP_DEC")
+
+if [[ "$COUNT" -eq 0 ]]; then
+  echo "No secret entries found"
+  exit 0
+fi
+
+echo "Found $COUNT secret entries"
+
+# =========================================================
+# BUILD SECRET MANIFEST
+# =========================================================
+SECRET_NAME="${SERVICE}-secret"
+
+kubectl create secret generic "$SECRET_NAME" \
+  -n "$NAMESPACE" \
+  --from-env-file=<(yq e '.secrets | to_entries | .[] | "\(.key)=\(.value)"' "$TMP_DEC") \
+  --dry-run=client -o yaml > "$TMP_SECRET"
+
+# =========================================================
+# APPLY SECRET
+# =========================================================
+kubectl apply -f "$TMP_SECRET"
+
+echo "✅ Secret applied: $SECRET_NAME"
+

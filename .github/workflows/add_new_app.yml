@@ -45,20 +45,61 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
 
-      - name: Configure AWS
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: us-east-1
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Check AWS credentials
+        run: aws sts get-caller-identity
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Install jq
+      - name: Install jq and SOPS
         run: |
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y jq
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+
+      - name: Setup AGE key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+          test -s ~/.config/sops/age/keys.txt || {
+            echo "❌ AGE key missing"
+            exit 1
+          }
+
+      - name: Setup kubeconfig
+        run: |
+          set -e
+
+          aws eks update-kubeconfig \
+            --region ${{ secrets.AWS_REGION }} \
+            --name kubapp-dev
+
+          export KUBECONFIG=~/.kube/config
+
+          echo "✅ kubeconfig created"
+
+          kubectl cluster-info
+
+      - name: Check
+        run: |
+          set -e
+          echo "=== kubeconfig ==="
+          cat ~/.kube/config || true
+          echo "=== auth test ==="
+          kubectl auth can-i get pods -A || true
+
+      - name: Check Readiness
+        run: bash scripts/check_cluster.sh
 
       - name: Get Current Env
         run: |
@@ -183,6 +224,7 @@ jobs:
 
             SERVICE=$(jq -r '.service' "$file")
             ENV=$(jq -r '.env' "$file")
+            NO_SECRETS=$(jq -r '.NO_SECRETS' "$file")
 
             if [[ -z "$SERVICE" || "$SERVICE" == "null" ]]; then
               echo "❌ Invalid service in $file"
@@ -214,6 +256,13 @@ jobs:
             echo "Registering ingress route..."
             bash scripts/register_new_svc.sh "$SERVICE" "$ENV"
 
+            if [[ "$NO_SECRETS" == "false" ]]; then
+              echo "Send Secrets in k8s"
+              bash scripts/create_secrets.sh "$file"
+            else
+              echo "$SERVICE has No secrets"
+            fi
+
             echo "✅ Provision complete for: $SERVICE - $ENV"
           done
 
@@ -222,28 +271,56 @@ jobs:
           set -euo pipefail
           bash scripts/validate_gitops.sh
 
+
+      - name: Install SOPS
+        run: |
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+
+      - name: Setup AGE key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+          test -s ~/.config/sops/age/keys.txt || {
+            echo "❌ AGE key missing"
+            exit 1
+          }
+
+      # --------------------------------
+      #  Setup kubeconfig (EKS access)
+      # --------------------------------
+      - name: Setup kubeconfig
+        run: |
+          set -e
+
+          aws eks update-kubeconfig \
+            --region ${{ secrets.AWS_REGION }} \
+            --name kubapp-dev
+
+          export KUBECONFIG=~/.kube/config
+
+          echo "✅ kubeconfig created"
+
+          kubectl cluster-info
+
+      - name: Check
+        run: |
+          set -e
+          echo "=== kubeconfig ==="
+          cat ~/.kube/config || true
+          echo "=== auth test ==="
+          kubectl auth can-i get pods -A || true
+
+      - name: Check Readiness
+        run: bash scripts/check_cluster.sh
+
       - name: Commit GitOps changes
         run: |
           set -euo pipefail
           ENV="${{ env.ENV }}"
-          DATE=$(date +"%Y-%m-%d_%H-%M-%S")
-
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git add gitops/
-
-          git diff --cached --quiet && {
-            echo "ℹ️  No new app changes detected"
-            exit 0
-          }
-
-          git commit -m "[ADD-APP] ${DATE} provision new application(s)"
-          if git push; then
-            echo ""
-          else
-            echo "Remote State changed.. Rebasing.."
-            git pull --rebase && git push
-          fi
-
+          DIR="gitops"
+          MSG="[ADD-NEW-APP] provision new application(s)"
+          bash scripts/commit.sh "$DIR" "$MSG"
           echo "✅ New app provisioning committed successfully for $ENV"
