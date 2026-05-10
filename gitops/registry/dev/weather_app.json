@@ -3,7 +3,7 @@
   "context": "docker/weather_app",
   "image": "paragon40/weather_app",
   "image2": "paragon40/weather_app:latest",
-  "tag": "49b0c1568b1bf5cbe94be63722a5e9fd7abeb946-1778407416",
+  "tag": "94a2d6cc76d29520ebb5ce7834782bd2e4842e0a-1778423114",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -19,6 +19,6 @@
   "mount_vol": "edgepaas-vol",
   "mount_path": "/tmp",
   "NO_VARS": false,
-  "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-10_10-03-36"
+  "NO_SECRETS": false,
+  "CREATED_AT": "2026-05-10_14-25-14"
 }
