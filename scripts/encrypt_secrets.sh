@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../iac" && pwd)"
 STACKS=("infra" "k8s")
 
-ENV="${1:-dev}"   # dev | prod | all
+ENV="${1:-dev}"
 
 echo
 echo "=================================================="
@@ -203,6 +203,73 @@ fi
 if [[ "$valid_files" = false ]]; then
   echo "[ERROR] ❌ No valid encrypted files exist"
   exit 1
+fi
+
+# =========================
+# DOCKER APP SECRETS ENCRYPTION
+# =========================
+echo "--------------------------------------------------"
+echo "[INFO] DOCKER SECRETS ENCRYPTION"
+echo "--------------------------------------------------"
+
+DOCKER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../docker" && pwd)"
+BACKUP_DIR="$DOCKER_DIR/.backup"
+
+echo "[INFO] Target directory: $DOCKER_DIR"
+
+mkdir -p "$BACKUP_DIR"
+
+[[ -d "$DOCKER_DIR" ]] || {
+  echo "[ERROR] ❌ Directory not found: $DOCKER_DIR"
+  exit 1
+}
+
+shopt -s nullglob
+
+found_docker_files=false
+valid_docker_files=false
+
+for file in $(find "$DOCKER_DIR" -type f \( \
+  -name "secrets.yml" -o \
+  -name "secrets.yaml" -o \
+  -name "secret.yml" -o \
+  -name "secret.yaml" -o \
+  -name "*secret*.yml" -o \
+  -name "*secret*.yaml" \
+\)); do
+
+  [[ -f "$file" ]] || continue
+  found_docker_files=true
+
+  echo "[INFO] Processing: $file"
+
+  # Skip already encrypted
+  if grep -q '^sops:' "$file"; then
+    echo "[WARN] ⚠️ Already encrypted: $file"
+    valid_docker_files=true
+    continue
+  fi
+
+  # Backup
+  backup_file="$BACKUP_DIR/$(basename "$file").bak"
+  cp -f "$file" "$backup_file"
+  echo "[INFO] Backup created: $backup_file"
+
+  # Encrypt in-place
+  if sops -e -i "$file"; then
+    echo "[INPLACE] Encrypted: $file"
+    valid_docker_files=true
+  else
+    echo "[ERROR] ❌ Failed: $file"
+    echo "[ERROR] Restoring backup..."
+    cp -f "$backup_file" "$file"
+    exit 1
+  fi
+
+done
+
+if [[ "$found_docker_files" = false ]]; then
+  echo "[WARN] ⚠️ No docker secret files found"
 fi
 
 echo
