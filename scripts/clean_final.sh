@@ -42,11 +42,10 @@ VPC_ID="${VPC_ID:-}"
 
 if [[ -z "${LEFTOVERS:-}" ]]; then
   echo "❌ LEFTOVERS is not set in environment"
-  LEFTOVERS="None"
 fi
 
-if "$LEFTOVERS" == "None" ]]; then
-  echo "✅ No Leftovers Remaining.. Account Is Clean"
+if [[ "${LEFTOVERS}" != "true" ]]; then
+  echo "✅ No Leftovers Remaining. Account Is Clean."
   exit 0
 fi
 
