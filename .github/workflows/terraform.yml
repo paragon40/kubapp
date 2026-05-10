@@ -419,6 +419,7 @@ jobs:
       - name: Verify Cleanups
         run: |
           bash scripts/verify_cleanup.sh
+          echo "LEFTOVERS: $LEFTOVERS"
           if [[ "$LEFTOVERS" = "true" ]]; then
             bash scripts/clean_final.sh
           fi
