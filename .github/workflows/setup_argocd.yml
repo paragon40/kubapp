@@ -141,7 +141,8 @@ jobs:
         run: |
           set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
-          CERT_ARN=$(terraform output -raw main_cert_arn || true)
+          CERT_ARN=$(terraform output -raw main_cert_arn 2>/dev/null || true)
+
           if [[ -z "$CERT_ARN" ]]; then
             echo "❌ CERT ARN is empty"
             exit 1
