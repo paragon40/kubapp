@@ -180,12 +180,11 @@ jobs:
         run: |
           set -euo pipefail
           ENV="${{ env.ENV }}"
-          DOMAIN="${{ secrets.TEST_DOMAIN }}"
           terraform init -reconfigure -backend-config="envs/$ENV/backend.hcl"
           CERT_ARN=$(terraform output -raw main_cert_arn 2>/dev/null || true)
           IRSA_ARN=$(terraform output -raw app_pods_role_arn 2>/dev/null || true)
 
-          if [[ -z "$CERT_ARN" ]]; the
+          if [[ -z "$CERT_ARN" ]]; then
             echo "❌ Arn Certificate Not Retrieved from terraform"
             exit 1
           fi
