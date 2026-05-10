@@ -106,5 +106,11 @@ jobs:
           terraform destroy -auto-approve -var-file=infra.tfvars
           echo "✅ Destory complete.. Remvoing Logs.."
 
+      - name: Check Logs
+        run: bash scripts/cleanup_logs.sh
+
       - name: Verify Cleanups
         run: bash scripts/cleanup_logs.sh
+
+      - name: Final cleaning if still exists
+        run: bash scripts/clean_final.sh

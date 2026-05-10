@@ -52,6 +52,30 @@ else
 fi
 
 echo "--------------------------------------------------"
+# ============================================================
+# ANALYSIS HELPERS
+# ============================================================
+
+LEFTOVERS=false
+LEFTOVER_COUNT=0
+
+# Marks that at least one orphaned resource was found
+flag_leftover() {
+  LEFTOVERS=true
+  LEFTOVER_COUNT=$((LEFTOVER_COUNT + 1))
+}
+
+# Prints output and marks leftovers if output is non-empty
+report_if_found() {
+  local output="$1"
+
+  if [[ -n "$output" ]]; then
+    echo "$output"
+    flag_leftover
+  else
+    echo "[OK] None found"
+  fi
+}
 
 # ============================================================
 # 2. Data Collection
@@ -92,7 +116,7 @@ mark() {
 
 mark "ENI ANALYSIS"
 
-echo "$ENIS" | jq -r --arg VPC "$VPC_ID" --arg CLUSTER "$CLUSTER_NAME" '
+OUTPUT=$(echo "$ENIS" | jq -r --arg VPC "$VPC_ID" --arg CLUSTER "$CLUSTER_NAME" '
 .NetworkInterfaces[]
 | select(.VpcId == $VPC)
 | select(
@@ -105,7 +129,8 @@ Desc: \(.Description)
 Status: \(.Status)
 Attachment: \(.Attachment.InstanceId // "none")
 "
-' || true
+' || true)
+report_if_found "$OUTPUT"
 
 # ============================================================
 # 5. Load Balancers
@@ -113,20 +138,22 @@ Attachment: \(.Attachment.InstanceId // "none")
 
 mark "LOAD BALANCERS (CLASSIC)"
 
-echo "$ELB_CLASSIC" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
+OUTPUT=$(echo "$ELB_CLASSIC" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
 .LoadBalancerDescriptions[]
 | select(.LoadBalancerName | test($CLUSTER; "i"))
 | "LB: \(.LoadBalancerName)\nDNS: \(.DNSName)\n"
-' || true
+' || true)
+report_if_found "$OUTPUT"
 
 mark "LOAD BALANCERS (ALB/NLB)"
 
-echo "$ELB_V2" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
+OUTPUT=$(echo "$ELB_V2" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
 .LoadBalancers[]
 | select(.VpcId != null)
 | select(.LoadBalancerName | test($CLUSTER; "i") or test("k8s"; "i"))
 | "LB: \(.LoadBalancerName)\nType: \(.Type)\nDNS: \(.DNSName)\n"
-' || true
+' || true)
+report_if_found "$OUTPUT"
 
 # ============================================================
 # 6. Target Groups
@@ -134,11 +161,12 @@ echo "$ELB_V2" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
 
 mark "TARGET GROUPS"
 
-echo "$TARGET_GROUPS" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
+OUTPUT=$(echo "$TARGET_GROUPS" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
 .TargetGroups[]
 | select(.TargetGroupName | test($CLUSTER; "i") or test("k8s"; "i"))
 | "TG: \(.TargetGroupName)\nARN: \(.TargetGroupArn)\n"
-' || true
+' || true)
+report_if_found "$OUTPUT"
 
 # ============================================================
 # 7. EC2 / ASG
@@ -146,66 +174,70 @@ echo "$TARGET_GROUPS" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
 
 mark "EC2 INSTANCES (ORPHAN CHECK)"
 
-echo "$EC2_INSTANCES" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
+OUTPUT=$(echo "$EC2_INSTANCES" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
 .Reservations[].Instances[]
 | select(.State.Name != "terminated")
 | "Instance: \(.InstanceId) | State: \(.State.Name) | Type: \(.InstanceType)"
-' || true
+' || true)
+report_if_found "$OUTPUT"
 
 mark "AUTO SCALING GROUPS"
 
-echo "$ASGS" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
+OUTPUT=$(echo "$ASGS" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
 .AutoScalingGroups[]
 | select(.AutoScalingGroupName | test($CLUSTER; "i"))
 | "ASG: \(.AutoScalingGroupName)\nMin: \(.MinSize) Max: \(.MaxSize)\n"
-' || true
-
+' || true)
+report_if_found "$OUTPUT"
 # ============================================================
 # 8. Security Groups
 # ============================================================
 
 mark "SECURITY GROUPS"
 
-echo "$SGS" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
+OUTPUT=$(echo "$SGS" | jq -r --arg CLUSTER "$CLUSTER_NAME" '
 .SecurityGroups[]
 | select(.GroupName | test($CLUSTER; "i"))
 | "SG: \(.GroupId) | \(.GroupName)"
-' || true
-
+' || true)
+report_if_found "$OUTPUT"
 # ============================================================
 # 9. EBS Volumes (COST RISK)
 # ============================================================
 
 mark "EBS VOLUMES (COST RISK)"
 
-echo "$EBS" | jq -r '
+OUTPUT=$(echo "$EBS" | jq -r '
 .Volumes[]
 | select(.State == "available")
 | "Volume: \(.VolumeId) | Size: \(.Size)GB | State: \(.State)"
-' || true
-
+' || true)
+report_if_found "$OUTPUT"
 # ============================================================
 # 10. EFS (COST RISK)
 # ============================================================
 
 mark "EFS FILE SYSTEMS (COST RISK)"
 
-echo "$EFS" | jq -r '
+OUTPUT=$(echo "$EFS" | jq -r '
 .FileSystems[]
 | " EFS: \(.FileSystemId) | State: \(.LifeCycleState)"
-' || true
+' || true)
 
+report_if_found "$OUTPUT"
 # ============================================================
 # 11. NAT Gateways (HIGH COST CRITICAL)
 # ============================================================
 
 mark "NAT GATEWAYS (HIGH COST)"
 
-echo "$NAT_GWS" | jq -r '
+OUTPUT=$(echo "$NAT_GWS" | jq -r '
 .NatGateways[]
 | select(.State != "deleted")
 | "NAT GW: \(.NatGatewayId) | State: \(.State) | VPC: \(.VpcId)"
-' || true
+' || true)
+
+report_if_found "$OUTPUT"
 
 # ============================================================
 # FINAL SUMMARY
@@ -216,4 +248,14 @@ echo "- Reviewd ENIs, LBs, NAT GW, EFS, EBS carefully"
 echo "=================================================="
 echo "CLEANUP AUDIT COMPLETE"
 echo "=================================================="
+echo "LEFTOVERS     : $LEFTOVERS"
+echo "RESOURCE SETS : $LEFTOVER_COUNT"
+echo "=================================================="
 
+# Export to GitHub Actions
+if [[ -n "${GITHUB_ENV:-}" ]]; then
+  {
+    echo "LEFTOVERS=$LEFTOVERS"
+    echo "LEFTOVER_COUNT=$LEFTOVER_COUNT"
+  } >> "$GITHUB_ENV"
+fi
