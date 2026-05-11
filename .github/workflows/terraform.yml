@@ -419,12 +419,18 @@ jobs:
       - name: Verify Cleanups
         run: |
           bash scripts/verify_cleanup.sh
+
+      - name: Final Conditional Cleanups
+        run: |
           LEFTOVERS="${{ env.LEFTOVERS }}"
+          echo "LEFTOVERS=${{ env.LEFTOVERS }}"
 
           if [[ -n "$LEFTOVERS" ]]; then
-            echo "LEFTOVERS: $LEFTOVERS"
             if [[ "$LEFTOVERS" = "true" ]]; then
               bash scripts/clean_final.sh
+              echo "✅ Final cleanup Done!"
+            else
+              echo "No Further cleanup required"
             fi
           else
             echo "❌ LEFTOVERS Variable Not Discovered"
