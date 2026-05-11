@@ -69,7 +69,7 @@ jobs:
 
           ENV="${{ github.event.inputs.env || 'dev' }}"
           ING_FILE="gitops/ingress/${ENV}/values.yaml"
-          APP_BASE="envs/$ENV"
+          APP_BASE="gitops/envs/$ENV"
 
           echo "=============================="
           echo " ORPHAN APP CLEANUP ENGINE"
