@@ -14,6 +14,7 @@ ENV="${3:-dev}"
 DOMAIN="${DOMAIN:-}"
 CERT_ARN="${CERT_ARN:-}"
 PORT="${SERVICE_PORT:-80}"
+BACKEND_SERVICE="${BACKEND_SERVICE:-}"
 
 VALUES_FILE="gitops/ingress/${ENV}/values.yaml"
 TMP_FILE="/tmp/ingress-values-${ENV}.yaml"
@@ -66,6 +67,9 @@ fi
 echo "================================="
 echo "ACTION : $ACTION"
 echo "SERVICE: $SERVICE_NAME"
+if [[ -n "$BACKEND_SERVICE" ]]; then
+  echo "BACKEND SERVICE: $BACKEND_SERVICE"
+fi
 echo "ENV    : $ENV"
 echo "FILE   : $VALUES_FILE"
 echo "TMP    : $TMP_FILE"
@@ -203,11 +207,22 @@ add_service() {
 
   echo "Adding service: $SERVICE_NAME"
 
-  yq e -i '.services += [{
-    "name": strenv(SERVICE_NAME),
-    "port": env(PORT),
-    "enabled": true
-  }]' "$TMP_FILE"
+  if [[ -n "$BACKEND_SERVICE" ]]; then
+    yq e -i '.services += [{
+      "name": strenv(SERVICE_NAME),
+      "port": env(PORT),
+      "enabled": true,
+      "backend": {
+        "service": strenv(BACKEND_SERVICE)
+      }
+    }]' "$TMP_FILE"
+  else
+    yq e -i '.services += [{
+      "name": strenv(SERVICE_NAME),
+      "port": env(PORT),
+      "enabled": true
+    }]' "$TMP_FILE"
+  fi
 }
 
 remove_service() {

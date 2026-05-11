@@ -209,6 +209,7 @@ jobs:
 
           jq -n \
             --arg service "$SERVICE_NAME" \
+            --arg type "App" \
             --arg context "$CONTEXT" \
             --arg image1 "$IMAGE" \
             --arg image2 "$IMAGE2" \
@@ -232,6 +233,7 @@ jobs:
             --arg created_at "$TM" \
             '{
               service: $service,
+              type: $type,
               context: $context,
               image: $image1,
               image2: $image2,
@@ -380,6 +382,50 @@ jobs:
             cp "$file" "$NEW_DIR"
           done
 
+          echo "Building Platform/Internal Backend (Observability+ ) Services...."
+          TM="$(date +%Y-%m-%d_%H-%M-%S)"
+
+          for svc in grafana prometheus alertmanager argocd; do
+            case "$svc" in
+              grafana)
+                PORT=3000
+                BACKEND_SERVICE="kube-prometheus-stack-grafana"
+              ;;
+              prometheus)
+                PORT=9090
+                BACKEND_SERVICE="kube-prometheus-stack-prometheus"
+              ;;
+              alertmanager)
+                PORT=9093
+                BACKEND_SERVICE="kube-prometheus-stack-alertmanager"
+              ;;
+              argocd)
+                PORT=8080
+                BACKEND_SERVICE="argocd-server"
+              ;;
+            esac
+
+            FILE="$NEW_DIR/${svc}.json"
+
+            echo "→ Building $FILE"
+
+            jq -n \
+              --arg service "$svc" \
+              --arg type "Backend" \
+              --arg backendService "$BACKEND_SERVICE" \
+              --arg env "$ENV" \
+              --argjson port "$PORT" \
+              --arg timestamp "$TM" \
+              '{
+                service: $service,
+                type: $type,
+                backendService: $backendService,
+                env: $env,
+                port: $port,
+                timestamp: $timestamp
+              }' > "$FILE"
+          done
+
       - name: Validate registry
         run: |
           NEW_DIR="${{ env.NEW_DIR }}"
@@ -452,7 +498,7 @@ jobs:
 
       - name: Debug
         run: |
-          git ls-files | grep artifacts || echo "NOT TRACKED"
+          git ls-files | grep artifacts || echo "Artifact Correctly NOT TRACKED Anymore!"
 
       - name: finally
         run: |

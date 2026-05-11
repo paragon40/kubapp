@@ -27,9 +27,9 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ .name }}-service
+                name: {{ .backend.service | default (printf "%s-service" .name) }}
                 port:
-                  number: 80
+                  number: {{ .port }}
 {{- end }}
 
 {{- if .Values.ingress.enableSubdomainRouting }}
@@ -43,9 +43,9 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ .name }}-service
+                name: {{ .backend.service | default (printf "%s-service" .name) }}
                 port:
-                  number: 80
+                  number: {{ .port }}
 
 {{- end }}
 {{- end }}

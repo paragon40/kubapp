@@ -207,8 +207,8 @@ jobs:
           ENV="${{ env.ENV }}"
           APP_LIST="$(find gitops/registry/$ENV -name "*.json" | wc -l)"
           echo "Number of Apps Found: $APP_LIST"
-
           for file in $(find gitops/registry/$ENV -name "*.json"); do
+            ENV1="$ENV"
             echo ""
             echo "================================================"
             echo "Processing metadata: $file"
@@ -217,6 +217,13 @@ jobs:
             SERVICE=$(jq -r '.service' "$file")
             ENV=$(jq -r '.env' "$file")
             NO_SECRETS=$(jq -r '.NO_SECRETS' "$file")
+
+            if [[ "$ENV1" != "$ENV" ]]; then
+              echo "❌ Enviroment Mismatch. Workflow Must run in one environment"
+              echo "Env Specified For Registry: $ENV1"
+              echo "Env Specified for App: $ENV"
+              exit 1
+            fi
 
             if [[ -z "$SERVICE" || "$SERVICE" == "null" ]]; then
               echo "❌ Invalid service in $file"
@@ -229,29 +236,46 @@ jobs:
             fi
             echo "file=$file" >> $GITHUB_ENV
 
+            SERVICE_TYPE=$(jq -r '.type' "$file")
 
+            if [[ "$SERVICE_TYPE" == "App" || "$SERVICE_TYPE" == "Frontend" ]]; then
             ####################################################
             # Create values.yaml
             ####################################################
-            echo "Creating values.yaml..."
-            bash scripts/create_values.sh "$file"
+              echo "Creating values.yaml..."
+              bash scripts/create_values.sh "$file"
 
             ####################################################
             # Inject runtime env + encrypted secrets
             ####################################################
-            echo "Preparing runtime env + secrets..."
-            if [[ "$NO_SECRETS" == "false" ]]; then
-              bash scripts/create_secrets.sh "$file"
-              echo "✅ Secrets for $SERVICE Updated!"
-            else
-              echo "$SERVICE has No secrets"
-            fi
+              echo "Preparing runtime env + secrets..."
+              if [[ "$NO_SECRETS" == "false" ]]; then
+                bash scripts/create_secrets.sh "$file"
+                echo "✅ Secrets for $SERVICE Updated!"
+              else
+                echo "$SERVICE has No secrets"
+              fi
 
             ####################################################
             # Register app in shared ingress
             ####################################################
-            echo "Registering ingress route..."
-            bash scripts/register_new_svc.sh "$SERVICE" "$ENV"
+              echo "Registering ingress route for $SERVICE..."
+              bash scripts/register_new_svc.sh "$SERVICE" "$ENV"
+            elif [[ "$SERVICE_TYPE" == "Backend" ]]; then
+              BACKEND_SERVICE=$(jq -r '.backendService' "$file")
+              if [[ -n "$BACKEND_SERVICE" ]]; then
+                export BACKEND_SERVICE
+              else
+                echo "❌ Backend Service Name for $SERVICE is empty"
+                continue
+              fi
+
+              echo "Registering ingress route for $SERVICE..."
+              bash scripts/register_new_svc.sh "$SERVICE" "$ENV"
+            else
+              echo "Incomplete data for $SERVICE, Update gitops/registry/$ENV/${SERVICE}.json"
+              exit 1
+            fi
 
             echo "✅ Provision complete for: $SERVICE - $ENV"
           done

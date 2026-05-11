@@ -250,7 +250,7 @@ resource "helm_release" "kube_prometheus_stack" {
         }
 
         service = {
-          type = "LoadBalancer"
+          type = "ClusterIP"
         }
 
         persistence = {
