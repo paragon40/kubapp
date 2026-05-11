@@ -23,12 +23,6 @@ services:
   - name: admin
     port: 80
     enabled: true
-  - name: nodejsapp
-    port: 80
-    enabled: true
   - name: urlshortener
-    port: 80
-    enabled: true
-  - name: chatbot
     port: 80
     enabled: true
