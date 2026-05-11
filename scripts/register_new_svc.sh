@@ -21,6 +21,12 @@ TMP_FILE="/tmp/ingress-values-${ENV}.yaml"
 # -----------------------------------------
 # Normalize legacy usage
 # -----------------------------------------
+if [[ "$ACTION" != "add" && "$ACTION" != "remove" ]]; then
+  ENV="${2:-dev}"
+  SERVICE_NAME="$ACTION"
+  ACTION="add"
+fi
+
 if [[ -z "$SERVICE_NAME" ]]; then
   echo "Usage:"
   echo "  $0 <service> [env]"
@@ -29,7 +35,15 @@ if [[ -z "$SERVICE_NAME" ]]; then
   exit 1
 fi
 
-ARR=("ACTION" "SERVICE_NAME" "ENV" "DOMAIN" "CERT_ARN" "PORT" "VALUES_FILE")
+# -----------------------------------------
+# Required variables
+# -----------------------------------------
+if [[ "$ACTION" == "add" ]]; then
+  ARR=("ACTION" "SERVICE_NAME" "ENV" "DOMAIN" "CERT_ARN" "PORT" "VALUES_FILE")
+else
+  ARR=("ACTION" "SERVICE_NAME" "ENV" "VALUES_FILE")
+fi
+
 for var in "${ARR[@]}"; do
   value="${!var}"
 
@@ -41,15 +55,12 @@ for var in "${ARR[@]}"; do
   export "$var=$value"
 done
 
-[[ "$PORT" =~ ^[0-9]+$ && "$PORT" -ge 1 && "$PORT" -le 65535 ]] || {
-  echo "❌ Invalid PORT: $PORT"
-  exit 1
-}
-
-if [[ "$ACTION" != "add" && "$ACTION" != "remove" ]]; then
-  ENV="${2:-dev}"
-  SERVICE_NAME="$ACTION"
-  ACTION="add"
+# Validate port only for add
+if [[ "$ACTION" == "add" ]]; then
+  [[ "$PORT" =~ ^[0-9]+$ && "$PORT" -ge 1 && "$PORT" -le 65535 ]] || {
+    echo "❌ Invalid PORT: $PORT"
+    exit 1
+  }
 fi
 
 echo "================================="
@@ -69,41 +80,42 @@ sanitize() {
 
 command -v yq >/dev/null 2>&1 || { echo "yq is required"; exit 1; }
 
-[[ -f "$VALUES_FILE" ]] || { echo "Ingress file not found: $VALUES_FILE"; exit 1; }
+[[ -f "$VALUES_FILE" ]] || {
+  echo "Ingress file not found: $VALUES_FILE"
+  exit 1
+}
 
 # -----------------------------------------
 # BOOTSTRAP TEMP STATE
 # -----------------------------------------
 cp "$VALUES_FILE" "$TMP_FILE"
 
-# -------------------------------
-# INGRESS DYNAMIC CONFIGURATION
-# -------------------------------
-yq e -i '
-  .ingress.baseDomain = strenv(DOMAIN)
-  | .ingress.certificateArn = strenv(CERT_ARN)
-  | .ingress.name = (.ingress.name // ("kubapp-" + strenv(ENV) + "-alb"))
-  | .ingress.className = (.ingress.className // "alb")
-  | .ingress.enableSubdomainRouting = (.ingress.enableSubdomainRouting // true)
-  | .ingress.annotations.listenPorts = [
-      {"HTTP": 80},
-      {"HTTPS": 443}
-    ]
-' "$TMP_FILE"
+# -----------------------------------------
+# INGRESS DYNAMIC CONFIGURATION (ADD ONLY)
+# -----------------------------------------
+if [[ "$ACTION" == "add" ]]; then
+  yq e -i '
+    .ingress.baseDomain = strenv(DOMAIN)
+    | .ingress.certificateArn = strenv(CERT_ARN)
+    | .ingress.name = (.ingress.name // ("kubapp-" + strenv(ENV) + "-alb"))
+    | .ingress.className = (.ingress.className // "alb")
+    | .ingress.enableSubdomainRouting = (.ingress.enableSubdomainRouting // true)
+    | .ingress.annotations.listenPorts = [
+        {"HTTP": 80},
+        {"HTTPS": 443}
+      ]
+  ' "$TMP_FILE"
 
-if yq e '.ingress.annotations.listenPorts | tag' "$TMP_FILE" | grep -q '!!str'; then
-  echo "❌ listenPorts is STRING-ENCODED (invalid ALB format)"
-  exit 1
+  if yq e '.ingress.annotations.listenPorts | type' "$TMP_FILE" | grep -q '!!str'; then
+    echo "❌ listenPorts must NOT be a string"
+    exit 1
+  fi
 fi
 
-if yq e '.ingress.annotations.listenPorts | type' "$TMP_FILE" | grep -q '!!str'; then
-  echo "❌ listenPorts must NOT be a string"
-  exit 1
-fi
-# ensure services array
+# Ensure services array exists
 yq e -i '.services = (.services // [])' "$TMP_FILE"
 
-# normalize
+# Normalize service entries
 yq e -i '
   .services |= map(
     .enabled = (.enabled // true) |
@@ -111,13 +123,14 @@ yq e -i '
   )
 ' "$TMP_FILE"
 
-# filter enabled only
+# Keep only enabled services
 yq e -i '.services |= map(select(.enabled == true))' "$TMP_FILE"
 
 SERVICE_NAME="$(sanitize "$SERVICE_NAME")"
+export SERVICE_NAME
 
 # =========================================
-# VALIDATION FUNCTIONS (CLEAN SECTION)
+# VALIDATION FUNCTIONS
 # =========================================
 
 validate_schema() {
@@ -145,21 +158,22 @@ validate_listen_ports() {
   TYPE=$(yq e '.ingress.annotations.listenPorts | type' "$TMP_FILE")
 
   if [[ "$TYPE" != "!!seq" ]]; then
-    echo "❌ listenPorts must be a YAML array (sequence)"
+    echo "❌ listenPorts must be a YAML array"
     exit 1
   fi
-
-  HTTP_COUNT=$(yq e '.ingress.annotations.listenPorts[] | select(has("HTTP")) | .HTTP' "$TMP_FILE" | wc -l)
-  HTTPS_COUNT=$(yq e '.ingress.annotations.listenPorts[] | select(has("HTTPS")) | .HTTPS' "$TMP_FILE" | wc -l)
-
-  [[ "$HTTP_COUNT" -eq 1 ]] || { echo "❌ HTTP must exist exactly once"; exit 1; }
-  [[ "$HTTPS_COUNT" -eq 1 ]] || { echo "❌ HTTPS must exist exactly once"; exit 1; }
 
   HTTP=$(yq e '.ingress.annotations.listenPorts[] | select(has("HTTP")) | .HTTP' "$TMP_FILE" | head -n1)
   HTTPS=$(yq e '.ingress.annotations.listenPorts[] | select(has("HTTPS")) | .HTTPS' "$TMP_FILE" | head -n1)
 
-  [[ "$HTTP" == "80" ]] || { echo "❌ HTTP must be 80"; exit 1; }
-  [[ "$HTTPS" == "443" ]] || { echo "❌ HTTPS must be 443"; exit 1; }
+  [[ "$HTTP" == "80" ]] || {
+    echo "❌ HTTP must be 80"
+    exit 1
+  }
+
+  [[ "$HTTPS" == "443" ]] || {
+    echo "❌ HTTPS must be 443"
+    exit 1
+  }
 
   echo "✅ listenPorts valid"
 }
@@ -206,7 +220,9 @@ remove_service() {
 
   echo "Removing service: $SERVICE_NAME"
 
-  yq e -i '.services |= map(select(.name != strenv(SERVICE_NAME)))' "$TMP_FILE"
+  yq e -i '
+    .services |= map(select(.name != strenv(SERVICE_NAME)))
+  ' "$TMP_FILE"
 }
 
 # =========================================
@@ -219,33 +235,32 @@ case "$ACTION" in
   *) echo "Invalid action"; exit 1 ;;
 esac
 
-# -----------------------------------------
-# VALIDATION PIPELINE (ORDERED)
-# -----------------------------------------
+# =========================================
+# VALIDATION
+# =========================================
+
 validate_schema
 validate_listen_ports
 validate_https_requirements
 
 echo "Running YAML validation..."
-yq e '.' "$TMP_FILE" >/dev/null || {
-  echo "Invalid YAML generated"
-  exit 1
-}
+yq e '.' "$TMP_FILE" >/dev/null
 
 echo "Running final structural validation..."
 
 yq e '
-.ingress.baseDomain != null and
-.ingress.name != null and
-.services | length > 0
+  .ingress.baseDomain != null and
+  .ingress.name != null and
+  (.services | length > 0)
 ' "$TMP_FILE" | grep -q true || {
   echo "❌ Ingress schema invalid"
   exit 1
 }
 
-# -----------------------------------------
+# =========================================
 # ATOMIC APPLY
-# -----------------------------------------
+# =========================================
+
 echo "Applying changes atomically..."
 
 cp "$VALUES_FILE" "${VALUES_FILE}.bak"
