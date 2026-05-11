@@ -372,6 +372,8 @@ jobs:
           echo "NEW_DIR=$NEW_DIR" >> $GITHUB_ENV
 
       - name: Rebuild registry from artifacts
+        env:
+          ENV: ${{ needs.build.outputs.env }}
         run: |
           set -euo pipefail
           NEW_DIR="${{ env.NEW_DIR }}"
