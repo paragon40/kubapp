@@ -128,10 +128,10 @@ module "eks" {
   access_iam_arn   = var.access_iam_arn
   admin_arn        = var.admin_arn
 
-  node_instance_type    = "t3.medium"
-  node_desired_capacity = 2
-  node_min_capacity     = 1
-  node_max_capacity     = 3
+  node_instance_type    = "t3.large"
+  node_desired_capacity = 3
+  node_min_capacity     = 2
+  node_max_capacity     = 5
 
   tags = merge(local.common_tags, {
     layer        = "compute"
