@@ -129,7 +129,7 @@ module "eks" {
   admin_arn        = var.admin_arn
 
   node_instance_type    = "t3.large"
-  node_desired_capacity = 3
+  node_desired_capacity = 2
   node_min_capacity     = 2
   node_max_capacity     = 5
 
