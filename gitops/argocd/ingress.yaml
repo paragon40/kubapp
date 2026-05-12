@@ -8,22 +8,21 @@ spec:
   generators:
     - matrix:
         generators:
-
           - list:
               elements:
                 - env: dev
-                  namespace: dev
                 # - env: prod
-                #   namespace: prod
 
           - list:
               elements:
                 - stack: values
+                  namespace: dev
                 - stack: monitoring
+                  namespace: monitoring
 
   template:
     metadata:
-      name: "ingress-{{env}}-{{stack}}"
+      name: "ingress-{{.env}}-{{.stack}}"
 
     spec:
       project: default
@@ -31,18 +30,14 @@ spec:
       source:
         repoURL: https://github.com/paragon40/kubapp.git
         targetRevision: main
-
         path: gitops/charts/ingress
-
         helm:
           valueFiles:
-            #- "ingress/{{env}}/values.yaml"
-            -  "../../ingress/{{env}}/{{stack}}.yaml"
-
+            - "../../ingress/{{.env}}/{{.stack}}.yaml"
 
       destination:
         server: https://kubernetes.default.svc
-        namespace: "{{if eq stack \"monitoring\"}}monitoring{{else}}{{namespace}}{{end}}"
+        namespace: "{{.namespace}}"
 
       syncPolicy:
         automated:
@@ -50,4 +45,3 @@ spec:
           selfHeal: true
         syncOptions:
           - CreateNamespace=true
-
