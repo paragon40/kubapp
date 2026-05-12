@@ -8,9 +8,11 @@ spec:
   generators:
     - list:
         elements:
-          - env: dev
+          - namespace: dev
+            env: dev
             stack: values
-          - env: monitoring
+          - namespace: monitoring
+            env: dev
             stack: monitoring
 
   template:
