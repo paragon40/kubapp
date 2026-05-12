@@ -192,6 +192,29 @@ resource "helm_release" "fluentbit" {
               Keep_Log            Off
               K8S-Logging.Parser  On
               K8S-Logging.Exclude Off
+
+          [FILTER]
+              Name                parser
+              Match               kube.*
+              Key_Name            message
+              Parser              json
+              Reserve_Data        On
+              Preserve_Key        Off
+
+          [FILTER]
+              Name                modify
+              Match               kube.*
+              Copy                kubernetes.namespace_name namespace
+              Copy                kubernetes.pod_name       pod
+              Copy                kubernetes.container_name container
+              Copy                kubernetes.host           node
+              Copy                kubernetes.labels.app     app
+
+          [FILTER]
+              Name   modify
+              Match  kube.*
+              Add    cluster ${var.cluster_name}
+              Add    environment ${var.env}
         EOF
 
         outputs = <<-EOF
