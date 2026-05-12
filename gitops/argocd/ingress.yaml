@@ -15,9 +15,12 @@ spec:
 
           - list:
               elements:
-                - stack: values
+                - env: dev
+                  stack: values
                   namespace: dev
-                - stack: monitoring
+
+                - env: dev
+                  stack: monitoring
                   namespace: monitoring
 
   template:
