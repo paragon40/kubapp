@@ -36,7 +36,6 @@ spec:
           valueFiles:
             #- "ingress/{{env}}/values.yaml"
             - "../../ingress/{{env}}/{{stack}}.yaml"
-            - "../../ingress/{{env}}/{{stack}}.yaml"
 
 
       destination:
