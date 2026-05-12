@@ -33,7 +33,7 @@ variable "admin_arn" {
 variable "kubernetes_v" {
   description = "Kubernetes version"
   type        = string
-  default     = "1.35"
+  default     = "1.31"
 }
 
 variable "CERT_ARN" {
