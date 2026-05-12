@@ -52,7 +52,7 @@ for var in "${ARR[@]}"; do
   export "$var=$value"
 done
 
-TARGET_DIR="gitops/envs/$ENV/$SERVICE"
+TARGET_DIR="gitops/envs/$ENV/apps/$SERVICE"
 TARGET_FILE="$TARGET_DIR/values.yaml"
 
 mkdir -p "$TARGET_DIR"

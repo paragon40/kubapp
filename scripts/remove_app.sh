@@ -28,7 +28,7 @@ require() {
 
 require yq
 
-APP_DIR="gitops/envs/$ENV/$SERVICE"
+APP_DIR="gitops/envs/$ENV/apps/$SERVICE"
 
 # Adjust this if your shared ingress file differs
 INGRESS_FILE="gitops/ingress/$ENV/values.yaml"
