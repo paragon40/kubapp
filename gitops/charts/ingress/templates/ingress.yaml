@@ -27,7 +27,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ .backend.service | default (printf "%s-service" .name) }}
+                name: {{ default (printf "%s-service" .name) (dig "backend" "service" "" .) }}
                 port:
                   number: {{ .port }}
 {{- end }}
@@ -43,7 +43,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ .backend.service | default (printf "%s-service" .name) }}
+                name: {{ default (printf "%s-service" .name) (dig "backend" "service" "" .) }}
                 port:
                   number: {{ .port }}
 
