@@ -121,12 +121,11 @@ for dir in "${DIRS[@]}"; do
       fi
       if [[ "$file" == *"/backend_proxy/"* ]]; then
         NAME=$(yq e '.metadata.name' "$file")
-        TYPE=$(yq e '.spec.type' "$file")
-        EXT_NAME=$(yq e '.spec.externalName' "$file")
-        [[ -n "$EXT_NAME" && "$EXT_NAME" != "null" ]] || fail "Missing appName in backend_proxy: $file"
-        [[ -n "$NAME" && "$NAME" != "null" ]] || fail "Missing backend.service in $file"
+        NS=$(yq e '.metadata.namespace' "$file")
+        [[ -n "$NAME" && "$NAME" != "null" ]] || fail "Missing appName in backend_proxy: $file"
+        [[ -n "$NS" && "$NS" != "null" ]] || fail "Missing namespace in $file"
 
-        echo "[INFO] ✅ Backend proxy valid: $NAME with $EXT_NAME"
+        echo "[INFO] ✅ Backend proxy valid: $NAME with $NS"
       fi
     fi
     ############################################

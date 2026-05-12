@@ -1,12 +1,11 @@
 apiVersion: v1
-kind: Service
+kind: Endpoints
 metadata:
-  name: kube-prometheus-stack-grafana
+  name: grafana-proxy
   namespace: dev
-spec:
-  type: ExternalName
-  externalName: kube-prometheus-stack-grafana.monitoring.svc.cluster.local
-  ports:
-    - port: 3000
-      targetPort: 80
+subsets:
+  - addresses:
+      - ip: IP
+    ports:
+      - port: 3000
 

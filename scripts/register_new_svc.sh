@@ -18,6 +18,7 @@ BACKEND_SERVICE="${BACKEND_SERVICE:-}"
 
 VALUES_FILE="gitops/ingress/${ENV}/values.yaml"
 TMP_FILE="/tmp/ingress-values-${ENV}.yaml"
+BACKEND_FILE="gitops/ingress/${ENV}/monitoring.yaml"
 
 # -----------------------------------------
 # Normalize legacy usage
@@ -69,9 +70,14 @@ echo "ACTION : $ACTION"
 echo "SERVICE: $SERVICE_NAME"
 if [[ -n "$BACKEND_SERVICE" ]]; then
   echo "BACKEND SERVICE: $BACKEND_SERVICE"
+  USE_FILE="$BACKEND_FILE"
+  NS="monitoring"
+else
+  USE_FILE="$VALUES_FILE"
+  NS="$ENV"
 fi
 echo "ENV    : $ENV"
-echo "FILE   : $VALUES_FILE"
+echo "FILE   : $USE_FILE"
 echo "TMP    : $TMP_FILE"
 echo "================================="
 
@@ -84,15 +90,15 @@ sanitize() {
 
 command -v yq >/dev/null 2>&1 || { echo "yq is required"; exit 1; }
 
-[[ -f "$VALUES_FILE" ]] || {
-  echo "Ingress file not found: $VALUES_FILE"
+[[ -f "$USE_FILE" ]] || {
+  echo "Ingress file not found: $USE_FILE"
   exit 1
 }
 
 # -----------------------------------------
 # BOOTSTRAP TEMP STATE
 # -----------------------------------------
-cp "$VALUES_FILE" "$TMP_FILE"
+cp "$USE_FILE" "$TMP_FILE"
 
 # -----------------------------------------
 # INGRESS DYNAMIC CONFIGURATION (ADD ONLY)
@@ -101,7 +107,7 @@ if [[ "$ACTION" == "add" ]]; then
   yq e -i '
     .ingress.baseDomain = strenv(DOMAIN)
     | .ingress.certificateArn = strenv(CERT_ARN)
-    | .ingress.name = (.ingress.name // ("kubapp-" + strenv(ENV) + "-alb"))
+    | .ingress.name = (.ingress.name // ("kubapp-" + strenv(NS) + "-alb"))
     | .ingress.className = (.ingress.className // "alb")
     | .ingress.enableSubdomainRouting = (.ingress.enableSubdomainRouting // true)
     | .ingress.annotations.listenPorts = [
@@ -278,10 +284,11 @@ yq e '
 
 echo "Applying changes atomically..."
 
-cp "$VALUES_FILE" "${VALUES_FILE}.bak"
-mv "$TMP_FILE" "$VALUES_FILE"
+
+cp "$USE_FILE" "${USE_FILE}.bak"
+mv "$TMP_FILE" "$USE_FILE"
 
 echo "Update complete"
 echo "---------------------------------"
-cat "$VALUES_FILE"
+cat "$USE_FILE"
 echo "---------------------------------"
