@@ -4,7 +4,7 @@ ingress:
   className: alb
   baseDomain: rundailytest.online
   enableSubdomainRouting: true
-  certificateArn: arn:aws:acm:us-east-1:198200019771:certificate/69c0aa59-1525-4efa-86ae-ea8e88a04b09
+  certificateArn: arn:aws:acm:us-east-1:198200019771:certificate/d33fdba8-5a0c-4be6-9cc7-9a7b45be19f4
   annotations:
     scheme: internet-facing
     targetType: ip
@@ -31,3 +31,18 @@ services:
     enabled: true
     backend:
       service: kube-prometheus-stack-grafana
+  - name: prometheus
+    port: 80
+    enabled: true
+    backend:
+      service: kube-prometheus-stack-prometheus
+  - name: alertmanager
+    port: 80
+    enabled: true
+    backend:
+      service: kube-prometheus-stack-alertmanager
+  - name: argocd
+    port: 80
+    enabled: true
+    backend:
+      service: argocd-server
