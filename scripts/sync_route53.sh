@@ -7,6 +7,7 @@ set -euo pipefail
 DOMAIN="${DOMAIN:-rundailytest.online}"
 ENV="${ENV:-dev}"
 ING_FILE="${INGRESS_FILE:-gitops/ingress/$ENV/values.yaml}"
+MON_FILE="${MON_FILE:-gitops/ingress/$ENV/monitoring.yaml}"
 AWS_REGION="${AWS_REGION:-$(aws configure get region)}"
 CERT_ARN="${CERT_ARN:-}"
 
@@ -149,7 +150,17 @@ fi
 # -------------------------------
 # SERVICES FROM GITOPS
 # -------------------------------
-mapfile -t SERVICES < <(yq e '.services[].name' "$ING_FILE")
+
+APP_SERVICES=$(yq e '.services[].name' "$ING_FILE" 2>/dev/null || true)
+MON_SERVICES=$(yq e '.services[].name' "$MON_FILE" 2>/dev/null || true)
+
+ALL_SERVICES=$(printf "%s\n%s\n%s\n" \
+  "$APP_SERVICES" \
+  "$MON_SERVICES" \
+  | grep -v '^$' \
+  | sort -u)
+
+mapfile -t SERVICES <<< "$ALL_SERVICES"
 
 # -------------------------------
 # ROOT DOMAIN
