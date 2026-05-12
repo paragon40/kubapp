@@ -52,6 +52,14 @@ async def read_root(request: Request):
 async def health_test():
     return {"status": "ok", "code": 200}
 
+@app.get("/live")
+async def health_test():
+    return {"status": "ok", "code": 200}
+
+@app.get("/ready")
+async def health_test():
+    return {"status": "ok", "code": 200}
+
 @app.get("/metrics")
 async def health_test():
     return {"status": "Succesful Edgepass!", "code": 200}
