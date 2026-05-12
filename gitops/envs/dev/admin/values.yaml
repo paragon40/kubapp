@@ -1,0 +1,76 @@
+appName: admin
+namespace: dev
+serviceAccount:
+  create: true
+  name: admin-sa
+  roleArn: arn:aws:iam::198200019771:role/kubapp-dev-app-pods-role
+serviceMonitor:
+  enabled: false
+  path: /metrics
+  interval: 30s
+replicaCount: 2
+image:
+  repository: paragon40/admin_app
+  tag: f364c2642347ba5fecbf2ba47c6a46408a5d58ba-1778578622
+  pullPolicy: Always
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 4000
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
+env: {}
+securityContext:
+  pod:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  container:
+    runAsNonRoot: true
+    runAsUser: 10003
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+probes:
+  readiness:
+    httpGet:
+      path: /health
+      port: 4000
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  liveness:
+    httpGet:
+      path: /live
+      port: 4000
+    initialDelaySeconds: 10
+    periodSeconds: 15
+  startup:
+    httpGet:
+      path: /health
+      port: 4000
+    failureThreshold: 30
+    periodSeconds: 5
+hpa:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  cpu: 70
+  memory: 70
+meta:
+  staticFingerprint: be9cdf8b48982e22e4b67e6b6345e115a9ffde654c29143eaf57dff2b5007ecb
+  generatedAt: 2026-05-12T10:23:46Z
+  source: build-pipeline
+storage:
+  volumes:
+    - name: admin
+      emptyDir: {}
+  volumeMounts:
+    - name: admin
+      mountPath: /data
