@@ -213,8 +213,8 @@ resource "helm_release" "fluentbit" {
           [FILTER]
               Name   modify
               Match  kube.*
-              Add    cluster ${var.cluster_name}
-              Add    environment ${var.env}
+              Add    cluster ${local.cluster_name}
+              Add    environment ${local.env}
         EOF
 
         outputs = <<-EOF

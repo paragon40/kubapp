@@ -26,23 +26,3 @@ services:
   - name: urlshortener
     port: 80
     enabled: true
-  - name: grafana
-    port: 3000
-    enabled: true
-    backend:
-      service: kube-prometheus-stack-grafana
-  - name: prometheus
-    port: 80
-    enabled: true
-    backend:
-      service: kube-prometheus-stack-prometheus
-  - name: alertmanager
-    port: 80
-    enabled: true
-    backend:
-      service: kube-prometheus-stack-alertmanager
-  - name: argocd
-    port: 80
-    enabled: true
-    backend:
-      service: argocd-server
