@@ -206,7 +206,7 @@ jobs:
           set -euo pipefail
           ENV="${{ env.ENV }}"
           APP_LIST="$(find gitops/registry/$ENV -name "*.json" | wc -l)"
-          echo "Number of Apps Found: $APP_LIST"
+          echo "Number of Resources (Apps + Observability) Found: $APP_LIST"
           for file in $(find gitops/registry/$ENV -name "*.json"); do
             ENV1="$ENV"
             echo ""
