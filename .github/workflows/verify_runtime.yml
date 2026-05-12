@@ -107,7 +107,7 @@ jobs:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
           export ARGOCD_OPTS="--server $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN"
-          bash scripts/postchecks.sh "${{ env.ENV }}" "kubapp.rundailytest.site"
+          bash scripts/postchecks.sh "${{ env.ENV }}" "{{ secrets.DOMAIN }}"
 
       # FAILURE HANDLER
       - name: Suggest rollback
