@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "🚀 Setting up ArgoCD GitHub App integration + cluster observability"
+echo "Setting up ArgoCD GitHub App integration + cluster observability"
 
 # =========================
 # Required env vars

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-prometheus-stack-prometheus
+  namespace: dev
+spec:
+  type: ExternalName
+  externalName: kube-prometheus-stack-prometheus.monitoring.svc.cluster.local
+  ports:
+    - port: 9090
+      targetPort: 9090
+

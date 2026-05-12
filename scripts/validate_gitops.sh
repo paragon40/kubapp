@@ -108,17 +108,27 @@ for dir in "${DIRS[@]}"; do
     # ENV VALIDATION (values.yaml)
     ############################################
     if [[ "$dir" == "gitops/envs" ]]; then
-      APP_NAME=$(yq e '.appName' "$file")
-      NAMESPACE=$(yq e '.namespace' "$file")
-      IMAGE=$(yq e '.image.repository' "$file")
+      if [[ "$file" == *"/apps/"* ]]; then
+        APP_NAME=$(yq e '.appName' "$file")
+        NAMESPACE=$(yq e '.namespace' "$file")
+        IMAGE=$(yq e '.image.repository' "$file")
 
-      [[ -n "$APP_NAME" && "$APP_NAME" != "null" ]] || fail "Missing appName in $file"
-      [[ -n "$NAMESPACE" && "$NAMESPACE" != "null" ]] || fail "Missing namespace in $file"
-      [[ -n "$IMAGE" && "$IMAGE" != "null" ]] || fail "Missing image.repository in $file"
+        [[ -n "$APP_NAME" && "$APP_NAME" != "null" ]] || fail "Missing appName in $file"
+        [[ -n "$NAMESPACE" && "$NAMESPACE" != "null" ]] || fail "Missing namespace in $file"
+        [[ -n "$IMAGE" && "$IMAGE" != "null" ]] || fail "Missing image.repository in $file"
 
-      echo "[INFO] ✅ App env config valid: $APP_NAME ($NAMESPACE)"
+        echo "[INFO] ✅ App env config valid: $APP_NAME ($NAMESPACE)"
+      fi
+      if [[ "$file" == *"/backend_proxy/"* ]]; then
+        NAME=$(yq e '.metadata.name' "$file")
+        TYPE=$(yq e '.spec.type' "$file")
+        EXT_NAME=$(yq e '.spec.externalName' "$file")
+        [[ -n "$EXT_NAME" && "$EXT_NAME" != "null" ]] || fail "Missing appName in backend_proxy: $file"
+        [[ -n "$NAME" && "$NAME" != "null" ]] || fail "Missing backend.service in $file"
+
+        echo "[INFO] ✅ Backend proxy valid: $NAME with $EXT_NAME"
+      fi
     fi
-
     ############################################
     # INGRESS VALIDATION
     ############################################

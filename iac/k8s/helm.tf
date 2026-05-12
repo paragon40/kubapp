@@ -167,6 +167,10 @@ resource "helm_release" "fluentbit" {
               Daemon        Off
               Log_Level     info
               Parsers_File  parsers.conf
+              Health_Check  On
+              HTTP_Server   On
+              HTTP_Listen   0.0.0.0
+              HTTP_Port     2020
         EOF
 
         inputs = <<-EOF
@@ -198,6 +202,8 @@ resource "helm_release" "fluentbit" {
               log_group_name      ${local.app_logs}
               log_stream_prefix   kubernetes-
               auto_create_group   true
+              retry_limit         5
+              workers             2
         EOF
       }
     })

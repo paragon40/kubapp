@@ -10,14 +10,14 @@ spec:
         repoURL: https://github.com/paragon40/kubapp.git
         revision: main
         directories:
-          - path: gitops/envs/dev/*
+          - path: gitops/envs/dev/apps/*
 
   template:
     metadata:
-      name: "{{path[3]}}-{{path[2]}}"
+      name: "{{path[4]}}-{{path[2]}}"
       labels:
         env: "{{path[2]}}"
-        app: "{{path[3]}}"
+        app: "{{path[4]}}"
 
     spec:
       project: default
