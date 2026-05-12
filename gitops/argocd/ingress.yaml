@@ -6,26 +6,16 @@ metadata:
 
 spec:
   generators:
-    - matrix:
-        generators:
-          - list:
-              elements:
-                - env: dev
-                # - env: prod
-
-          - list:
-              elements:
-                - env: dev
-                  stack: values
-                  namespace: dev
-
-                - env: dev
-                  stack: monitoring
-                  namespace: monitoring
+    - list:
+        elements:
+          - env: dev
+            stack: values
+          - env: monitoring
+            stack: monitoring
 
   template:
     metadata:
-      name: "ingress-{{.env}}-{{.stack}}"
+      name: "ingress-{{env}}-{{stack}}"
 
     spec:
       project: default
@@ -36,11 +26,11 @@ spec:
         path: gitops/charts/ingress
         helm:
           valueFiles:
-            - "../../ingress/{{.env}}/{{.stack}}.yaml"
+            - "../../ingress/{{env}}/{{stack}}.yaml"
 
       destination:
         server: https://kubernetes.default.svc
-        namespace: "{{.namespace}}"
+        namespace: "{{env}}"
 
       syncPolicy:
         automated:
