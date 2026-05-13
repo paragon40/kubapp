@@ -229,13 +229,7 @@ shopt -s nullglob
 found_docker_files=false
 valid_docker_files=false
 
-for file in $(find "$DOCKER_DIR" -type f \( \
-  -name "secrets.yml" -o \
-  -name "secrets.yaml" -o \
-  -name "secret.yml" -o \
-  -name "secret.yaml" -o \
-\)); do
-
+while IFS= read -r -d '' file; do
   [[ -f "$file" ]] || continue
   found_docker_files=true
 
@@ -272,7 +266,14 @@ for file in $(find "$DOCKER_DIR" -type f \( \
     exit 1
   fi
 
-done
+done < <(
+  find "$DOCKER_DIR" -type f \( \
+    -name "secrets.yml" -o \
+    -name "secrets.yaml" -o \
+    -name "secret.yml" -o \
+    -name "secret.yaml" \
+  \) -print0
+)
 
 if [[ "$found_docker_files" = false ]]; then
   echo "[WARN] ⚠️ No docker secret files found"
