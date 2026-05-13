@@ -84,6 +84,7 @@ else
   NS="$ENV"
 fi
 echo "ENV    : $ENV"
+echo "NAMESPACE: $NS"
 echo "FILE   : $USE_FILE"
 echo "TMP    : $TMP_FILE"
 echo "================================="
