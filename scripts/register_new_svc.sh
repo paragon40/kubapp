@@ -15,6 +15,7 @@ DOMAIN="${DOMAIN:-}"
 CERT_ARN="${CERT_ARN:-}"
 PORT="${SERVICE_PORT:-80}"
 BACKEND_SERVICE="${BACKEND_SERVICE:-}"
+TYPE="{$SERVICE_TYPE:-}"
 
 VALUES_FILE="gitops/ingress/${ENV}/values.yaml"
 TMP_FILE="/tmp/ingress-values-${ENV}.yaml"
@@ -68,7 +69,7 @@ fi
 echo "================================="
 echo "ACTION : $ACTION"
 echo "SERVICE: $SERVICE_NAME"
-if [[ -n "$BACKEND_SERVICE" ]]; then
+if [[ -n "$BACKEND_SERVICE" && "$BACKEND_SERVICE" != "null" && "$TYPE" == "Backend" ]]; then
   echo "BACKEND SERVICE: $BACKEND_SERVICE"
   USE_FILE="$BACKEND_FILE"
   NS="monitoring"
@@ -213,7 +214,8 @@ add_service() {
 
   echo "Adding service: $SERVICE_NAME"
 
-  if [[ -n "$BACKEND_SERVICE" ]]; then
+  if [[ -n "$BACKEND_SERVICE" && "$TYPE" == "Backend" ]]; then
+    echo "Writing to $SERVICE_NAME backend file..."
     yq e -i '.services += [{
       "name": strenv(SERVICE_NAME),
       "port": env(PORT),
@@ -223,6 +225,7 @@ add_service() {
       }
     }]' "$TMP_FILE"
   else
+    echo "Writing to $SERVICE_NAME App File..."
     yq e -i '.services += [{
       "name": strenv(SERVICE_NAME),
       "port": env(PORT),

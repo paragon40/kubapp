@@ -239,6 +239,7 @@ jobs:
             SERVICE_TYPE=$(jq -r '.type' "$file")
 
             if [[ "$SERVICE_TYPE" == "App" || "$SERVICE_TYPE" == "Frontend" ]]; then
+              export SERVICE_TYPE
             ####################################################
             # Create values.yaml
             ####################################################
@@ -263,8 +264,9 @@ jobs:
               bash scripts/register_new_svc.sh "$SERVICE" "$ENV"
             elif [[ "$SERVICE_TYPE" == "Backend" ]]; then
               BACKEND_SERVICE=$(jq -r '.backendService' "$file")
-              if [[ -n "$BACKEND_SERVICE" ]]; then
+              if [[ -n "$BACKEND_SERVICE" && "$BACKEND_SERVICE" != "null" ]]; then
                 export BACKEND_SERVICE
+                export SERVICE_TYPE
               else
                 echo "❌ Backend Service Name for $SERVICE is empty"
                 continue
