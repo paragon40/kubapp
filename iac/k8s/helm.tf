@@ -254,12 +254,13 @@ resource "helm_release" "kube_prometheus_stack" {
 
   values = [
     yamlencode({
-
       global = {
         podLabels = local.monitoring_labels
       }
 
+      # -------------------------
       # GRAFANA
+      # -------------------------
       grafana = {
         initChownData = {
           enabled = false
@@ -273,8 +274,24 @@ resource "helm_release" "kube_prometheus_stack" {
 
         "grafana.ini" = {
           "auth.anonymous" = {
-            enabled  = true
-            org_role = "Admin"
+            enabled = false
+          }
+
+          "security" = {
+            disable_initial_admin_creation = false
+          }
+        }
+
+        affinity = {
+          podAntiAffinity = {
+            requiredDuringSchedulingIgnoredDuringExecution = [
+              {
+                labelSelector = {
+                  matchLabels = local.monitoring_labels
+                }
+                topologyKey = "kubernetes.io/hostname"
+              }
+            ]
           }
         }
 
@@ -292,22 +309,32 @@ resource "helm_release" "kube_prometheus_stack" {
         podLabels = local.monitoring_labels
       }
 
+      # -------------------------
       # PROMETHEUS
-      ############################
+      # -------------------------
       prometheus = {
         prometheusSpec = {
-
-          # HOW LONG METRICS LIVE
-          retention = "7d"
-
-          # HARD DISK LIMIT SAFETY NET
+          retention     = "7d"
           retentionSize = "15GB"
+
+          affinity = {
+            podAntiAffinity = {
+              requiredDuringSchedulingIgnoredDuringExecution = [
+                {
+                  labelSelector = {
+                    matchLabels = local.monitoring_labels
+                  }
+                  topologyKey = "kubernetes.io/hostname"
+                }
+              ]
+            }
+          }
 
           storageSpec = {
             volumeClaimTemplate = {
               spec = {
-                storageClassName = kubernetes_storage_class.efs.metadata[0].name
-                accessModes      = ["ReadWriteMany"]
+                storageClassName = kubernetes_storage_class.ebs_gp3.metadata[0].name
+                accessModes      = ["ReadWriteOnce"]
 
                 resources = {
                   requests = {
@@ -324,17 +351,31 @@ resource "helm_release" "kube_prometheus_stack" {
         }
       }
 
+      # -------------------------
       # ALERTMANAGER
+      # -------------------------
       alertmanager = {
         alertmanagerSpec = {
-
           retention = "120h"
+
+          affinity = {
+            podAntiAffinity = {
+              requiredDuringSchedulingIgnoredDuringExecution = [
+                {
+                  labelSelector = {
+                    matchLabels = local.monitoring_labels
+                  }
+                  topologyKey = "kubernetes.io/hostname"
+                }
+              ]
+            }
+          }
 
           storage = {
             volumeClaimTemplate = {
               spec = {
                 storageClassName = kubernetes_storage_class.efs.metadata[0].name
-                accessModes      = ["ReadWriteMany"]
+                accessModes      = ["ReadWriteOnce"]
 
                 resources = {
                   requests = {
@@ -349,9 +390,41 @@ resource "helm_release" "kube_prometheus_stack" {
             labels = local.monitoring_labels
           }
         }
+
+        config = {
+          global = {
+            resolve_timeout    = "5m"
+            smtp_smarthost     = "smtp.gmail.com:587"
+            smtp_from          = local.alert_email
+            smtp_auth_username = local.alert_email
+            smtp_auth_password = local.alert_email_password
+          }
+
+          route = {
+            receiver        = "default"
+            group_by        = ["alertname"]
+            group_wait      = "30s"
+            group_interval  = "5m"
+            repeat_interval = "1h"
+          }
+
+          receivers = [
+            {
+              name = "default"
+              email_configs = [
+                {
+                  to            = local.alert_email
+                  send_resolved = true
+                }
+              ]
+            }
+          ]
+        }
       }
 
-      # NODE SELECTION
+      # -------------------------
+      # NODE SELECTOR
+      # -------------------------
       nodeSelector = {
         "kubernetes.io/os" = "linux"
       }

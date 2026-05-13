@@ -39,3 +39,23 @@ resource "aws_eks_addon" "efs_csi" {
 
   tags = local.k8s_labels
 }
+
+# for prometheus
+resource "kubernetes_storage_class" "ebs_gp3" {
+  metadata {
+    name = "gp3"
+
+    annotations = {
+      "storageclass.kubernetes.io/is-default-class" = "false"
+    }
+  }
+
+  storage_provisioner = "ebs.csi.aws.com"
+
+  volume_binding_mode = "WaitForFirstConsumer"
+
+  parameters = {
+    type   = "gp3"
+    fsType = "ext4"
+  }
+}

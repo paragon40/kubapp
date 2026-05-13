@@ -17,6 +17,15 @@ variable "region" {
   type = string
 }
 
+variable "alert_email" {
+  type = string
+}
+
+variable "alert_email_password" {
+  type      = string
+  sensitive = true
+}
+
 variable "cert_arn" {
   type = string
 }

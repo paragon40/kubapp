@@ -27,6 +27,7 @@ locals {
   app_logs               = data.terraform_remote_state.infra.outputs.log_group_names["app_logs"]
 
   name_prefix = "kubapp-${var.env}"
+  alert_email = var.alert_email
   k8s_labels = {
     cluster_name  = local.cluster_name
     resource-type = "kubernetes"

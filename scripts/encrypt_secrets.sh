@@ -234,8 +234,6 @@ for file in $(find "$DOCKER_DIR" -type f \( \
   -name "secrets.yaml" -o \
   -name "secret.yml" -o \
   -name "secret.yaml" -o \
-  -name "*secret*.yml" -o \
-  -name "*secret*.yaml" \
 \)); do
 
   [[ -f "$file" ]] || continue
