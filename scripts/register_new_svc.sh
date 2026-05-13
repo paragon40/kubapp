@@ -41,12 +41,6 @@ fi
 # -----------------------------------------
 # Required variables
 # -----------------------------------------
-echo "====================DEBUG=================================="
-echo "Using BACKEND SERVICE: $BACKEND_SERVICE"
-echo "Using SERVICE TYPE: $TYPE"
-echo "Using SERVICE: $SERVICE_NAME"
-echo "====================DeBUG==================================="
-
 if [[ "$ACTION" == "add" ]]; then
   ARR=("ACTION" "SERVICE_NAME" "ENV" "DOMAIN" "CERT_ARN" "PORT" "VALUES_FILE")
 else
@@ -75,6 +69,7 @@ fi
 echo "================================="
 echo "ACTION : $ACTION"
 echo "SERVICE: $SERVICE_NAME"
+echo "SERVICE TYPE: $TYPE"
 if [[ -n "$BACKEND_SERVICE" && "$BACKEND_SERVICE" != "null" && "$TYPE" == "Backend" ]]; then
   echo "BACKEND SERVICE: $BACKEND_SERVICE"
   USE_FILE="$BACKEND_FILE"
