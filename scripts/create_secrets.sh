@@ -68,6 +68,7 @@ require kubectl
 # LOAD ARTIFACT METADATA
 # =========================================================
 SERVICE=$(jq -r '.service' "$ARTIFACT_FILE")
+CONTEXT=$(jq -r '.context' "$ARTIFACT_FILE")
 NAMESPACE=$(jq -r '.namespace' "$ARTIFACT_FILE")
 NO_SECRETS=$(jq -r '.NO_SECRETS' "$ARTIFACT_FILE")
 
@@ -97,10 +98,10 @@ fi
 SECRET_FILE=""
 
 for file in \
-  "docker/$SERVICE/secrets.yaml" \
-  "docker/$SERVICE/secrets.yml"  \
-  "docker/$SERVICE/secret.yaml" \
-  "docker/$SERVICE/secret.yml"
+  "$CONTEXT/secrets.yaml" \
+  "$CONTEXT/secrets.yml"  \
+  "$CONTEXT/secret.yaml" \
+  "$CONTEXT/secret.yml"
 do
   if [[ -f "$file" && -s "$file" ]]; then
     SECRET_FILE="$file"
