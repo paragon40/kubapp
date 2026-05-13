@@ -249,11 +249,19 @@ for file in $(find "$DOCKER_DIR" -type f \( \
   fi
 
   # Backup
-  backup_file="$BACKUP_DIR/$(basename "$file").bak"
-  cp -f "$file" "$backup_file"
+  base_backup="$BACKUP_DIR/$(basename "$file")"
+  backup_1="${base_backup}.bak"
+  backup_2="${base_backup}.bak.1"
+
+  if [[ -f "$backup_1" ]]; then
+    cp -f "$backup_1" "$backup_2"
+  fi
+
+  cp -f "$file" "$backup_1"
+  echo "[INFO] Backup updated: $backup_1 (previous moved to .bak.1)"
+
   echo "[INFO] Backup created: $backup_file"
 
-  # Encrypt in-place
   if sops -e -i "$file"; then
     echo "[INPLACE] Encrypted: $file"
     valid_docker_files=true
