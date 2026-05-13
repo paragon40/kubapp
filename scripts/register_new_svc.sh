@@ -65,13 +65,18 @@ if [[ "$ACTION" == "add" ]]; then
     exit 1
   }
 fi
+is_backend_service() {
+  [[ "$TYPE" == "Backend" ]] &&
+  [[ -n "$BACKEND_SERVICE" ]] &&
+  [[ "$BACKEND_SERVICE" != "null" ]]
+}
 
 echo "================================="
 echo "ACTION : $ACTION"
 echo "SERVICE: $SERVICE_NAME"
 echo "SERVICE TYPE: $TYPE"
 echo "SERVICE PORT: $PORT"
-if [[ -n "$BACKEND_SERVICE" && "$BACKEND_SERVICE" != "null" && "$TYPE" == "Backend" ]]; then
+if is_backend_service; then
   echo "BACKEND SERVICE: $BACKEND_SERVICE"
   USE_FILE="$BACKEND_FILE"
   NS="monitoring"
@@ -204,36 +209,84 @@ validate_https_requirements() {
 }
 
 # =========================================
-# SERVICE OPERATIONS
+# SERVICE OPERATIONS (CONTROLLER-GRADE)
 # =========================================
 
-add_service() {
-  EXISTS=$(yq e ".services[] | select(.name == strenv(SERVICE_NAME)) | .name" "$TMP_FILE" | wc -l)
+build_desired_service() {
+  jq -n \
+    --arg name "$SERVICE_NAME" \
+    --argjson port "$PORT" \
+    --arg backend "$BACKEND_SERVICE" \
+    --arg type "$TYPE" \
+    '
+    {
+      name: $name,
+      enabled: true,
+      port: $port
+    }
+    |
+    if ($backend != "" and $type == "Backend") then
+      .backend = { service: $backend }
+    else
+      .
+    end
+    '
+}
 
-  if [[ "$EXISTS" -gt 0 ]]; then
-    echo "Service already exists: $SERVICE_NAME"
+get_current_index() {
+  yq e '.services | to_entries | map(select(.value.name == strenv(SERVICE_NAME))) | .[0].key // empty' "$TMP_FILE"
+}
+
+get_current_object() {
+  yq e '.services[] | select(.name == strenv(SERVICE_NAME))' "$TMP_FILE"
+}
+
+normalize_json() {
+  jq -S .
+}
+
+needs_reconcile() {
+  local current desired
+
+  current="$(get_current_object)"
+  desired="$(build_desired_service)"
+
+  # If service does not exist → must add
+  if [[ -z "$current" || "$current" == "null" ]]; then
     return 0
   fi
 
-  echo "Adding service: $SERVICE_NAME"
+  CURRENT_NORM="$(echo "$current" | normalize_json)"
+  DESIRED_NORM="$(echo "$desired" | normalize_json)"
 
-  if [[ -n "$BACKEND_SERVICE" && "$TYPE" == "Backend" ]]; then
-    echo "Writing to $SERVICE_NAME backend file..."
-    yq e -i '.services += [{
-      "name": strenv(SERVICE_NAME),
-      "port": (strenv(PORT) | tonumber),
-      "enabled": true,
-      "backend": {
-        "service": strenv(BACKEND_SERVICE)
-      }
-    }]' "$TMP_FILE"
+  if [[ "$CURRENT_NORM" != "$DESIRED_NORM" ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+apply_service() {
+  if ! needs_reconcile; then
+    echo "✅ Service $SERVICE_NAME already matches desired state. No update needed."
+    return 0
+  fi
+
+  echo "Reconciling service: $SERVICE_NAME"
+
+  INDEX="$(get_current_index)"
+  DESIRED="$(build_desired_service)"
+
+  if [[ -n "$INDEX" ]]; then
+    echo "Updating existing service (full replace)"
+
+    yq e -i "
+      .services[$INDEX] = $DESIRED
+    " "$TMP_FILE"
   else
-    echo "Writing to $SERVICE_NAME App File..."
-    yq e -i '.services += [{
-      "name": strenv(SERVICE_NAME),
-      "port": (strenv(PORT) | tonumber),
-      "enabled": true
-    }]' "$TMP_FILE"
+    echo "➕ Adding new service"
+
+    yq e -i ".services += [$DESIRED]" "$TMP_FILE"
   fi
 }
 
@@ -257,7 +310,7 @@ remove_service() {
 # =========================================
 
 case "$ACTION" in
-  add) add_service ;;
+  add) apply_service ;;
   remove) remove_service ;;
   *) echo "Invalid action"; exit 1 ;;
 esac
