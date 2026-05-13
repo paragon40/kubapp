@@ -69,7 +69,7 @@ require kubectl
 # =========================================================
 SERVICE=$(jq -r '.service' "$ARTIFACT_FILE")
 NAMESPACE=$(jq -r '.namespace' "$ARTIFACT_FILE")
-NO_SECRETS=$(jq -r '.NO_SECRETS // true' "$ARTIFACT_FILE")
+NO_SECRETS=$(jq -r '.NO_SECRETS' "$ARTIFACT_FILE")
 
 [[ -n "$SERVICE" && "$SERVICE" != "null" ]] || fail "Invalid service in artifact"
 [[ -n "$NAMESPACE" && "$NAMESPACE" != "null" ]] || fail "Invalid namespace in artifact"
@@ -83,8 +83,11 @@ echo "======================================"
 # =========================================================
 # EXIT IF NO SECRETS
 # =========================================================
-if [[ "$NO_SECRETS" == "true" ]]; then
+if [[ -n "$NO_SECRETS" && "$NO_SECRETS" == "true" ]]; then
   echo "No secrets defined for $SERVICE"
+  exit 0
+elif [[ -z "$NO_SECRETS" ]]; then
+  echo "❌ Secrets Value for $SERVICE is Empty"
   exit 0
 fi
 
