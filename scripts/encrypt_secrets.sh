@@ -232,9 +232,8 @@ while IFS= read -r -d '' file; do
   echo "[INFO] Processing: $file"
 
   # Backup
-  base_backup="$DOCKER_DIR/$(basename "$file")"
-  backup_1="${base_backup}.bak"
-  backup_2="${base_backup}.bak.1"
+  backup_1="${file}.bak"
+  backup_2="${file}.bak.1"
 
   if [[ -f "$backup_1" ]]; then
     cp -f "$backup_1" "$backup_2"
