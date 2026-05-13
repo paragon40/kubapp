@@ -4,7 +4,7 @@
   "context": "docker/metrics_app",
   "image": "paragon40/metrics_app",
   "image2": "paragon40/metrics_app:latest",
-  "tag": "ef846ee742489fcf99c21b1b130ca2d85f696edc-1778663967",
+  "tag": "d8feba994ab08855234c6955ddba0782397d7ef2-1778700253",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -21,5 +21,5 @@
   "mount_path": "/data",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-13_09-19-27"
+  "CREATED_AT": "2026-05-13_19-24-13"
 }
