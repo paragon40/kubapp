@@ -233,14 +233,9 @@ while IFS= read -r -d '' file; do
 
   # Backup
   backup_1="${file}.bak"
-  backup_2="${file}.bak.1"
-
-  if [[ -f "$backup_1" ]]; then
-    cp -f "$backup_1" "$backup_2"
-  fi
 
   cp -f "$file" "$backup_1"
-  echo "[INFO] Backup updated: $backup_1 (previous moved to .bak.1)"
+  echo "[INFO] Backup updated: $backup_1"
 
   echo "[INFO] Backup created: $backup_1"
 
