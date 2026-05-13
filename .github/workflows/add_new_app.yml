@@ -269,9 +269,9 @@ jobs:
                 export BACKEND_SERVICE
                 export SERVICE_TYPE="$SERVICE_TYPE"
                 if [[ "$SERVICE" == "alertmanager" ]]; then
-                  export PORT="9093"
+                  export SERVICE_PORT="9093"
                 elif [[ "$SERVICE" == "prometheus" ]]; then
-                  export PORT="9090"
+                  export SERVICE_PORT="9090"
                 fi
               else
                 echo "❌ Backend Service Name for $SERVICE is empty"
