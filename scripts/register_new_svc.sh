@@ -70,6 +70,7 @@ echo "================================="
 echo "ACTION : $ACTION"
 echo "SERVICE: $SERVICE_NAME"
 echo "SERVICE TYPE: $TYPE"
+echo "SERVICE PORT: $PORT"
 if [[ -n "$BACKEND_SERVICE" && "$BACKEND_SERVICE" != "null" && "$TYPE" == "Backend" ]]; then
   echo "BACKEND SERVICE: $BACKEND_SERVICE"
   USE_FILE="$BACKEND_FILE"
@@ -132,7 +133,7 @@ yq e -i '.services = (.services // [])' "$TMP_FILE"
 yq e -i '
   .services |= map(
     .enabled = (.enabled // true) |
-    .port = (.port // 80)
+    .port = (.port)
   )
 ' "$TMP_FILE"
 
