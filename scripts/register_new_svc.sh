@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euo pipefail
+trap 'rm -f "${TMP_FILE:-}"' EXIT
 
 # =========================================
 # Ingress Service Manager (ADD / REMOVE)
@@ -18,7 +19,7 @@ BACKEND_SERVICE="${BACKEND_SERVICE:-}"
 TYPE="${SERVICE_TYPE:-}"
 
 VALUES_FILE="gitops/ingress/${ENV}/values.yaml"
-TMP_FILE="/tmp/ingress-values-${ENV}.yaml"
+TMP_FILE="/tmp/ingress-values-${ENV}-$$.yaml"
 BACKEND_FILE="gitops/ingress/${ENV}/monitoring.yaml"
 
 # -----------------------------------------
@@ -65,6 +66,7 @@ if [[ "$ACTION" == "add" ]]; then
     exit 1
   }
 fi
+
 is_backend_service() {
   [[ "$TYPE" == "Backend" ]] &&
   [[ -n "$BACKEND_SERVICE" ]] &&
@@ -98,6 +100,7 @@ sanitize() {
 }
 
 command -v yq >/dev/null 2>&1 || { echo "yq is required"; exit 1; }
+command -v jq >/dev/null 2>&1 || { echo "jq is required"; exit 1; }
 
 [[ -f "$USE_FILE" ]] || {
   echo "Ingress file not found: $USE_FILE"
@@ -109,9 +112,7 @@ command -v yq >/dev/null 2>&1 || { echo "yq is required"; exit 1; }
 # -----------------------------------------
 cp "$USE_FILE" "$TMP_FILE"
 
-# -----------------------------------------
 # INGRESS DYNAMIC CONFIGURATION (ADD ONLY)
-# -----------------------------------------
 if [[ "$ACTION" == "add" ]]; then
   yq e -i '
     .ingress.baseDomain = strenv(DOMAIN)
@@ -209,84 +210,170 @@ validate_https_requirements() {
 }
 
 # =========================================
-# SERVICE OPERATIONS (CONTROLLER-GRADE)
+# SERVICE OPERATIONS
 # =========================================
 
 build_desired_service() {
-  jq -n \
-    --arg name "$SERVICE_NAME" \
-    --argjson port "$PORT" \
-    --arg backend "$BACKEND_SERVICE" \
-    --arg type "$TYPE" \
-    '
+  if [[ -z "${SERVICE_NAME:-}" ]]; then
+    echo "❌ SERVICE_NAME is required"
+    exit 1
+  fi
+
+  if [[ -z "${PORT:-}" ]]; then
+    echo "❌ PORT is required"
+    exit 1
+  fi
+
+  if is_backend_service && [[ -z "${BACKEND_SERVICE:-}" ]]; then
+    echo "❌ BACKEND_SERVICE is required for backend services"
+    exit 1
+  fi
+
+  if is_backend_service; then
+    jq -n \
+      --arg name "$SERVICE_NAME" \
+      --argjson port "$PORT" \
+      --arg backend "$BACKEND_SERVICE" \
+      '{
+        name: $name,
+        enabled: true,
+        port: $port,
+        backend: {
+          service: $backend
+        }
+      }'
+  else
+    jq -n \
+      --arg name "$SERVICE_NAME" \
+      --argjson port "$PORT" \
+      '{
+        name: $name,
+        enabled: true,
+        port: $port
+      }'
+  fi
+}
+
+get_current_service() {
+  yq e -o=json '.services[] | select(.name == strenv(SERVICE_NAME))' "$TMP_FILE" 2>/dev/null || true
+}
+
+get_service_index() {
+  local idx
+
+  idx="$(yq e '.services | to_entries[] | select(.value.name == strenv(SERVICE_NAME)) | .key' "$TMP_FILE" 2>/dev/null || true)"
+
+  if [[ -n "${idx:-}" && "${idx:-}" != "null" ]]; then
+    echo "$idx"
+  fi
+}
+
+compare_objects() {
+  local current_json="$1"
+  local desired_json="$2"
+
+  local all_keys
+  local changed=0
+
+  # Collect every scalar path from BOTH objects.
+  all_keys="$(
     {
-      name: $name,
-      enabled: true,
-      port: $port
-    }
-    |
-    if ($backend != "" and $type == "Backend") then
-      .backend = { service: $backend }
-    else
-      .
-    end
-    '
+      echo "$current_json" | jq -r 'paths(scalars) | map(tostring) | join(".")'
+      echo "$desired_json" | jq -r 'paths(scalars) | map(tostring) | join(".")'
+    } | sort -u
+  )"
+
+  while IFS= read -r key; do
+    [[ -z "${key:-}" ]] && continue
+
+    local current_value desired_value
+
+    current_value="$(
+      echo "$current_json" |
+      jq -r --arg path "$key" '
+        ($path | split(".")) as $p
+        | getpath($p) // null
+      ' 2>/dev/null || true
+    )"
+
+    desired_value="$(
+      echo "$desired_json" |
+      jq -r --arg path "$key" '
+        ($path | split(".")) as $p
+        | getpath($p) // null
+      ' 2>/dev/null || true
+    )"
+
+    # Desired value missing is a hard error.
+    if [[ -z "${desired_value:-}" || "${desired_value:-}" == "null" ]]; then
+      echo "❌ Desired value missing for key: $key"
+      exit 1
+    fi
+
+    # Missing current value is treated as drift and corrected.
+    if [[ -z "${current_value:-}" ]]; then
+      current_value="null"
+    fi
+
+    if [[ "$current_value" != "$desired_value" ]]; then
+      changed=1
+      echo "DIFF: $key"
+      echo "  Current: $current_value"
+      echo "  Desired: $desired_value"
+    fi
+  done <<< "$all_keys"
+
+  return "$changed"
 }
 
-get_current_index() {
-  yq e '.services | to_entries | map(select(.value.name == strenv(SERVICE_NAME))) | .[0].key // empty' "$TMP_FILE"
-}
+needs_update() {
+  local current_json desired_json
 
-get_current_object() {
-  yq e '.services[] | select(.name == strenv(SERVICE_NAME))' "$TMP_FILE"
-}
+  current_json="$(get_current_service)"
+  desired_json="$(build_desired_service)"
 
-normalize_json() {
-  jq -S .
-}
-
-needs_reconcile() {
-  local current desired
-
-  current="$(get_current_object)"
-  desired="$(build_desired_service)"
-
-  # If service does not exist → must add
-  if [[ -z "$current" || "$current" == "null" ]]; then
+  # Service not found → create it.
+  if [[ -z "${current_json:-}" || "${current_json:-}" == "null" ]]; then
+    echo "Service does not exist. It will be created."
     return 0
   fi
 
-  CURRENT_NORM="$(echo "$current" | normalize_json)"
-  DESIRED_NORM="$(echo "$desired" | normalize_json)"
-
-  if [[ "$CURRENT_NORM" != "$DESIRED_NORM" ]]; then
+  if compare_objects "$current_json" "$desired_json"; then
+    # No differences
+    return 1
+  else
+    # Differences detected
     return 0
   fi
-
-  return 1
 }
 
 apply_service() {
-  if ! needs_reconcile; then
-    echo "✅ Service $SERVICE_NAME already matches desired state. No update needed."
+  local desired_json
+  local index
+
+  desired_json="$(build_desired_service)"
+
+  if ! needs_update; then
+    echo "✅ Service $SERVICE_NAME already matches desired state. No changes required."
     return 0
   fi
 
   echo "Reconciling service: $SERVICE_NAME"
 
-  INDEX="$(get_current_index)"
-  DESIRED="$(build_desired_service)"
+  index="$(get_service_index)"
 
-  if [[ -n "$INDEX" ]]; then
-    echo "Updating existing service (full replace)"
+  if [[ -n "${index:-}" ]]; then
+    echo "Updating existing service by replacing full object..."
 
     yq e -i "
-      .services[$INDEX] = $DESIRED
+      .services[$index] = $desired_json
     " "$TMP_FILE"
   else
-    echo "➕ Adding new service"
+    echo "Adding new service..."
 
-    yq e -i ".services += [$DESIRED]" "$TMP_FILE"
+    yq e -i "
+      .services += [$desired_json]
+    " "$TMP_FILE"
   fi
 }
 
