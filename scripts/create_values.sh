@@ -8,6 +8,8 @@ set -euo pipefail
 ARTIFACT_FILE="${1:-}"
 ROLE_ARN="${IRSA_ARN:-}"
 SERVICE_TYPE="${SERVICE_TYPE:-}"
+#SECRET_NAME="${SECRET_NAME:-}"
+#NO_SECRETS="${NO_SECRETS:-}"
 
 fail() {
   echo "❌ $1"
@@ -179,6 +181,14 @@ storage:
       mountPath: ${MNT_PATH}
 EOF
 fi
+
+#if [[ "$NO_SECRETS" == "false" && -n "$SECRET_NAME" ]]; then
+#cat >> /tmp/static-values.yaml <<EOF
+#envFrom:
+#  - secretRef:
+#      name: $SECRET_NAME
+#EOF
+#fi
 
 ####################################################
 # APPLY STRATEGY (SAFE + IDENTITY PRESERVING)
