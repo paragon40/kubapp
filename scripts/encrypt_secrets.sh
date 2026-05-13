@@ -213,11 +213,7 @@ echo "[INFO] DOCKER SECRETS ENCRYPTION"
 echo "--------------------------------------------------"
 
 DOCKER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../docker" && pwd)"
-BACKUP_DIR="$DOCKER_DIR/.backup"
-
 echo "[INFO] Target directory: $DOCKER_DIR"
-
-mkdir -p "$BACKUP_DIR"
 
 [[ -d "$DOCKER_DIR" ]] || {
   echo "[ERROR] ❌ Directory not found: $DOCKER_DIR"
@@ -236,7 +232,7 @@ while IFS= read -r -d '' file; do
   echo "[INFO] Processing: $file"
 
   # Backup
-  base_backup="$BACKUP_DIR/$(basename "$file")"
+  base_backup="$DOCKER_DIR/$(basename "$file")"
   backup_1="${base_backup}.bak"
   backup_2="${base_backup}.bak.1"
 
