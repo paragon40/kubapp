@@ -240,6 +240,7 @@ jobs:
 
             if [[ "$SERVICE_TYPE" == "App" || "$SERVICE_TYPE" == "Frontend" ]]; then
               export BACKEND_SERVICE=""
+              export SERVICE_PORT="80"
               export SERVICE_TYPE=$SERVICE_TYPE
             ####################################################
             # Create values.yaml
