@@ -7,7 +7,7 @@ set -euo pipefail
 
 ARTIFACT_FILE="${1:-}"
 ROLE_ARN="${IRSA_ARN:-}"
-SERVICE_TYPE="{SERVICE_TYPE:-}"
+SERVICE_TYPE="${SERVICE_TYPE:-}"
 
 fail() {
   echo "❌ $1"
