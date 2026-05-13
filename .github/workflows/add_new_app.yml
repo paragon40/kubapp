@@ -239,6 +239,7 @@ jobs:
             SERVICE_TYPE=$(jq -r '.type' "$file")
 
             if [[ "$SERVICE_TYPE" == "App" || "$SERVICE_TYPE" == "Frontend" ]]; then
+              export BACKEND_SERVICE=""
               export SERVICE_TYPE=$SERVICE_TYPE
             ####################################################
             # Create values.yaml
