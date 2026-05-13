@@ -8,7 +8,7 @@ ingress:
   annotations:
     scheme: internet-facing
     targetType: ip
-    healthcheckPath: /health
+    healthcheckPath: /
     listenPorts:
       - HTTP: 80
       - HTTPS: 443
