@@ -8,8 +8,7 @@ set -euo pipefail
 ARTIFACT_FILE="${1:-}"
 ROLE_ARN="${IRSA_ARN:-}"
 SERVICE_TYPE="${SERVICE_TYPE:-}"
-#SECRET_NAME="${SECRET_NAME:-}"
-#NO_SECRETS="${NO_SECRETS:-}"
+SECRET_NAME="${SECRET_NAME:-}"
 
 fail() {
   echo "❌ $1"
@@ -45,6 +44,8 @@ MNT_PATH=$(jq -r '.mount_path // ""' "$ARTIFACT_FILE")
 VOLUMES_ENABLED=$(jq -r '.volumes_enabled // false' "$ARTIFACT_FILE")
 TMP_ENABLED=$(jq -r '.tmp_enabled // false' "$ARTIFACT_FILE")
 SVC_MONITOR_ENAB=$(jq -r '.svc_monitor_enabled // false' "$ARTIFACT_FILE")
+NO_SECRETS=$(jq -r '.NO_SECRETS // ""' "$ARTIFACT_FILE")
+SECRET_NAME="${SERVICE}-secrets"
 
 ARR=("SERVICE" "ENV" "NAMESPACE" "ROLE_ARN" "PORT" "IMAGE" "TAG" "CONTAINER_UID" "HEALTH" "LIVE" "TMP_ENABLED" "VOLUMES_ENABLED" "SVC_MONITOR_ENAB")
 for var in "${ARR[@]}"; do
@@ -182,13 +183,13 @@ storage:
 EOF
 fi
 
-#if [[ "$NO_SECRETS" == "false" && -n "$SECRET_NAME" ]]; then
-#cat >> /tmp/static-values.yaml <<EOF
-#envFrom:
-#  - secretRef:
-#      name: $SECRET_NAME
-#EOF
-#fi
+if [[ "$NO_SECRETS" == "false" && -n "$SECRET_NAME" && "$SECRET_NAME" != "null" ]]; then
+cat >> /tmp/static-values.yaml <<EOF
+secret:
+  enabled: true
+  name: $SECRET_NAME
+EOF
+fi
 
 ####################################################
 # APPLY STRATEGY (SAFE + IDENTITY PRESERVING)

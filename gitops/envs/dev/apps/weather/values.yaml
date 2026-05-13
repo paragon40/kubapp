@@ -79,3 +79,6 @@ serviceMonitor:
   enabled: true
   path: /metrics
   interval: 30s
+secret:
+  enabled: true
+  name: weather-secret

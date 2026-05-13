@@ -238,7 +238,7 @@ jobs:
 
             SERVICE_TYPE=$(jq -r '.type' "$file")
 
-            if [[ "$SERVICE_TYPE" == "App" || "$SERVICE_TYPE" == "Frontend" ]]; then
+            if [[ "$SERVICE_TYPE" == "App" ]]; then
               export BACKEND_SERVICE=""
               export SERVICE_PORT="80"
               export SERVICE_TYPE=$SERVICE_TYPE

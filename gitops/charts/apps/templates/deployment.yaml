@@ -48,6 +48,12 @@ spec:
               value: "{{ $value }}"
             {{- end }}
 
+          {{- if and .Values.secret .Values.secret.enabled }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secret.name | quote }}
+          {{- end }}
+
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}
