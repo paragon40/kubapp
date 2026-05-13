@@ -34,18 +34,3 @@ services:
     port: 80
     backend:
       service: argocd-server
-  - name: metrics
-    port: 80
-    enabled: true
-    backend:
-      service: kube-prometheus-stack-alertmanager
-  - name: urlshortener
-    port: 80
-    enabled: true
-    backend:
-      service: kube-prometheus-stack-alertmanager
-  - name: weather
-    port: 80
-    enabled: true
-    backend:
-      service: kube-prometheus-stack-grafana

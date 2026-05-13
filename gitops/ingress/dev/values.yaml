@@ -26,15 +26,3 @@ services:
   - name: urlshortener
     port: 80
     enabled: true
-  - name: prometheus
-    port: 80
-    enabled: true
-  - name: alertmanager
-    port: 80
-    enabled: true
-  - name: grafana
-    port: 80
-    enabled: true
-  - name: argocd
-    port: 80
-    enabled: true
