@@ -7,6 +7,7 @@ set -euo pipefail
 
 ARTIFACT_FILE="${1:-}"
 ROLE_ARN="${IRSA_ARN:-}"
+SERVICE_TYPE="{SERVICE_TYPE:-}"
 
 fail() {
   echo "❌ $1"
@@ -19,6 +20,9 @@ require() {
 
 [[ -n "$ARTIFACT_FILE" ]] || fail "Usage: create_values.sh <artifact-json>"
 [[ -f "$ARTIFACT_FILE" ]] || fail "Artifact not found: $ARTIFACT_FILE"
+
+SVC_TYPE=$(jq -r '.type' "$ARTIFACT_FILE")
+[[ "$SERVICE_TYPE" == "App" && "$SVC_TYPE" == "$SERVICE_TYPE" ]] || fail "Service Type Not found OR Doesnt Match: $SERVICE_TYPE != $SVC_TYPE"
 
 require jq
 require yq

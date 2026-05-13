@@ -239,7 +239,7 @@ jobs:
             SERVICE_TYPE=$(jq -r '.type' "$file")
 
             if [[ "$SERVICE_TYPE" == "App" || "$SERVICE_TYPE" == "Frontend" ]]; then
-              export SERVICE_TYPE
+              export SERVICE_TYPE="$SERVICE_TYPE"
             ####################################################
             # Create values.yaml
             ####################################################
@@ -266,7 +266,7 @@ jobs:
               BACKEND_SERVICE=$(jq -r '.backendService' "$file")
               if [[ -n "$BACKEND_SERVICE" && "$BACKEND_SERVICE" != "null" ]]; then
                 export BACKEND_SERVICE
-                export SERVICE_TYPE
+                export SERVICE_TYPE="$SERVICE_TYPE"
               else
                 echo "❌ Backend Service Name for $SERVICE is empty"
                 continue
@@ -275,7 +275,7 @@ jobs:
               echo "Registering ingress route for $SERVICE..."
               bash scripts/register_new_svc.sh "$SERVICE" "$ENV"
             else
-              echo "Incomplete data for $SERVICE, Update gitops/registry/$ENV/${SERVICE}.json"
+              echo "❌ Incomplete data for $SERVICE, Update gitops/registry/$ENV/${SERVICE}.json"
               exit 1
             fi
 
