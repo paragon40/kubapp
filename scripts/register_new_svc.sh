@@ -41,7 +41,7 @@ fi
 # -----------------------------------------
 # Required variables
 # -----------------------------------------
-echo "====================DEBUG==================================""
+echo "====================DEBUG=================================="
 echo "Using BACKEND SERVICE: $BACKEND_SERVICE"
 echo "Using SERVICE TYPE: $TYPE"
 echo "Using SERVICE: $SERVICE"
