@@ -133,7 +133,7 @@ yq e -i '.services = (.services // [])' "$TMP_FILE"
 yq e -i '
   .services |= map(
     .enabled = (.enabled // true) |
-    .port = (.port)
+    .port = (.port // 80)
   )
 ' "$TMP_FILE"
 
@@ -221,7 +221,7 @@ add_service() {
     echo "Writing to $SERVICE_NAME backend file..."
     yq e -i '.services += [{
       "name": strenv(SERVICE_NAME),
-      "port": env(PORT),
+      "port": (strenv(PORT) | tonumber),
       "enabled": true,
       "backend": {
         "service": strenv(BACKEND_SERVICE)
@@ -231,7 +231,7 @@ add_service() {
     echo "Writing to $SERVICE_NAME App File..."
     yq e -i '.services += [{
       "name": strenv(SERVICE_NAME),
-      "port": env(PORT),
+      "port": (strenv(PORT) | tonumber),
       "enabled": true
     }]' "$TMP_FILE"
   fi
