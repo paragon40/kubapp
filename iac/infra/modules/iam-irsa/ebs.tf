@@ -23,8 +23,8 @@ resource "aws_iam_role" "ebs_csi_irsa" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = {
-          "${replace(var.oidc_provider_url, "https://", "")}:sub" =
-            "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+          "${local.oidc_provider}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+          "${local.oidc_provider}:aud" = "sts.amazonaws.com"
         }
       }
     }]
