@@ -15,7 +15,7 @@ DOMAIN="${DOMAIN:-}"
 CERT_ARN="${CERT_ARN:-}"
 PORT="${SERVICE_PORT:-80}"
 BACKEND_SERVICE="${BACKEND_SERVICE:-}"
-TYPE="{$SERVICE_TYPE:-}"
+TYPE="{SERVICE_TYPE:-}"
 
 VALUES_FILE="gitops/ingress/${ENV}/values.yaml"
 TMP_FILE="/tmp/ingress-values-${ENV}.yaml"
@@ -44,7 +44,7 @@ fi
 echo "====================DEBUG=================================="
 echo "Using BACKEND SERVICE: $BACKEND_SERVICE"
 echo "Using SERVICE TYPE: $TYPE"
-echo "Using SERVICE: $SERVICE"
+echo "Using SERVICE: $SERVICE_NAME"
 echo "====================DeBUG==================================="
 
 if [[ "$ACTION" == "add" ]]; then
