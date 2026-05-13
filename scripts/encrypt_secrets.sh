@@ -235,13 +235,6 @@ while IFS= read -r -d '' file; do
 
   echo "[INFO] Processing: $file"
 
-  # Skip already encrypted
-  if grep -q '^sops:' "$file"; then
-    echo "[WARN] ⚠️ Already encrypted: $file"
-    valid_docker_files=true
-    continue
-  fi
-
   # Backup
   base_backup="$BACKUP_DIR/$(basename "$file")"
   backup_1="${base_backup}.bak"
@@ -254,7 +247,14 @@ while IFS= read -r -d '' file; do
   cp -f "$file" "$backup_1"
   echo "[INFO] Backup updated: $backup_1 (previous moved to .bak.1)"
 
-  echo "[INFO] Backup created: $backup_file"
+  echo "[INFO] Backup created: $backup_1"
+
+  # Skip already encrypted
+  if grep -q '^sops:' "$file"; then
+    echo "[WARN] ⚠️ Already encrypted: $file"
+    valid_docker_files=true
+    continue
+  fi
 
   if sops -e -i "$file"; then
     echo "[INPLACE] Encrypted: $file"

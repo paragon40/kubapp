@@ -186,3 +186,4 @@ temp/
 site/
 docs/_build/
 artifacts/
+.backup/
