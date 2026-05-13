@@ -26,8 +26,9 @@ locals {
   efs_security_group_id  = data.terraform_remote_state.infra.outputs.efs_security_group_id
   app_logs               = data.terraform_remote_state.infra.outputs.log_group_names["app_logs"]
 
-  name_prefix = "kubapp-${var.env}"
-  alert_email = var.alert_email
+  name_prefix          = "kubapp-${var.env}"
+  alert_email          = var.alert_email
+  alert_email_password = var.alert_email_password
   k8s_labels = {
     cluster_name  = local.cluster_name
     resource-type = "kubernetes"
