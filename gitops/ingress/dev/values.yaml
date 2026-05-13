@@ -18,11 +18,11 @@ services:
     enabled: true
     port: 80
   - name: metrics
-    port: 80
     enabled: true
+    port: 9093
   - name: admin
     port: 80
     enabled: true
   - name: urlshortener
-    port: 80
     enabled: true
+    port: 9093
