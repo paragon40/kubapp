@@ -1,6 +1,7 @@
 
 service:
   name: admin
+  compute: fargate
 
 app:
   port: 4000

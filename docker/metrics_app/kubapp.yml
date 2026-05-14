@@ -1,6 +1,7 @@
 
 service:
   name: metrics
+  compute: node
 
 app:
   port: 8080

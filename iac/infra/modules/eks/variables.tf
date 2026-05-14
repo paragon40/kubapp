@@ -62,16 +62,23 @@ variable "fargate_role_arn" {
 
 variable "fargate_workloads" {
   type = map(object({
-    role = string
+    role   = string
+    labels = optional(map(string), {})
   }))
 
   default = {
-    users = {
-      role = "customers"
+    dev = {
+      role = "applications"
+      labels = {
+        compute = "fargate"
+      }
     }
 
-    fargate-monitoring = {
-      role = "observe"
+    prod = {
+      role = "applications"
+      labels = {
+        compute = "fargate"
+      }
     }
   }
 }

@@ -8,7 +8,8 @@ set -euo pipefail
 ARTIFACT_FILE="${1:-}"
 ROLE_ARN="${IRSA_ARN:-}"
 SERVICE_TYPE="${SERVICE_TYPE:-}"
-SECRET_NAME="${SECRET_NAME:-}"
+REPLICA_COUNT="${REPLICA_COUNT:-2}"
+HPA_ENABLED="${HPA_ENABLED:-false}"
 
 fail() {
   echo "❌ $1"
@@ -46,6 +47,13 @@ TMP_ENABLED=$(jq -r '.tmp_enabled // false' "$ARTIFACT_FILE")
 SVC_MONITOR_ENAB=$(jq -r '.svc_monitor_enabled // false' "$ARTIFACT_FILE")
 NO_SECRETS=$(jq -r '.NO_SECRETS // ""' "$ARTIFACT_FILE")
 SECRET_NAME="${SERVICE}-secrets"
+COMPUTE_TYPE=$(jq -r '.computeType // "fargate"' "$ARTIFACT_FILE")
+
+if [[ "$COMPUTE_TYPE" != "fargate" && "$COMPUTE_TYPE" != "node" ]]; then
+  if [[ "$COMPUTE_TYPE" != "ec2" ]]; then
+    fail "❌ Invalid COMPUTE_TYPE: $COMPUTE_TYPE (must be fargate or node)"
+  if
+fi
 
 ARR=("SERVICE" "ENV" "NAMESPACE" "ROLE_ARN" "PORT" "IMAGE" "TAG" "CONTAINER_UID" "HEALTH" "LIVE" "TMP_ENABLED" "VOLUMES_ENABLED" "SVC_MONITOR_ENAB")
 for var in "${ARR[@]}"; do
@@ -64,7 +72,7 @@ TARGET_FILE="$TARGET_DIR/values.yaml"
 
 mkdir -p "$TARGET_DIR"
 
-echo " Building static values for $SERVICE"
+echo " Building static values for $SERVICE with $COMPUTE_TYPE"
 
 ####################################################
 # STATIC FINGERPRINT (NO IMAGE DEPENDENCY)
@@ -90,7 +98,7 @@ serviceMonitor:
   path: /metrics
   interval: 30s
 
-replicaCount: 2
+replicaCount: $REPLICA_COUNT
 
 image:
   repository: $(jq -r '.image' "$ARTIFACT_FILE")
@@ -150,9 +158,9 @@ probes:
     periodSeconds: 5
 
 hpa:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 2
+  enabled: $HPA_ENABLED
+  minReplicas: 2
+  maxReplicas: 4
   cpu: 70
   memory: 70
 
@@ -188,6 +196,28 @@ cat >> /tmp/static-values.yaml <<EOF
 secret:
   enabled: true
   name: $SECRET_NAME
+EOF
+fi
+
+if [[ "$COMPUTE_TYPE" == "fargate" ]]; then
+cat >> /tmp/static-values.yaml <<EOF
+
+labels:
+  compute: fargate
+EOF
+fi
+
+if [[ "$COMPUTE_TYPE" == "node" ]]; then
+cat >> /tmp/static-values.yaml <<EOF
+
+nodeSelector:
+  compute: ec2
+
+tolerations:
+  - key: compute
+    operator: Equal
+    value: ec2
+    effect: NoSchedule
 EOF
 fi
 

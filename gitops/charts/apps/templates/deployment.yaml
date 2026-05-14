@@ -6,6 +6,9 @@ metadata:
 
   labels:
     app: {{ .Values.appName }}
+    {{- with .Values.labels }}
+{{ toYaml . | indent 8 }}
+    {{- end }}
 
 spec:
   replicas: {{ .Values.replicaCount }}
@@ -33,6 +36,21 @@ spec:
       {{- end }}
 
       serviceAccountName: {{ .Values.serviceAccount.name | default (printf "%s-sa" .Values.appName) }}
+
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end }}
+
+      {{- if .Values.tolerations }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+      {{- end }}
+
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+      {{- end }}
 
       containers:
         - name: {{ .Values.appName }}

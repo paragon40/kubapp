@@ -79,5 +79,22 @@ locals {
       gid  = 1002
     }
   }
+
+  fargate_workloads = {
+    dev = {
+      role = "applications"
+      labels = {
+        compute = "fargate"
+      }
+    }
+
+    prod = {
+      role = "applications"
+      labels = {
+        compute = "fargate"
+      }
+    }
+  }
+
 }
 

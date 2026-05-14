@@ -130,6 +130,34 @@ for eni in $enis; do
     continue
   fi
 
+  if [[ "$desc" == aws-K8S-i-* ]]; then
+    status=$(awsq ec2 describe-network-interfaces \
+      --region "$REGION" \
+      --network-interface-ids "$eni" \
+      --query "NetworkInterfaces[0].Status" \
+      --output text)
+
+    attachment=$(awsq ec2 describe-network-interfaces \
+      --region "$REGION" \
+      --network-interface-ids "$eni" \
+      --query "NetworkInterfaces[0].Attachment.AttachmentId" \
+      --output text)
+
+    log "K8S ENI STATUS=$status"
+    log "K8S ENI ATTACHMENT=$attachment"
+
+    if [[ "$status" == "available" ]] && [[ -z "$attachment" || "$attachment" == "None" ]]; then
+      log "ORPHAN K8S ENI CONFIRMED"
+
+      run aws ec2 delete-network-interface \
+        --region "$REGION" \
+        --network-interface-id "$eni"
+    else
+      log "K8S ENI STILL IN USE -> SKIP"
+    fi
+
+    continue
+  fi
   log "NO MATCH -> SKIP $eni"
   log "---- ENI END: $eni ----"
 

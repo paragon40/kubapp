@@ -1,6 +1,7 @@
 
 service:
   name: urlshortener
+  compute: fargate
 
 app:
   port: 3000

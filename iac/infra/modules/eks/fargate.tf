@@ -7,6 +7,7 @@ resource "aws_eks_fargate_profile" "workloads" {
   subnet_ids = var.private_subnet_ids
   selector {
     namespace = each.key
+    labels    = each.value.labels
   }
 
   tags = merge(var.tags, {

@@ -116,10 +116,8 @@ module "eks" {
 
   cluster_name       = local.cluster_name
   kubernetes_version = var.kubernetes_v
-
   vpc_id             = module.network.vpc_id
   private_subnet_ids = module.network.private_subnet_ids
-
   sg_ids = module.security.sg_ids
 
   cluster_role_arn = module.iam_core.eks_cluster_role_arn
@@ -127,6 +125,7 @@ module "eks" {
   fargate_role_arn = module.iam_core.fargate_role_arn
   access_iam_arn   = var.access_iam_arn
   admin_arn        = var.admin_arn
+  fargate_workloads = local.fargate_workloads
 
   node_instance_type    = "t3.large"
   node_desired_capacity = 3

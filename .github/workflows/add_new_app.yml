@@ -237,11 +237,15 @@ jobs:
             echo "file=$file" >> $GITHUB_ENV
 
             SERVICE_TYPE=$(jq -r '.type' "$file")
+            COMPUTE_TYPE=$(jq -r '.computeType' "$file")
 
             if [[ "$SERVICE_TYPE" == "App" ]]; then
               export BACKEND_SERVICE=""
               export SERVICE_PORT="80"
               export SERVICE_TYPE=$SERVICE_TYPE
+              if [[ "$COMPUTE_TYPE" == "fargate" ]]; then
+                export HPA_ENABLED="true"
+              fi
             ####################################################
             # Create values.yaml
             ####################################################
