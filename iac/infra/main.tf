@@ -129,7 +129,7 @@ module "eks" {
 
   node_instance_type    = "t3.large"
   node_desired_capacity = 2
-  node_min_capacity     = 2
+  node_min_capacity     = 1
   node_max_capacity     = 3
 
   tags = merge(local.common_tags, {
