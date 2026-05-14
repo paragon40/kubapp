@@ -21,8 +21,6 @@ resource "aws_eks_node_group" "system_nodes" {
     compute   = "system"
   }
 
-  # IMPORTANT: NO TAINT
-
   update_config {
     max_unavailable = 1
   }
