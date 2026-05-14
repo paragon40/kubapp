@@ -414,9 +414,11 @@ jobs:
           terraform destroy -auto-approve -var-file=infra.tfvars
 
       - name: Wipe Away Never-expire Logs Groups
+        if: always()
         run: bash scripts/cleanup_logs.sh
 
       - name: Verify Cleanups
+        if: always()
         run: |
           bash scripts/verify_cleanup.sh
 
@@ -437,5 +439,6 @@ jobs:
           fi
 
       - name: Finally
+        if: success()
         run: echo "✅ $CLUSTER_NAME Terraform Workflow Passed!"
 
