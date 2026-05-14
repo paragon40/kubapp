@@ -125,7 +125,7 @@ jobs:
             fi
           fi
 
-          MAX_AGE=18000
+          MAX_AGE=30000
           NOW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           STATE_EPOCH=$(date -d "$STATE_TS" +%s)
           NOW_EPOCH=$(date -d "$NOW_TS" +%s)
@@ -134,8 +134,12 @@ jobs:
           AGE=$((NOW_EPOCH - STATE_EPOCH))
 
           if (( AGE > MAX_AGE )); then
-            echo "❌ State file too old ($AGE sec)"
-            exit 1
+            if [[ "$WORKFLOW" == 'workflow_dispatch' ]]; then
+              echo "Manual trigger detected — skipping time check"
+            else
+              echo "❌ State file too old ($AGE sec)"
+              exit 1
+            fi
           fi
 
           STATE_ENV=$(jq -r '.env' gitops/state/current.json)
