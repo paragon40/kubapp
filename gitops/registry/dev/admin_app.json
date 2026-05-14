@@ -1,10 +1,11 @@
 {
   "service": "admin",
   "type": "App",
+  "computeType": "fargate",
   "context": "docker/admin_app",
   "image": "paragon40/admin_app",
   "image2": "paragon40/admin_app:latest",
-  "tag": "d8feba994ab08855234c6955ddba0782397d7ef2-1778700249",
+  "tag": "b8a935d21b9948a638b4ead5f90a11b85b8c2225-1778749858",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -21,5 +22,5 @@
   "mount_path": "/data",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-05-13_19-24-09"
+  "CREATED_AT": "2026-05-14_09-10-58"
 }
