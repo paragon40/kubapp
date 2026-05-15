@@ -146,6 +146,11 @@ echo "Found $COUNT secret entries"
 # =========================================================
 SECRET_NAME="${SERVICE}-secret"
 
+if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
+  echo "Namespace '$NAMESPACE' does not exist. Creating..."
+  kubectl create namespace "$NAMESPACE"
+fi
+
 kubectl create secret generic "$SECRET_NAME" \
   -n "$NAMESPACE" \
   --from-env-file=<(yq e '.secrets | to_entries | .[] | "\(.key)=\(.value)"' "$TMP_DEC") \
