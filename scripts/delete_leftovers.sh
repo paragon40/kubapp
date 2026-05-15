@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-# PRODUCTION ENI + ELB CLEANUP ENGINE (SAFE ORPHAN DETECTION)
+# PRODUCTION ENI CLEANUP ENGINE (ORPHAN-BASED DELETION)
 # ============================================================
 
 ENV="${ENV:?ENV required}"
@@ -47,117 +47,68 @@ for eni in $enis; do
 done
 
 # ============================================================
-# HELPER: ORPHAN SCORE
+# STEP 2: PROCESS ENIs (ORPHAN RULE ENGINE)
 # ============================================================
 
-score_eni() {
-  local eni="$1"
+for eni in $enis; do
 
-  local json
+  log "---- ENI START: $eni ----"
+
   json=$(awsq ec2 describe-network-interfaces \
     --network-interface-ids "$eni" \
     --output json)
 
-  local desc status requester attachment tags
-
   desc=$(echo "$json" | jq -r '.NetworkInterfaces[0].Description // ""')
-  status=$(echo "$json" | jq -r '.NetworkInterfaces[0].Status')
+  status=$(echo "$json" | jq -r '.NetworkInterfaces[0].Status // ""')
+  attachment_id=$(echo "$json" | jq -r '.NetworkInterfaces[0].Attachment.AttachmentId // ""')
   requester=$(echo "$json" | jq -r '.NetworkInterfaces[0].RequesterId // ""')
-  attachment=$(echo "$json" | jq -r '.NetworkInterfaces[0].Attachment.AttachmentId // ""')
-  tags=$(echo "$json" | jq -r '.NetworkInterfaces[0].TagSet // []')
 
-  local score=0
+  log "DESC=$desc"
+  log "STATUS=$status"
+  log "REQUESTER=$requester"
+  log "ATTACHMENT=$attachment_id"
 
-  # ------------------------------------------------------------
-  # HARD BLOCKS (immediately disqualify)
-  # ------------------------------------------------------------
+  # =========================================================
+  # HARD PROTECTION RULES (NEVER DELETE)
+  # =========================================================
 
   if [[ "$requester" == "amazon-vpc" ]]; then
-    echo "$eni|0|CORE_VPC"
-    return
-  fi
-
-  if echo "$tags" | grep -q "kubernetes.io/cluster"; then
-    echo "$eni|0|EKS_TAGGED"
-    return
-  fi
-
-  if [[ "$desc" == *"EFS"* || "$desc" == *"efs"* ]]; then
-    echo "$eni|0|EFS"
-    return
+    log "SKIP CORE AWS VPC ENI"
+    continue
   fi
 
   if [[ "$desc" == *"NAT Gateway"* ]]; then
-    echo "$eni|0|NAT"
-    return
+    log "SKIP NAT"
+    continue
   fi
 
-  # ------------------------------------------------------------
-  # SCORE SIGNALS
-  # ------------------------------------------------------------
-
-  [[ "$status" == "available" ]] && score=$((score + 50))
-
-  [[ -z "$attachment" || "$attachment" == "null" ]] && score=$((score + 30))
-
-  [[ "$desc" == *"aws-K8S-i-"* || "$desc" == *"eks"* ]] && score=$((score - 80))
-
-  [[ "$desc" == *"ELB"* ]] && score=$((score - 50))
-
-  echo "$eni|$score|$desc"
-}
-
-# ============================================================
-# STEP 2: SCAN ENIs
-# ============================================================
-
-CANDIDATES=()
-
-log "SCANNING ENIs..."
-
-for eni in $enis; do
-
-  result=$(score_eni "$eni")
-  IFS='|' read -r id score reason <<< "$result"
-
-  log "ENI=$id SCORE=$score REASON=$reason"
-
-  if (( score >= 80 )); then
-    CANDIDATES+=("$id")
+  if [[ "$desc" == *"EFS"* || "$desc" == *"efs"* ]]; then
+    log "SKIP EFS"
+    continue
   fi
-done
 
-# ============================================================
-# STEP 3: FINAL CONFIRMATION CHECK
-# ============================================================
+  # =========================================================
+  # MAIN ORPHAN RULE (THIS IS WHAT YOU WANT)
+  # =========================================================
 
-if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
-  log "NO SAFE ENIs TO DELETE"
-  exit 0
-fi
+  if [[ "$status" == "available" ]]; then
 
-log "CANDIDATES FOR DELETION:"
-printf '%s\n' "${CANDIDATES[@]}"
+    if [[ -z "$attachment_id" || "$attachment_id" == "None" || "$attachment_id" == "null" ]]; then
 
-# ============================================================
-# STEP 4: DELETE SAFELY
-# ============================================================
+      log "ORPHAN DETECTED → SAFE DELETE"
 
-for eni in "${CANDIDATES[@]}"; do
+      run aws ec2 delete-network-interface \
+        --network-interface-id "$eni"
 
-  log "FINAL VERIFY: $eni"
+    else
+      log "HAS ATTACHMENT → SKIP"
+    fi
 
-  verify=$(awsq ec2 describe-network-interfaces \
-    --network-interface-ids "$eni" \
-    --query "NetworkInterfaces[0].[Status,RequesterId,Attachment.AttachmentId,Description]" \
-    --output text)
+  else
+    log "NOT AVAILABLE → SKIP"
+  fi
 
-  log "VERIFY STATE: $verify"
-
-  run aws ec2 delete-network-interface \
-    --network-interface-id "$eni"
-
+  log "---- ENI END ----"
 done
 
 log "ENGINE COMPLETE"
-
