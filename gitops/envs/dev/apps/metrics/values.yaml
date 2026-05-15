@@ -29,6 +29,7 @@ securityContext:
     capabilities:
       drop:
         - ALL
+        - ALL
     runAsNonRoot: true
 probes:
   readiness:
@@ -57,14 +58,18 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 6eb65282886a0603f8c86255c84251d376fa95d72df49a6392d9bc346965da9f
-  generatedAt: 2026-05-15T14:09:57Z
+  generatedAt: 2026-05-15T14:17:09Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
   volumes:
     - name: metrics
       emptyDir: {}
+    - name: metrics
+      emptyDir: {}
   volumeMounts:
+    - name: metrics
+      mountPath: /data
     - name: metrics
       mountPath: /data
 serviceAccount:
