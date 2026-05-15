@@ -234,10 +234,8 @@ mv "$COMPUTE_FILE" /tmp/static-values.yaml
 if [[ -f "$TARGET_FILE" ]]; then
   echo " Merging existing values.yaml"
 
-  # safer merge: preserve runtime-managed sections
   yq eval-all '
-    select(fileIndex == 0) * select(fileIndex == 1) |
-    . as $item ireduce ({}; . *+ $item)
+    select(fileIndex == 0) *+ select(fileIndex == 1)
   ' "$TARGET_FILE" /tmp/static-values.yaml > /tmp/merged.yaml
 
   mv /tmp/merged.yaml "$TARGET_FILE"
@@ -245,6 +243,41 @@ else
   echo " Creating values.yaml"
   mv /tmp/static-values.yaml "$TARGET_FILE"
 fi
+
+####################################################
+# ENFORCE MUTUALLY EXCLUSIVE COMPUTE CONFIG
+####################################################
+# Existing values.yaml may still contain stale compute
+# fields preserved by the merge. Remove them and
+# reapply only the desired compute configuration.
+
+yq eval -i '
+  del(.labels.compute) |
+  del(.nodeSelector) |
+  del(.tolerations)
+' "$TARGET_FILE"
+
+case "$COMPUTE_TYPE" in
+  fargate)
+    yq eval -i '
+      .labels.compute = "fargate"
+    ' "$TARGET_FILE"
+    ;;
+
+  node|ec2)
+    yq eval -i '
+      .nodeSelector.compute = "ec2" |
+      .tolerations = [
+        {
+          "key": "compute",
+          "operator": "Equal",
+          "value": "ec2",
+          "effect": "NoSchedule"
+        }
+      ]
+    ' "$TARGET_FILE"
+    ;;
+esac
 
 ####################################################
 # ENSURE FINGERPRINT IS ALWAYS CONSISTENT
