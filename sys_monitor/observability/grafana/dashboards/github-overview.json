@@ -1,21 +1,26 @@
 {
+  "uid": "github-overview",
   "title": "GitOps GitHub Overview",
+  "schemaVersion": 38,
+  "version": 1,
   "panels": [
     {
       "type": "timeseries",
       "title": "Push Events",
       "targets": [
-        { "expr": "github_push_total" }
+        {
+          "expr": "rate(github_push_total[1m])"
+        }
       ]
     },
     {
       "type": "timeseries",
       "title": "PR Events",
       "targets": [
-        { "expr": "github_pr_total" }
+        {
+          "expr": "rate(github_pr_total[1m])"
+        }
       ]
     }
-  ],
-  "schemaVersion": 38,
-  "version": 1
+  ]
 }

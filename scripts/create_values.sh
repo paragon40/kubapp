@@ -216,7 +216,7 @@ case "$COMPUTE_TYPE" in
     yq eval -i '.labels.compute = "fargate"' "$COMPUTE_FILE"
     ;;
 
-  node)
+  node|ec2)
     yq eval -i '.nodeSelector.compute = "ec2"' "$COMPUTE_FILE"
     yq eval -i '.tolerations = [{"key":"compute","operator":"Equal","value":"ec2","effect":"NoSchedule"}]' "$COMPUTE_FILE"
     ;;

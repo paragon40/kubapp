@@ -1,33 +1,17 @@
 sys_monitor/
 │
 ├── exporters/
-│   └── github_webhook_collector/
-│       ├── src/
-│       │   ├── app.py
-│       │   ├── routes/
-│       │   ├── handlers/
-│       │   └── metrics/
-│       ├── requirements.txt
-│       ├── Dockerfile
-│       └── README.md
+│   └── github/
+│   
 │
 ├── observability/
 │   ├── prometheus/
-│   │   └── prometheus.yml
-│   │
-│   ├── grafana/
-│   │   ├── provisioning/
-│   │   │   ├── datasources/
-│   │   │   │   └── datasource.yml
-│   │   │   ├── dashboards/
-│   │   │   │   └── dashboards.yml
-│   │   │   └── dashboard-definitions/
-│   │   │       └── github-overview.json
-│   │   │
-│   │   └── README.md
-│   │
-│   └── alerts/
-│       └── (later)
+│   └── grafana/
+│       ├── provisioning/
+│       └── dashboards/
+│
+├── alerts/   
+│
 ├── ai/
 │   ├── analyzer/
 │   │   ├── event_analyzer.py

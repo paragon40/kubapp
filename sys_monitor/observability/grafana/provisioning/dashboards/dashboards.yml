@@ -4,5 +4,8 @@ providers:
   - name: "gitops"
     folder: "GitOps"
     type: file
+    disableDeletion: false
+    updateIntervalSeconds: 5
     options:
       path: /var/lib/grafana/dashboards
+
