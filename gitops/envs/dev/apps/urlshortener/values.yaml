@@ -58,14 +58,14 @@ probes:
     failureThreshold: 30
     periodSeconds: 5
 hpa:
-  enabled: true
+  enabled: false
   minReplicas: 2
   maxReplicas: 4
   cpu: 70
   memory: 70
 meta:
   staticFingerprint: d882d65204ed4afd42b1d002d2189eff2847433e8ecf57ebe372615ceae7d8b1
-  generatedAt: 2026-05-15T12:02:58Z
+  generatedAt: 2026-05-15T13:50:48Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
