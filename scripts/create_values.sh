@@ -38,34 +38,17 @@ TAG=$(jq -r '.tag' "$ARTIFACT_FILE")
 CONTAINER_UID=$(jq -r '.containerUid // 10001' "$ARTIFACT_FILE")
 HEALTH=$(jq -r '.healthPath // "/health"' "$ARTIFACT_FILE")
 LIVE=$(jq -r '.livePath // "/live"' "$ARTIFACT_FILE")
-BASE=$(jq -r '.basePath // ""' "$ARTIFACT_FILE")
 TMP_VOL=$(jq -r '.tmp_volume // ""' "$ARTIFACT_FILE")
 MNT_VOL=$(jq -r '.mount_vol // ""' "$ARTIFACT_FILE")
 MNT_PATH=$(jq -r '.mount_path // ""' "$ARTIFACT_FILE")
-VOLUMES_ENABLED=$(jq -r '.volumes_enabled // false' "$ARTIFACT_FILE")
 TMP_ENABLED=$(jq -r '.tmp_enabled // false' "$ARTIFACT_FILE")
 SVC_MONITOR_ENAB=$(jq -r '.svc_monitor_enabled // false' "$ARTIFACT_FILE")
 NO_SECRETS=$(jq -r '.NO_SECRETS // ""' "$ARTIFACT_FILE")
 SECRET_NAME="${SERVICE}-secrets"
 COMPUTE_TYPE=$(jq -r '.computeType // "fargate"' "$ARTIFACT_FILE")
 
-if [[ "$COMPUTE_TYPE" != "fargate" && "$COMPUTE_TYPE" != "node" ]]; then
-  if [[ "$COMPUTE_TYPE" != "ec2" ]]; then
-    fail "❌ Invalid COMPUTE_TYPE: $COMPUTE_TYPE (must be fargate or node)"
-  fi
-fi
-
-ARR=("SERVICE" "ENV" "NAMESPACE" "ROLE_ARN" "PORT" "IMAGE" "TAG" "CONTAINER_UID" "HEALTH" "LIVE" "TMP_ENABLED" "VOLUMES_ENABLED" "SVC_MONITOR_ENAB")
-for var in "${ARR[@]}"; do
-  value="${!var}"
-
-  if [[ -z "$value" ]]; then
-    echo "❌ $var required"
-    exit 1
-  fi
-
-  export "$var=$value"
-done
+require jq
+require yq
 
 TARGET_DIR="gitops/envs/$ENV/apps/$SERVICE"
 TARGET_FILE="$TARGET_DIR/values.yaml"
@@ -75,14 +58,13 @@ mkdir -p "$TARGET_DIR"
 echo " Building static values for $SERVICE with $COMPUTE_TYPE"
 
 ####################################################
-# STATIC FINGERPRINT (NO IMAGE DEPENDENCY)
+# STATIC FINGERPRINT
 ####################################################
 STATIC_FP=$(echo -n "$SERVICE|$NAMESPACE|$PORT|v1" | sha256sum | awk '{print $1}')
-
 DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 ####################################################
-# BASE STRUCTURE
+# BUILD BASE VALUES (STATIC SOURCE OF TRUTH)
 ####################################################
 cat > /tmp/static-values.yaml <<EOF
 appName: $SERVICE
@@ -101,8 +83,8 @@ serviceMonitor:
 replicaCount: $REPLICA_COUNT
 
 image:
-  repository: $(jq -r '.image' "$ARTIFACT_FILE")
-  tag: $(jq -r '.tag' "$ARTIFACT_FILE")
+  repository: $IMAGE
+  tag: $TAG
   pullPolicy: Always
 
 service:
@@ -150,13 +132,6 @@ probes:
     initialDelaySeconds: 10
     periodSeconds: 15
 
-  startup:
-    httpGet:
-      path: ${HEALTH}
-      port: ${PORT}
-    failureThreshold: 30
-    periodSeconds: 5
-
 hpa:
   enabled: $HPA_ENABLED
   minReplicas: 2
@@ -170,13 +145,9 @@ meta:
   source: build-pipeline
 EOF
 
-echo "Checks for $SERVICE volume config.."
-echo "tmp_enabled: $TMP_ENABLED"
-echo "vol_enabled: $VOLUMES_ENABLED"
-echo "Temp Vol: $TMP_VOL"
-echo "Mount Vol: $MNT_VOL"
-echo "Mount Path: $MNT_PATH"
-
+####################################################
+# STORAGE (NO DUPLICATES BY DESIGN)
+####################################################
 if [[ "$TMP_ENABLED" == "true" && -n "$TMP_VOL" && -n "$MNT_VOL" && -n "$MNT_PATH" ]]; then
 cat >> /tmp/static-values.yaml <<EOF
 
@@ -191,7 +162,10 @@ storage:
 EOF
 fi
 
-if [[ "$NO_SECRETS" == "false" && -n "$SECRET_NAME" && "$SECRET_NAME" != "null" ]]; then
+####################################################
+# SECRETS
+####################################################
+if [[ "$NO_SECRETS" == "false" && -n "$SECRET_NAME" ]]; then
 cat >> /tmp/static-values.yaml <<EOF
 secret:
   enabled: true
@@ -199,89 +173,47 @@ secret:
 EOF
 fi
 
-# COMPUTE TYPE MUTUALLY EXCLUSIVE
-COMPUTE_FILE="/tmp/static-values-compute.yaml"
-cp /tmp/static-values.yaml "$COMPUTE_FILE"
-
-# remove any old compute config from base
-yq eval '
-  del(.labels.compute) |
-  del(.nodeSelector) |
-  del(.tolerations)
-' -i "$COMPUTE_FILE"
-
-# apply ONLY one compute mode
-case "$COMPUTE_TYPE" in
-  fargate)
-    yq eval -i '.labels.compute = "fargate"' "$COMPUTE_FILE"
-    ;;
-
-  node|ec2)
-    yq eval -i '.nodeSelector.compute = "ec2"' "$COMPUTE_FILE"
-    yq eval -i '.tolerations = [{"key":"compute","operator":"Equal","value":"ec2","effect":"NoSchedule"}]' "$COMPUTE_FILE"
-    ;;
-
-  *)
-    fail "Unknown COMPUTE_TYPE: $COMPUTE_TYPE"
-    ;;
-esac
-
-mv "$COMPUTE_FILE" /tmp/static-values.yaml
-
 ####################################################
-# APPLY STRATEGY (SAFE + IDENTITY PRESERVING)
+# COMPUTE MODE (SINGLE SOURCE OF TRUTH)
 ####################################################
-if [[ -f "$TARGET_FILE" ]]; then
-  echo " Merging existing values.yaml"
-
-  yq eval-all '
-    select(fileIndex == 0) *+ select(fileIndex == 1)
-  ' "$TARGET_FILE" /tmp/static-values.yaml > /tmp/merged.yaml
-
-  mv /tmp/merged.yaml "$TARGET_FILE"
-else
-  echo " Creating values.yaml"
-  mv /tmp/static-values.yaml "$TARGET_FILE"
-fi
-
-####################################################
-# ENFORCE MUTUALLY EXCLUSIVE COMPUTE CONFIG
-####################################################
-# Existing values.yaml may still contain stale compute
-# fields preserved by the merge. Remove them and
-# reapply only the desired compute configuration.
 
 yq eval -i '
   del(.labels.compute) |
   del(.nodeSelector) |
   del(.tolerations)
-' "$TARGET_FILE"
+' /tmp/static-values.yaml
 
 case "$COMPUTE_TYPE" in
   fargate)
-    yq eval -i '
-      .labels.compute = "fargate"
-    ' "$TARGET_FILE"
+    yq eval -i '.labels.compute = "fargate"' /tmp/static-values.yaml
     ;;
 
   node|ec2)
     yq eval -i '
       .nodeSelector.compute = "ec2" |
-      .tolerations = [
-        {
-          "key": "compute",
-          "operator": "Equal",
-          "value": "ec2",
-          "effect": "NoSchedule"
-        }
-      ]
-    ' "$TARGET_FILE"
+      .tolerations = [{
+        "key": "compute",
+        "operator": "Equal",
+        "value": "ec2",
+        "effect": "NoSchedule"
+      }]
+    ' /tmp/static-values.yaml
+    ;;
+  *)
+    fail "Unknown COMPUTE_TYPE: $COMPUTE_TYPE"
     ;;
 esac
 
 ####################################################
-# ENSURE FINGERPRINT IS ALWAYS CONSISTENT
+# FINAL WRITE (NO MERGE - FULL OVERRIDE)
+####################################################
+
+cp /tmp/static-values.yaml "$TARGET_FILE"
+
+####################################################
+# FINAL PATCH
 ####################################################
 yq e -i ".meta.staticFingerprint = \"$STATIC_FP\"" "$TARGET_FILE"
 
 echo "✅ Static values ready: $TARGET_FILE"
+
