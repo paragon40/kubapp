@@ -52,7 +52,7 @@ COMPUTE_TYPE=$(jq -r '.computeType // "fargate"' "$ARTIFACT_FILE")
 if [[ "$COMPUTE_TYPE" != "fargate" && "$COMPUTE_TYPE" != "node" ]]; then
   if [[ "$COMPUTE_TYPE" != "ec2" ]]; then
     fail "❌ Invalid COMPUTE_TYPE: $COMPUTE_TYPE (must be fargate or node)"
-  if
+  fi
 fi
 
 ARR=("SERVICE" "ENV" "NAMESPACE" "ROLE_ARN" "PORT" "IMAGE" "TAG" "CONTAINER_UID" "HEALTH" "LIVE" "TMP_ENABLED" "VOLUMES_ENABLED" "SVC_MONITOR_ENAB")
