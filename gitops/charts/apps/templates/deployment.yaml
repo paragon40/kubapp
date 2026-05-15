@@ -21,6 +21,9 @@ spec:
     metadata:
       labels:
         app: {{ .Values.appName }}
+        {{- with .Values.labels }}
+  {{ toYaml . | indent 8 }}
+        {{- end }}
 
     spec:
       securityContext:
