@@ -1,0 +1,21 @@
+{
+  "title": "GitOps GitHub Overview",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Push Events",
+      "targets": [
+        { "expr": "github_push_total" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "PR Events",
+      "targets": [
+        { "expr": "github_pr_total" }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}

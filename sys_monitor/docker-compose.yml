@@ -3,7 +3,7 @@
 services:
 
   github_exporter:
-    build: ./exporters/github-webhook-collector
+    build: ./exporters/github
     container_name: github-exporter
     ports:
       - "3000:3000"
@@ -12,7 +12,7 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     volumes:
-      - ./base/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
 
@@ -23,3 +23,7 @@ services:
       - "3001:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+      - ./observability/grafana/dashboard-definitions:/var/lib/grafana/dashboards
+

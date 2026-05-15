@@ -1,0 +1,51 @@
+sys_monitor/
+│
+├── exporters/
+│   └── github_webhook_collector/
+│       ├── src/
+│       │   ├── app.py
+│       │   ├── routes/
+│       │   ├── handlers/
+│       │   └── metrics/
+│       ├── requirements.txt
+│       ├── Dockerfile
+│       └── README.md
+│
+├── observability/
+│   ├── prometheus/
+│   │   └── prometheus.yml
+│   │
+│   ├── grafana/
+│   │   ├── provisioning/
+│   │   │   ├── datasources/
+│   │   │   │   └── datasource.yml
+│   │   │   ├── dashboards/
+│   │   │   │   └── dashboards.yml
+│   │   │   └── dashboard-definitions/
+│   │   │       └── github-overview.json
+│   │   │
+│   │   └── README.md
+│   │
+│   └── alerts/
+│       └── (later)
+├── ai/
+│   ├── analyzer/
+│   │   ├── event_analyzer.py
+│   │   ├── anomaly_detector.py
+│   │   └── insight_engine.py
+│   │
+│   ├── api/
+│   │   └── ai_service.py
+│   │
+│   └── models/
+│       └── (future: embeddings / ML models)
+│
+├── docker-compose.yml
+│
+├── scripts/
+│   ├── start.sh
+│   ├── stop.sh
+│   └── reset.sh
+│
+└── README.md
+

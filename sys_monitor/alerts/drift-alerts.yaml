@@ -1,5 +1,0 @@
-groups:
-  - name: drift-alerts
-    rules:
-      - alert: ClusterDriftDetected
-        expr: cluster_drift_total > 0
