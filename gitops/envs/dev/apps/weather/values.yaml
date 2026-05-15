@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: "paragon40/weather_app"
-  tag: 832712a12e0e0bb775a13cdb73f490cdbff89042-1778846455
+  tag: f448278ab57b6075a82b825c38e173c01cb2527a-1778855889
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -25,7 +25,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 1f3b831b2cf66454cfd85ffc89c9a88645d5eae258e7587330db355c10509795
-  generatedAt: 2026-05-15T14:17:10Z
+  generatedAt: 2026-05-15T14:39:40Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 securityContext:
@@ -39,6 +39,7 @@ securityContext:
     readOnlyRootFilesystem: true
     capabilities:
       drop:
+        - ALL
         - ALL
         - ALL
     runAsNonRoot: true
@@ -71,7 +72,11 @@ storage:
       emptyDir: {}
     - name: edgepaas-vol
       emptyDir: {}
+    - name: edgepaas-vol
+      emptyDir: {}
   volumeMounts:
+    - name: edgepaas-vol
+      mountPath: /tmp
     - name: edgepaas-vol
       mountPath: /tmp
     - name: edgepaas-vol
@@ -87,11 +92,5 @@ serviceMonitor:
 secret:
   enabled: true
   name: weather-secret
-labels: {}
-nodeSelector:
-  compute: ec2
-tolerations:
-  - key: compute
-    operator: Equal
-    value: ec2
-    effect: NoSchedule
+labels:
+  compute: fargate

@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: paragon40/metrics_app
-  tag: 832712a12e0e0bb775a13cdb73f490cdbff89042-1778846451
+  tag: f448278ab57b6075a82b825c38e173c01cb2527a-1778855884
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -28,6 +28,7 @@ securityContext:
     readOnlyRootFilesystem: true
     capabilities:
       drop:
+        - ALL
         - ALL
         - ALL
     runAsNonRoot: true
@@ -58,7 +59,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 6eb65282886a0603f8c86255c84251d376fa95d72df49a6392d9bc346965da9f
-  generatedAt: 2026-05-15T14:17:09Z
+  generatedAt: 2026-05-15T14:39:43Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
@@ -67,7 +68,11 @@ storage:
       emptyDir: {}
     - name: metrics
       emptyDir: {}
+    - name: metrics
+      emptyDir: {}
   volumeMounts:
+    - name: metrics
+      mountPath: /data
     - name: metrics
       mountPath: /data
     - name: metrics

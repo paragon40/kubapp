@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/url_shortener
-  tag: 832712a12e0e0bb775a13cdb73f490cdbff89042-1778846449
+  tag: f448278ab57b6075a82b825c38e173c01cb2527a-1778855886
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -37,6 +37,7 @@ securityContext:
     readOnlyRootFilesystem: true
     capabilities:
       drop:
+        - ALL
         - ALL
         - ALL
 probes:
@@ -66,11 +67,13 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: d882d65204ed4afd42b1d002d2189eff2847433e8ecf57ebe372615ceae7d8b1
-  generatedAt: 2026-05-15T14:17:09Z
+  generatedAt: 2026-05-15T14:39:40Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
   volumes:
+    - name: urlshortener-volume
+      emptyDir: {}
     - name: urlshortener-volume
       emptyDir: {}
     - name: urlshortener-volume
@@ -80,11 +83,7 @@ storage:
       mountPath: /data
     - name: urlshortener-volume
       mountPath: /data
-labels: {}
-nodeSelector:
-  compute: ec2
-tolerations:
-  - key: compute
-    operator: Equal
-    value: ec2
-    effect: NoSchedule
+    - name: urlshortener-volume
+      mountPath: /data
+labels:
+  compute: fargate
