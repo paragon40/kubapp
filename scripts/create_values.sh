@@ -199,27 +199,34 @@ secret:
 EOF
 fi
 
-if [[ "$COMPUTE_TYPE" == "fargate" ]]; then
-cat >> /tmp/static-values.yaml <<EOF
+# COMPUTE TYPE MUTUALLY EXCLUSIVE
+COMPUTE_FILE="/tmp/static-values-compute.yaml"
+cp /tmp/static-values.yaml "$COMPUTE_FILE"
 
-labels:
-  compute: fargate
-EOF
-fi
+# remove any old compute config from base
+yq eval '
+  del(.labels.compute) |
+  del(.nodeSelector) |
+  del(.tolerations)
+' -i "$COMPUTE_FILE"
 
-if [[ "$COMPUTE_TYPE" == "node" ]]; then
-cat >> /tmp/static-values.yaml <<EOF
+# apply ONLY one compute mode
+case "$COMPUTE_TYPE" in
+  fargate)
+    yq eval -i '.labels.compute = "fargate"' "$COMPUTE_FILE"
+    ;;
 
-nodeSelector:
-  compute: ec2
+  node)
+    yq eval -i '.nodeSelector.compute = "ec2"' "$COMPUTE_FILE"
+    yq eval -i '.tolerations = [{"key":"compute","operator":"Equal","value":"ec2","effect":"NoSchedule"}]' "$COMPUTE_FILE"
+    ;;
 
-tolerations:
-  - key: compute
-    operator: Equal
-    value: ec2
-    effect: NoSchedule
-EOF
-fi
+  *)
+    fail "Unknown COMPUTE_TYPE: $COMPUTE_TYPE"
+    ;;
+esac
+
+mv "$COMPUTE_FILE" /tmp/static-values.yaml
 
 ####################################################
 # APPLY STRATEGY (SAFE + IDENTITY PRESERVING)
