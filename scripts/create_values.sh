@@ -20,6 +20,12 @@ require() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing dependency: $1"
 }
 
+line() {
+  printf '%*s\n' "${1:-60}" '' | tr ' ' '#'
+}
+
+line 80
+
 [[ -n "$ARTIFACT_FILE" ]] || fail "Usage: create_values.sh <artifact-json>"
 [[ -f "$ARTIFACT_FILE" ]] || fail "Artifact not found: $ARTIFACT_FILE"
 
@@ -204,16 +210,12 @@ case "$COMPUTE_TYPE" in
     ;;
 esac
 
-####################################################
 # FINAL WRITE (NO MERGE - FULL OVERRIDE)
-####################################################
-
 cp /tmp/static-values.yaml "$TARGET_FILE"
 
-####################################################
 # FINAL PATCH
-####################################################
 yq e -i ".meta.staticFingerprint = \"$STATIC_FP\"" "$TARGET_FILE"
 
+line 80
 echo "✅ Static values ready: $TARGET_FILE"
-
+line 80
