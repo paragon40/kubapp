@@ -2,14 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-# ENI + Classic ELB decision engine (strict chain)
-# ============================================================
-# FLOW:
-# 1. list ENIs
-# 2. classify attachment source
-# 3. NAT/EFS/subnet => skip
-# 4. ELB => validate orphan/cluster-bound
-# 5. confirm + delete
+# PRODUCTION ENI + ELB CLEANUP ENGINE (SAFE ORPHAN DETECTION)
 # ============================================================
 
 ENV="${ENV:?ENV required}"
@@ -20,37 +13,33 @@ DRY_RUN="${DRY_RUN:-true}"
 
 log(){ echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
-awsq(){ aws "$@" 2>/dev/null || true; }
+awsq(){
+  aws "$@" --region "$REGION" --no-cli-pager
+}
 
 run(){
   if [[ "$DRY_RUN" == "true" ]]; then
-    log "DRY_RUN: $*"
+    log "[DRY_RUN] $*"
   else
-    eval "$@" || true
+    eval "$@"
   fi
 }
 
 [[ "$ENV" == "prod" ]] && { log "BLOCKED PROD"; exit 1; }
 
 # ============================================================
-# STEP 1: LIST ENIs (VERIFIED)
+# STEP 1: LIST ENIs
 # ============================================================
 
 log "STEP 1: LIST ENIs"
 log "VPC=$VPC_ID REGION=$REGION CLUSTER=$CLUSTER_NAME"
 
 enis=$(awsq ec2 describe-network-interfaces \
-  --region "$REGION" \
   --filters Name=vpc-id,Values="$VPC_ID" \
   --query "NetworkInterfaces[].NetworkInterfaceId" \
   --output text)
 
-log "RAW ENI OUTPUT=${enis:-EMPTY}"
-
-if [[ -z "$enis" ]]; then
-  log "NO ENIs FOUND - CHECK VPC/REGION/ACCOUNT"
-  exit 0
-fi
+[[ -z "$enis" ]] && { log "NO ENIs FOUND"; exit 0; }
 
 log "ENIs FOUND:"
 for eni in $enis; do
@@ -58,109 +47,117 @@ for eni in $enis; do
 done
 
 # ============================================================
-# STEP 2: PROCESS ENIs
+# HELPER: ORPHAN SCORE
 # ============================================================
+
+score_eni() {
+  local eni="$1"
+
+  local json
+  json=$(awsq ec2 describe-network-interfaces \
+    --network-interface-ids "$eni" \
+    --output json)
+
+  local desc status requester attachment tags
+
+  desc=$(echo "$json" | jq -r '.NetworkInterfaces[0].Description // ""')
+  status=$(echo "$json" | jq -r '.NetworkInterfaces[0].Status')
+  requester=$(echo "$json" | jq -r '.NetworkInterfaces[0].RequesterId // ""')
+  attachment=$(echo "$json" | jq -r '.NetworkInterfaces[0].Attachment.AttachmentId // ""')
+  tags=$(echo "$json" | jq -r '.NetworkInterfaces[0].TagSet // []')
+
+  local score=0
+
+  # ------------------------------------------------------------
+  # HARD BLOCKS (immediately disqualify)
+  # ------------------------------------------------------------
+
+  if [[ "$requester" == "amazon-vpc" ]]; then
+    echo "$eni|0|CORE_VPC"
+    return
+  fi
+
+  if echo "$tags" | grep -q "kubernetes.io/cluster"; then
+    echo "$eni|0|EKS_TAGGED"
+    return
+  fi
+
+  if [[ "$desc" == *"EFS"* || "$desc" == *"efs"* ]]; then
+    echo "$eni|0|EFS"
+    return
+  fi
+
+  if [[ "$desc" == *"NAT Gateway"* ]]; then
+    echo "$eni|0|NAT"
+    return
+  fi
+
+  # ------------------------------------------------------------
+  # SCORE SIGNALS
+  # ------------------------------------------------------------
+
+  [[ "$status" == "available" ]] && score=$((score + 50))
+
+  [[ -z "$attachment" || "$attachment" == "null" ]] && score=$((score + 30))
+
+  [[ "$desc" == *"aws-K8S-i-"* || "$desc" == *"eks"* ]] && score=$((score - 80))
+
+  [[ "$desc" == *"ELB"* ]] && score=$((score - 50))
+
+  echo "$eni|$score|$desc"
+}
+
+# ============================================================
+# STEP 2: SCAN ENIs
+# ============================================================
+
+CANDIDATES=()
+
+log "SCANNING ENIs..."
 
 for eni in $enis; do
 
-  log "---- ENI START: $eni ----"
+  result=$(score_eni "$eni")
+  IFS='|' read -r id score reason <<< "$result"
 
-  desc=$(awsq ec2 describe-network-interfaces \
-    --region "$REGION" \
+  log "ENI=$id SCORE=$score REASON=$reason"
+
+  if (( score >= 80 )); then
+    CANDIDATES+=("$id")
+  fi
+done
+
+# ============================================================
+# STEP 3: FINAL CONFIRMATION CHECK
+# ============================================================
+
+if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
+  log "NO SAFE ENIs TO DELETE"
+  exit 0
+fi
+
+log "CANDIDATES FOR DELETION:"
+printf '%s\n' "${CANDIDATES[@]}"
+
+# ============================================================
+# STEP 4: DELETE SAFELY
+# ============================================================
+
+for eni in "${CANDIDATES[@]}"; do
+
+  log "FINAL VERIFY: $eni"
+
+  verify=$(awsq ec2 describe-network-interfaces \
     --network-interface-ids "$eni" \
-    --query "NetworkInterfaces[0].Description" \
+    --query "NetworkInterfaces[0].[Status,RequesterId,Attachment.AttachmentId,Description]" \
     --output text)
 
-  requester=$(awsq ec2 describe-network-interfaces \
-    --region "$REGION" \
-    --network-interface-ids "$eni" \
-    --query "NetworkInterfaces[0].RequesterId" \
-    --output text)
+  log "VERIFY STATE: $verify"
 
-  log "DESC=$desc"
-  log "REQUESTER=$requester"
-
-  if [[ "$desc" == *"NAT Gateway"* ]]; then
-    log "SKIP NAT"
-    continue
-  fi
-
-  if [[ "$desc" == *"efs"* || "$desc" == *"EFS"* ]]; then
-    log "SKIP EFS"
-    continue
-  fi
-
-  if [[ "$requester" == "amazon-vpc" ]]; then
-    log "SKIP CORE VPC"
-    continue
-  fi
-
-  if [[ "$desc" == *"ELB"* ]]; then
-
-    lb_name=$(echo "$desc" | grep -oE 'k8s-[a-zA-Z0-9-]+' || true)
-
-    log "ELB CANDIDATE=$lb_name"
-
-    if [[ -n "$lb_name" ]]; then
-
-      state=$(awsq elb describe-load-balancers \
-        --region "$REGION" \
-        --load-balancer-names "$lb_name" \
-        --query "LoadBalancerDescriptions[0].Instances" \
-        --output text)
-
-      log "ELB STATE=$state"
-
-      if [[ "$state" == "None" || "$state" == "" ]]; then
-        log "ORPHAN ELB CONFIRMED"
-
-        run aws elb delete-load-balancer \
-          --region "$REGION" \
-          --load-balancer-name "$lb_name"
-
-        run aws ec2 delete-network-interface \
-          --region "$REGION" \
-          --network-interface-id "$eni"
-
-      else
-        log "ELB ACTIVE -> SKIP"
-      fi
-    fi
-
-    continue
-  fi
-
-  if [[ "$desc" == aws-K8S-i-* ]]; then
-    status=$(awsq ec2 describe-network-interfaces \
-      --region "$REGION" \
-      --network-interface-ids "$eni" \
-      --query "NetworkInterfaces[0].Status" \
-      --output text)
-
-    attachment=$(awsq ec2 describe-network-interfaces \
-      --region "$REGION" \
-      --network-interface-ids "$eni" \
-      --query "NetworkInterfaces[0].Attachment.AttachmentId" \
-      --output text)
-
-    log "K8S ENI STATUS=$status"
-    log "K8S ENI ATTACHMENT=$attachment"
-
-    if [[ "$status" == "available" ]] && [[ -z "$attachment" || "$attachment" == "None" ]]; then
-      log "ORPHAN K8S ENI CONFIRMED"
-
-      run aws ec2 delete-network-interface \
-        --region "$REGION" \
-        --network-interface-id "$eni"
-    else
-      log "K8S ENI STILL IN USE -> SKIP"
-    fi
-
-    continue
-  fi
-  log "NO MATCH -> SKIP $eni"
-  log "---- ENI END: $eni ----"
+  run aws ec2 delete-network-interface \
+    --network-interface-id "$eni"
 
 done
 
 log "ENGINE COMPLETE"
+
