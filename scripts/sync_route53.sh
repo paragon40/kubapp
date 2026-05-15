@@ -62,8 +62,21 @@ echo "Fetching ALB from ingress..."
 ALB=""
 
 for i in {1..15}; do
-  ALB=$(kubectl get ingress kubapp-$ENV-alb -n "$ENV" \
-    -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+  ALB_ARN=$(aws elbv2 describe-load-balancers \
+    --region "$AWS_REGION" \
+    --query "LoadBalancers[?contains(LoadBalancerName, 'kubapp')].LoadBalancerArn | [0]" \
+    --output text)
+
+  [[ -n "$ALB_ARN" && "$ALB_ARN" != "None" ]] || {
+    echo "❌ No ALB found"
+    exit 1
+  }
+
+  ALB=$(aws elbv2 describe-load-balancers \
+    --region "$AWS_REGION" \
+    --load-balancer-arns "$ALB_ARN" \
+    --query "LoadBalancers[0].DNSName" \
+    --output text)
 
   if [[ -n "$ALB" ]]; then
     echo "✅ ALB ready: $ALB"
@@ -76,7 +89,11 @@ done
 
 if [[ -z "$ALB" ]]; then
   echo "❌ ALB never became ready"
+  echo "I will Describe connected ingresses next..."
+  echo "===================================================="
   kubectl describe ingress kubapp-$ENV-alb -n "$ENV" || true
+  echo "===================================================="
+  kubectl describe ingress kubapp-monitoring-alb -n "$ENV" || true
   exit 1
 fi
 
