@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from handlers.health import calculate_health
 from ai.anomaly_detector import AnomalyDetector
-from metrics.ai import github_anomaly_flag
+from metrics.health import github_anomaly_flag
 
 from metrics.registry import (
     github_push_total,
@@ -24,7 +24,8 @@ def handle_push(payload):
 
     github_push_total.labels(repo=repo, commit=commit).inc()
     LAST_PUSH_TS[repo] = datetime.now(timezone.utc).timestamp()
-
+    current_count = github_push_total.labels(repo=repo, commit=commit)._value.get()
+    detect_push_anomaly(repo, current_count)
     print(f"[PUSH] repo={repo} commit={commit}")
     calculate_health(repo)
 

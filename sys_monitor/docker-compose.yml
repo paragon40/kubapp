@@ -7,6 +7,7 @@ services:
     container_name: github-exporter
     ports:
       - "3000:3000"
+    restart: unless-stopped
 
   prometheus:
     image: prom/prometheus:latest
@@ -15,6 +16,7 @@ services:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
@@ -28,4 +30,4 @@ services:
     volumes:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards
-
+    restart: unless-stopped
