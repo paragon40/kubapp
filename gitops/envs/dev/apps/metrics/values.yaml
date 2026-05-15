@@ -1,5 +1,13 @@
 appName: metrics
 namespace: dev
+serviceAccount:
+  create: true
+  name: metrics-sa
+  roleArn: arn:aws:iam::198200019771:role/kubapp-dev-app-pods-role
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  interval: 30s
 replicaCount: 2
 image:
   repository: paragon40/metrics_app
@@ -23,15 +31,13 @@ securityContext:
     seccompProfile:
       type: RuntimeDefault
   container:
+    runAsNonRoot: true
     runAsUser: 10009
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities:
       drop:
         - ALL
-        - ALL
-        - ALL
-    runAsNonRoot: true
 probes:
   readiness:
     httpGet:
@@ -45,12 +51,6 @@ probes:
       port: 8080
     initialDelaySeconds: 10
     periodSeconds: 15
-  startup:
-    httpGet:
-      path: /health
-      port: 8080
-    failureThreshold: 30
-    periodSeconds: 5
 hpa:
   enabled: true
   minReplicas: 2
@@ -59,32 +59,15 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 6eb65282886a0603f8c86255c84251d376fa95d72df49a6392d9bc346965da9f
-  generatedAt: 2026-05-15T14:39:43Z
+  generatedAt: 2026-05-15T14:59:42Z
   source: build-pipeline
-  runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
   volumes:
-    - name: metrics
-      emptyDir: {}
-    - name: metrics
-      emptyDir: {}
     - name: metrics
       emptyDir: {}
   volumeMounts:
     - name: metrics
       mountPath: /data
-    - name: metrics
-      mountPath: /data
-    - name: metrics
-      mountPath: /data
-serviceAccount:
-  create: true
-  name: metrics-sa
-  roleArn: arn:aws:iam::198200019771:role/kubapp-dev-app-pods-role
-serviceMonitor:
-  enabled: true
-  path: /metrics
-  interval: 30s
 nodeSelector:
   compute: ec2
 tolerations:

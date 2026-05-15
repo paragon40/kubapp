@@ -38,8 +38,6 @@ securityContext:
     capabilities:
       drop:
         - ALL
-        - ALL
-        - ALL
 probes:
   readiness:
     httpGet:
@@ -53,12 +51,6 @@ probes:
       port: 4000
     initialDelaySeconds: 10
     periodSeconds: 15
-  startup:
-    httpGet:
-      path: /health
-      port: 4000
-    failureThreshold: 30
-    periodSeconds: 5
 hpa:
   enabled: true
   minReplicas: 2
@@ -67,22 +59,13 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: be9cdf8b48982e22e4b67e6b6345e115a9ffde654c29143eaf57dff2b5007ecb
-  generatedAt: 2026-05-15T14:39:43Z
+  generatedAt: 2026-05-15T14:59:43Z
   source: build-pipeline
-  runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
   volumes:
     - name: admin
       emptyDir: {}
-    - name: admin
-      emptyDir: {}
-    - name: admin
-      emptyDir: {}
   volumeMounts:
-    - name: admin
-      mountPath: /data
-    - name: admin
-      mountPath: /data
     - name: admin
       mountPath: /data
 labels:

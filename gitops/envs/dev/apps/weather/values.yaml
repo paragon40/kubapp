@@ -1,8 +1,16 @@
 appName: weather
 namespace: dev
+serviceAccount:
+  create: true
+  name: weather-sa
+  roleArn: arn:aws:iam::198200019771:role/kubapp-dev-app-pods-role
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  interval: 30s
 replicaCount: 2
 image:
-  repository: "paragon40/weather_app"
+  repository: paragon40/weather_app
   tag: f448278ab57b6075a82b825c38e173c01cb2527a-1778855889
   pullPolicy: Always
 service:
@@ -17,6 +25,32 @@ resources:
     cpu: 300m
     memory: 256Mi
 env: {}
+securityContext:
+  pod:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  container:
+    runAsNonRoot: true
+    runAsUser: 10006
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+probes:
+  readiness:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  liveness:
+    httpGet:
+      path: /live
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 15
 hpa:
   enabled: true
   minReplicas: 2
@@ -25,72 +59,14 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 1f3b831b2cf66454cfd85ffc89c9a88645d5eae258e7587330db355c10509795
-  generatedAt: 2026-05-15T14:39:40Z
+  generatedAt: 2026-05-15T14:59:40Z
   source: build-pipeline
-  runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
-securityContext:
-  pod:
-    runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
-  container:
-    runAsUser: 10006
-    allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
-    capabilities:
-      drop:
-        - ALL
-        - ALL
-        - ALL
-    runAsNonRoot: true
-probes:
-  readiness:
-    path: /health
-    port: 8080
-    initialDelaySeconds: 5
-    periodSeconds: 10
-    httpGet:
-      path: /health
-      port: 8080
-  liveness:
-    path: /live
-    port: 8080
-    initialDelaySeconds: 10
-    periodSeconds: 15
-    httpGet:
-      path: /live
-      port: 8080
-  startup:
-    httpGet:
-      path: /health
-      port: 8080
-    failureThreshold: 30
-    periodSeconds: 5
 storage:
   volumes:
-    - name: edgepaas-vol
-      emptyDir: {}
-    - name: edgepaas-vol
-      emptyDir: {}
     - name: edgepaas-vol
       emptyDir: {}
   volumeMounts:
     - name: edgepaas-vol
       mountPath: /tmp
-    - name: edgepaas-vol
-      mountPath: /tmp
-    - name: edgepaas-vol
-      mountPath: /tmp
-serviceAccount:
-  create: true
-  name: weather-sa
-  roleArn: arn:aws:iam::198200019771:role/kubapp-dev-app-pods-role
-serviceMonitor:
-  enabled: true
-  path: /metrics
-  interval: 30s
-secret:
-  enabled: true
-  name: weather-secret
 labels:
   compute: fargate
