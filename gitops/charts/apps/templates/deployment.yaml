@@ -22,7 +22,7 @@ spec:
       labels:
         app: {{ .Values.appName }}
         {{- with .Values.labels }}
-  {{ toYaml . | indent 8 }}
+  {{ toYaml . | nindent 8 }}
         {{- end }}
 
     spec:
