@@ -1,7 +1,7 @@
 
 service:
   name: weather
-  compute: fargate
+  compute: ec2
 
 app:
   port: 8080

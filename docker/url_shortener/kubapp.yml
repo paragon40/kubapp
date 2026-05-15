@@ -1,7 +1,7 @@
 
 service:
   name: urlshortener
-  compute: fargate
+  compute: node
 
 app:
   port: 3000
