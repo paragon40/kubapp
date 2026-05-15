@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: "paragon40/weather_app"
-  tag: d8feba994ab08855234c6955ddba0782397d7ef2-1778700249
+  tag: 7a3ae24d9868dc2b44622300728ef3e6dcc48aec-1778833425
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -18,14 +18,14 @@ resources:
     memory: 256Mi
 env: {}
 hpa:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 2
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
   cpu: 70
   memory: 70
 meta:
   staticFingerprint: 1f3b831b2cf66454cfd85ffc89c9a88645d5eae258e7587330db355c10509795
-  generatedAt: 2026-05-13T19:26:15Z
+  generatedAt: 2026-05-15T08:37:27Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 securityContext:
@@ -82,3 +82,5 @@ serviceMonitor:
 secret:
   enabled: true
   name: weather-secret
+labels:
+  compute: fargate

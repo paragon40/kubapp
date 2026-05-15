@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/url_shortener
-  tag: d8feba994ab08855234c6955ddba0782397d7ef2-1778700254
+  tag: 7a3ae24d9868dc2b44622300728ef3e6dcc48aec-1778833423
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -58,14 +58,14 @@ probes:
     failureThreshold: 30
     periodSeconds: 5
 hpa:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 2
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
   cpu: 70
   memory: 70
 meta:
   staticFingerprint: d882d65204ed4afd42b1d002d2189eff2847433e8ecf57ebe372615ceae7d8b1
-  generatedAt: 2026-05-13T19:26:15Z
+  generatedAt: 2026-05-15T08:37:26Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
@@ -75,3 +75,5 @@ storage:
   volumeMounts:
     - name: urlshortener-volume
       mountPath: /data
+labels:
+  compute: fargate

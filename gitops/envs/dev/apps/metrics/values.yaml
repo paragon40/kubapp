@@ -3,7 +3,7 @@ namespace: dev
 replicaCount: 2
 image:
   repository: paragon40/metrics_app
-  tag: d8feba994ab08855234c6955ddba0782397d7ef2-1778700253
+  tag: 7a3ae24d9868dc2b44622300728ef3e6dcc48aec-1778833428
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -50,14 +50,14 @@ probes:
     failureThreshold: 30
     periodSeconds: 5
 hpa:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 2
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
   cpu: 70
   memory: 70
 meta:
   staticFingerprint: 6eb65282886a0603f8c86255c84251d376fa95d72df49a6392d9bc346965da9f
-  generatedAt: 2026-05-13T19:26:15Z
+  generatedAt: 2026-05-15T08:37:32Z
   source: build-pipeline
   runtimeHash: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
 storage:
@@ -75,3 +75,10 @@ serviceMonitor:
   enabled: true
   path: /metrics
   interval: 30s
+nodeSelector:
+  compute: ec2
+tolerations:
+  - key: compute
+    operator: Equal
+    value: ec2
+    effect: NoSchedule
