@@ -132,7 +132,7 @@ module "eks" {
   node_min_capacity     = local.app_nodes.node_min_capacity
   node_max_capacity     = local.app_nodes.node_max_capacity
 
-  sys_node_instance_types   = local.sys_nodes.node_instance_type
+  sys_node_instance_type    = local.sys_nodes.node_instance_type
   sys_node_desired_capacity = local.sys_nodes.node_desired_capacity
   sys_node_min_capacity     = local.sys_nodes.node_min_capacity
   sys_node_max_capacity     = local.sys_nodes.node_max_capacity
