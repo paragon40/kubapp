@@ -165,7 +165,7 @@ done
 # ------------------------------------------------------------
 echo "Generating test data..."
 export IP=$PUBLIC_IP
-bash "$ROOT_PROJECT/scripts/generate.sh"
+bash ./generate.sh
 
 echo
 echo "============================================================"
