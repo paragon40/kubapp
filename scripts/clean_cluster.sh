@@ -217,6 +217,6 @@ kubectl get ns
 
 echo ""
 echo "======================================"
-echo " CLEANUP COMPLETE (ROBUST MODE)"
+echo " CLEANUP COMPLETE !!"
 echo "======================================"
 

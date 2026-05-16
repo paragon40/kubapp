@@ -33,8 +33,10 @@ services:
     restart: unless-stopped
 
   sre-engine:
-    build: ./exporters/github/src/sre_engine
+    build:
+      context: ./exporters/github/src
+      dockerfile: sre_engine/Dockerfile
     container_name: sre-engine
-    command: python -m exporters.github.src.sre_engine.worker
+    command: python -m sre_engine.worker
     depends_on:
       - github_exporter

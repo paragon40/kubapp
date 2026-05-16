@@ -1,17 +1,7 @@
-resource "kubernetes_namespace_v1" "aws_observability" {
-  metadata {
-    name = "aws-observability"
-
-    labels = {
-      "aws-observability" = "enabled"
-    }
-  }
-}
-
 resource "kubernetes_config_map_v1" "fargate_logging" {
   metadata {
     name      = "aws-logging"
-    namespace = kubernetes_namespace_v1.aws_observability.metadata[0].name
+    namespace = kubernetes_namespace_v1.this["aws-observability"].metadata[0].name
   }
 
   data = {
@@ -27,6 +17,6 @@ resource "kubernetes_config_map_v1" "fargate_logging" {
   }
 
   depends_on = [
-    kubernetes_namespace_v1.aws_observability
+    kubernetes_namespace_v1.this[aws_observability]
   ]
 }

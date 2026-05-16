@@ -30,6 +30,7 @@ locals {
   name_prefix          = "kubapp-${var.env}"
   alert_email          = var.alert_email
   alert_email_password = var.alert_email_password
+
   k8s_labels = {
     cluster_name  = local.cluster_name
     resource-type = "kubernetes"
@@ -70,6 +71,15 @@ locals {
       }
     }
 
+    aws-observability = {
+      component = "platform"
+      workload  = "logging"
+
+      labels = {
+        aws-observability = "enabled"
+        Environment       = var.env
+      }
+    }
     #    user = {
     #      component = "application"
     #      workload  = "users"
