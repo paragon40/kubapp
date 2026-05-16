@@ -1,5 +1,6 @@
+# ./exporters/github/src/sre_engine/worker.py
+
 import time
-from collections import deque, defaultdict
 
 from stream.event_bus import consume_all
 
@@ -17,43 +18,23 @@ from metrics.health import (
 )
 
 # ============================================================
-# SRE CONFIG (REAL SLO MODEL)
+# SLO CONFIG
 # ============================================================
 
 SLO_TARGET = 0.95
 ERROR_BUDGET = 1.0 - SLO_TARGET
 
-WINDOW_SECONDS = 300  # 5 min rolling window
 
 # ============================================================
-# SLIDING WINDOW STATE (REAL SLI SOURCE)
+# PURE SLI COMPUTATION
 # ============================================================
 
-workflow_events = deque()  # stores (timestamp, success)
-
-push_events = deque()
-issue_events = deque()
-pr_events = deque()
-
-# ============================================================
-# HELPERS
-# ============================================================
-
-def prune_window(window, now):
-    while window and now - window[0][0] > WINDOW_SECONDS:
-        window.popleft()
-
-
-def compute_sli():
-    """
-    SLI = workflow success rate over window
-    """
-    total = len(workflow_events)
-    if total == 0:
+def compute_sli(workflow_events):
+    if not workflow_events:
         return 1.0
 
-    success = sum(1 for _, ok in workflow_events if ok)
-    return success / total
+    success = sum(1 for e in workflow_events if e["success"])
+    return success / len(workflow_events)
 
 
 def compute_error_rate(sli):
@@ -67,113 +48,82 @@ def compute_burn_rate(error_rate):
 
 
 # ============================================================
-# MAIN WORKER LOOP
+# WORKER LOOP (SQLITE SOURCE OF TRUTH)
 # ============================================================
 
 def run_worker():
     print("[SRE ENGINE] Worker started...")
 
     while True:
-        now = time.time()
         events = consume_all()
 
-        # -----------------------------
-        # INGEST EVENTS
-        # -----------------------------
+        workflow_events = []
+
+        # --------------------------------------------------------
+        # PROCESS EVENTS (FROM SQLITE REPLAY)
+        # --------------------------------------------------------
         for event in events:
-            repo = event.repo
-            etype = event.event_type
-            payload = event.payload
+            repo = event.get("repo", "unknown")
+            etype = event.get("event_type")
+            payload = event.get("payload", {})
 
-            # -------------------------
-            # PUSH (activity only)
-            # -------------------------
+            # PUSH
             if etype == "push":
-                push_events.append((now, 1))
-
                 github_push_total.labels(
                     repo=repo,
                     commit=payload.get("after", "unknown")
                 ).inc()
 
-            # -------------------------
-            # PR (activity only)
-            # -------------------------
+            # PR
             elif etype == "pull_request":
-                pr_events.append((now, 1))
-
                 github_pr_total.labels(
                     repo=repo,
                     action=payload.get("action", "unknown")
                 ).inc()
 
-            # -------------------------
-            # ISSUES (activity only)
-            # -------------------------
+            # ISSUES
             elif etype == "issues":
-                issue_events.append((now, 1))
-
                 github_issue_total.labels(
                     repo=repo,
                     action=payload.get("action", "unknown"),
                     state=payload.get("issue", {}).get("state", "unknown"),
                 ).inc()
 
-            # -------------------------
             # WORKFLOW RUN (REAL SLI SIGNAL)
-            # -------------------------
-            elif etype == "workflow_run":
+            elif etype in ("workflow_run_success", "workflow_run_failure", "workflow_run_unknown"):
                 run = payload.get("workflow_run", {})
 
-                conclusion = run.get("conclusion", "failure")
-                success = 1 if conclusion == "success" else 0
+                success = 1 if etype == "workflow_run_success" else 0
 
-                workflow_events.append((now, success))
+                workflow_events.append({
+                    "repo": repo,
+                    "success": success
+                })
 
                 github_workflow_run_total.labels(
                     repo=repo,
                     workflow=run.get("name", "unknown"),
                     status=run.get("status", "unknown"),
-                    conclusion=conclusion,
+                    conclusion=etype,
                 ).inc()
 
-        # -----------------------------
-        # PRUNE OLD DATA (ROLLING WINDOW)
-        # -----------------------------
-        prune_window(workflow_events, now)
-        prune_window(push_events, now)
-        prune_window(issue_events, now)
-        prune_window(pr_events, now)
-
-        # -----------------------------
-        # COMPUTE SLO
-        # -----------------------------
-        sli = compute_sli()
+        # --------------------------------------------------------
+        # COMPUTE SLO (FROM REAL SQLITE DATA ONLY)
+        # --------------------------------------------------------
+        sli = compute_sli(workflow_events)
         error_rate = compute_error_rate(sli)
         burn_rate = compute_burn_rate(error_rate)
-
         remaining_budget = max(0.0, ERROR_BUDGET - error_rate)
 
-        # -----------------------------
-        # EXPORT TO PROMETHEUS
-        # -----------------------------
-        # NOTE: currently single-repo assumption (can extend later)
         repo = "default"
 
         slo_success_rate.labels(repo=repo).set(sli)
         error_budget_burn_rate.labels(repo=repo).set(burn_rate)
         error_budget_remaining.labels(repo=repo).set(remaining_budget)
 
-        # -----------------------------
-        # LOGGING (SRE SIGNAL OUTPUT)
-        # -----------------------------
         print(
-            f"[SLO] "
-            f"sl={sli:.3f} "
-            f"err={error_rate:.3f} "
-            f"burn={burn_rate:.2f} "
-            f"budget_left={remaining_budget:.3f} "
-            f"window={WINDOW_SECONDS}s"
+            f"[SLO] sli={sli:.3f} err={error_rate:.3f} "
+            f"burn={burn_rate:.2f} budget_left={remaining_budget:.3f}"
         )
 
         time.sleep(5)

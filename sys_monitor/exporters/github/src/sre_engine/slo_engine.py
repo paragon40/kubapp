@@ -1,17 +1,16 @@
+# NOTE: legacy / unused in runtime worker (SQLite is source of truth)
 from dataclasses import dataclass
 
 
 @dataclass
 class ErrorBudgetState:
-    """
-    PURE STATE HOLDER (no business logic).
-    """
+
     total: int = 0
     good: int = 0
 
-    def record(self, value: float):
+    def record(self, success: bool):
         self.total += 1
-        if value > 0:
+        if success:
             self.good += 1
 
     def success_rate(self):

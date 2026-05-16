@@ -65,7 +65,7 @@ resource "kubernetes_storage_class" "ebs_gp3" {
 }
 
 resource "aws_eks_addon" "ebs_csi" {
-  cluster_name                = var.cluster_name
+  cluster_name                = local.cluster_name
   addon_name                  = "aws-ebs-csi-driver"
   service_account_role_arn    = local.ebs_csi_irsa_arn
   resolve_conflicts_on_create = "OVERWRITE"
