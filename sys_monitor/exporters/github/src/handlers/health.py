@@ -1,35 +1,47 @@
 from metrics.health import github_health_score
 
-# In-memory score store per repository.
-# Starts each repo at a neutral score of 50.
 REPO_SCORE = {}
 
+def calculate_health(repo: str, event_type: str = None, payload: dict = None):
+    current = REPO_SCORE.get(repo, 50)
 
-def calculate_health(repo: str):
-    """
-    Simple event-driven GitOps health score.
-    Rules:
-    - New repositories start at 50.
-    - Every GitHub event (push, PR, workflow, release, issue)
-      increases the score by 2.
-    - Score is capped between 0 and 100.
+    # ----------------------------
+    # POSITIVE SIGNALS
+    # ----------------------------
+    if event_type == "push":
+        current += 1
 
-    This gives you a stable and deterministic score without relying on
-    Prometheus internal counter state or specific metric labels.
-    """
-    current_score = REPO_SCORE.get(repo, 50)
+    elif event_type == "pull_request":
+        current += 2
 
-    # Reward activity
-    current_score += 2
+    elif event_type == "release":
+        current += 4
 
-    # Clamp score to 0-100
-    current_score = max(0, min(100, current_score))
+    # ----------------------------
+    # NEGATIVE SIGNALS
+    # ----------------------------
+    elif event_type == "workflow_run":
+        conclusion = (payload or {}).get("conclusion", "success")
 
-    # Save state
-    REPO_SCORE[repo] = current_score
+        if conclusion == "success":
+            current += 3
+        elif conclusion == "failure":
+            current -= 8
 
-    # Export to Prometheus
-    github_health_score.labels(repo=repo).set(current_score)
+    elif event_type == "issues":
+        state = (payload or {}).get("issue", {}).get("state", "open")
 
-    print(f"[HEALTH] repo={repo} score={current_score}")
+        if state == "open":
+            current -= 2
+        elif state == "closed":
+            current += 1
 
+    # ----------------------------
+    # BOUNDS
+    # ----------------------------
+    current = max(0, min(100, current))
+
+    REPO_SCORE[repo] = current
+    github_health_score.labels(repo=repo).set(current)
+
+    print(f"[HEALTH] repo={repo} score={current}")
