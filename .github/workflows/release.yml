@@ -1,4 +1,4 @@
-name: Sys Monitor Pipeline
+name: Sys Monitor Release Pipeline
 
 on:
   push:
