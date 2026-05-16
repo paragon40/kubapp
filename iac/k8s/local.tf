@@ -24,6 +24,7 @@ locals {
   efs_id                 = data.terraform_remote_state.infra.outputs.efs_id
   efs_dns_name           = data.terraform_remote_state.infra.outputs.efs_dns_name
   efs_security_group_id  = data.terraform_remote_state.infra.outputs.efs_security_group_id
+  ebs_csi_irsa_arn       = data.terraform_remote_state.infra.outputs.ebs_csi_irsa_arn
   app_logs               = data.terraform_remote_state.infra.outputs.log_group_names["app_logs"]
 
   name_prefix          = "kubapp-${var.env}"

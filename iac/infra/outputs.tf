@@ -7,6 +7,10 @@ output "app_pods_role_arn" {
   value = module.iam_irsa.app_pods_role_arn
 }
 
+output "ebs_csi_irsa_arn" {
+  value = module.iam_irsa.ebs_csi_irsa_arn
+}
+
 output "fluentbit_role_arn" {
   value = module.iam_irsa.fluentbit_role_arn
 }
