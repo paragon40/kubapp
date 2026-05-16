@@ -1,0 +1,60 @@
+name: Release Pipeline
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. v1.2.0)"
+        required: false
+        default: "v0.1.0"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Determine Release Version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Show Release Information
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Version: $VERSION"
+          echo "Commit SHA: $GITHUB_SHA"
+          echo "Triggered by: $GITHUB_ACTOR"
+
+      - name: Simulate Build
+        run: |
+          echo "Building release artifact..."
+          sleep 5
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Completed
+        run: |
+          echo "Release $VERSION created successfully."
