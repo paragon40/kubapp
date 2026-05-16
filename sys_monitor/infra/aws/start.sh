@@ -26,6 +26,7 @@ REMOTE_USER="ubuntu"
 REMOTE_DIR="/opt/sys_monitor"
 export KEY_NAME=tf-web-key
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/${KEY_NAME}.pem}"
+REPO="${REPO:-paragon40/kubapp}"
 
 # ------------------------------------------------------------
 # Validation
@@ -109,12 +110,11 @@ fi
 
 # Update repository secret
 cd "$PROJECT_ROOT"
-if [[ -n "$CI" ]]; then
-  gh secret set SYS_MONITOR_WEBHOOK \
-    --repo $GITHUB_ACTOR/kubapp \
-    --body "$WEBHOOK_URL"
-fi
-export SYS_MONITOR_WEBHOOK
+
+gh secret set SYS_MONITOR_WEBHOOK \
+  --repo "$REPO" \
+  --body "$WEBHOOK_URL"
+
 echo "GitHub secret SYS_MONITOR_WEBHOOK updated successfully."
 
 # ------------------------------------------------------------
