@@ -82,3 +82,9 @@ resource "aws_iam_role_policy_attachment" "fargate_attach" {
   role       = aws_iam_role.fargate.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
 }
+
+resource "aws_iam_role_policy_attachment" "fargate_cloudwatch_logs" {
+  role       = aws_iam_role.fargate.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+}
+
