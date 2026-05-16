@@ -77,6 +77,45 @@ fi
 echo "============================================================"
 echo "EC2 Public IP: $PUBLIC_IP"
 echo "============================================================"
+# ------------------------------------------------------------
+# Update GitHub Secret with Current Webhook URL
+# ------------------------------------------------------------
+echo "============================================================"
+echo "Updating GitHub Secret: SYS_MONITOR_WEBHOOK"
+echo "============================================================"
+
+WEBHOOK_URL="$(terraform output -raw github_webhook_url)"
+
+if [[ -z "$WEBHOOK_URL" ]]; then
+  echo "ERROR: Unable to retrieve webhook URL from Terraform."
+  exit 1
+fi
+
+echo "Webhook URL: $WEBHOOK_URL"
+
+# Verify GitHub CLI is installed
+if ! command -v gh >/dev/null 2>&1; then
+  echo "ERROR: GitHub CLI (gh) is not installed."
+  echo "Install it from https://cli.github.com/"
+  exit 1
+fi
+
+# Verify authentication
+if ! gh auth status >/dev/null 2>&1; then
+  echo "ERROR: GitHub CLI is not authenticated."
+  echo "Run: gh auth login"
+  exit 1
+fi
+
+# Update repository secret
+cd "$PROJECT_ROOT"
+if [[ -n "$CI" ]]; then
+  gh secret set SYS_MONITOR_WEBHOOK \
+    --repo $GITHUB_ACTOR/kubapp \
+    --body "$WEBHOOK_URL"
+fi
+export SYS_MONITOR_WEBHOOK
+echo "GitHub secret SYS_MONITOR_WEBHOOK updated successfully."
 
 # ------------------------------------------------------------
 # Wait for SSH
