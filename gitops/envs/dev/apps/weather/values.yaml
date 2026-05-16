@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/weather_app
-  tag: cb5859df4ac3b71befe517f13518c73454d02d20-1778931464
+  tag: 43efce4b2f2be5a09b1323e639d90031485e9a27-1778932562
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -59,7 +59,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 1f3b831b2cf66454cfd85ffc89c9a88645d5eae258e7587330db355c10509795
-  generatedAt: 2026-05-16T11:39:10Z
+  generatedAt: 2026-05-16T11:57:22Z
   source: build-pipeline
 storage:
   volumes:
@@ -68,5 +68,10 @@ storage:
   volumeMounts:
     - name: edgepaas-vol
       mountPath: /tmp
-labels:
-  compute: fargate
+nodeSelector:
+  compute: ec2
+tolerations:
+  - key: compute
+    operator: Equal
+    value: ec2
+    effect: NoSchedule
