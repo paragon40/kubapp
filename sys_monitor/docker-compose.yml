@@ -31,3 +31,10 @@ services:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards
     restart: unless-stopped
+
+  sre-engine:
+    build: ./exporters/github/src/sre_engine
+    container_name: sre-engine
+    command: python -m exporters.github.src.sre_engine.worker
+    depends_on:
+      - github_exporter
