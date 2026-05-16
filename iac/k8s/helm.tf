@@ -134,54 +134,124 @@ resource "helm_release" "argocd" {
 }
 
 resource "helm_release" "fluentbit" {
-  name      = "fluent-bit"
-  namespace = "kube-system"
-
+  name       = "fluent-bit"
+  namespace  = "kube-system"
   repository = "https://fluent.github.io/helm-charts"
   chart      = "fluent-bit"
   version    = "0.47.0"
 
-  timeout         = 1200
-  wait            = true
-  cleanup_on_fail = true
+  timeout          = 1200
+  wait             = true
+  cleanup_on_fail  = true
+  create_namespace = false
 
   values = [
     yamlencode({
-
+      # ------------------------------------------------------------
+      # Service Account
+      # ------------------------------------------------------------
       serviceAccount = {
         create = false
         name   = "fluent-bit"
       }
 
+      # ------------------------------------------------------------
+      # Schedule on all Linux nodes, including tainted app nodes
+      # ------------------------------------------------------------
       nodeSelector = {
         "kubernetes.io/os" = "linux"
       }
 
+      tolerations = [
+        {
+          operator = "Exists"
+        }
+      ]
+
+      # ------------------------------------------------------------
+      # Host log directories
+      # ------------------------------------------------------------
+      daemonSetVolumes = [
+        {
+          name = "varlog"
+          hostPath = {
+            path = "/var/log"
+          }
+        },
+        {
+          name = "varlibdockercontainers"
+          hostPath = {
+            path = "/var/lib/docker/containers"
+          }
+        }
+      ]
+
+      daemonSetVolumeMounts = [
+        {
+          name      = "varlog"
+          mountPath = "/var/log"
+          readOnly  = true
+        },
+        {
+          name      = "varlibdockercontainers"
+          mountPath = "/var/lib/docker/containers"
+          readOnly  = true
+        }
+      ]
+
+      # ------------------------------------------------------------
+      # Resource Requests / Limits
+      # ------------------------------------------------------------
+      resources = {
+        requests = {
+          cpu    = "50m"
+          memory = "128Mi"
+        }
+
+        limits = {
+          memory = "256Mi"
+        }
+      }
+
+      # ------------------------------------------------------------
+      # Pod Labels
+      # ------------------------------------------------------------
       podLabels = local.logs_labels
 
+      # ------------------------------------------------------------
+      # Fluent Bit Configuration
+      # ------------------------------------------------------------
       config = {
-
         service = <<-EOF
           [SERVICE]
-              Flush         1
-              Daemon        Off
-              Log_Level     info
-              Parsers_File  parsers.conf
-              Health_Check  On
-              HTTP_Server   On
-              HTTP_Listen   0.0.0.0
-              HTTP_Port     2020
+              Flush                     1
+              Daemon                    Off
+              Log_Level                 info
+              Parsers_File              parsers.conf
+              HTTP_Server               On
+              HTTP_Listen               0.0.0.0
+              HTTP_Port                 2020
+              Health_Check              On
+              storage.path              /var/fluent-bit/state
+              storage.sync              normal
+              storage.checksum          off
+              storage.backlog.mem_limit 50M
         EOF
 
         inputs = <<-EOF
           [INPUT]
-              Name              tail
-              Path              /var/log/containers/*.log
-              Parser            cri
-              Tag               kube.*
-              Refresh_Interval  5
-              Mem_Buf_Limit     50MB
-              Skip_Long_Lines   On
+              Name                tail
+              Path                /var/log/containers/*.log
+              Parser              cri
+              Tag                 kube.*
+              Refresh_Interval    5
+              Rotate_Wait         30
+              Mem_Buf_Limit       50MB
+              Skip_Long_Lines     On
+              DB                  /var/fluent-bit/state/flb_kube.db
+              DB.Sync             Normal
+              storage.type        filesystem
+              Read_from_Head      Off
         EOF
 
         filters = <<-EOF
@@ -211,10 +281,10 @@ resource "helm_release" "fluentbit" {
               Copy                kubernetes.labels.app     app
 
           [FILTER]
-              Name   modify
-              Match  kube.*
-              Add    cluster ${local.cluster_name}
-              Add    environment ${local.env}
+              Name                modify
+              Match               kube.*
+              Add                 cluster ${local.cluster_name}
+              Add                 environment ${local.env}
         EOF
 
         outputs = <<-EOF
@@ -225,8 +295,9 @@ resource "helm_release" "fluentbit" {
               log_group_name      ${local.app_logs}
               log_stream_prefix   kubernetes-
               auto_create_group   true
-              retry_limit         5
+              retry_limit         false
               workers             2
+              log_retention_days  30
         EOF
       }
     })
@@ -238,7 +309,6 @@ resource "helm_release" "fluentbit" {
     kubernetes_service_account_v1.fluentbit
   ]
 }
-
 
 resource "helm_release" "kube_prometheus_stack" {
   name      = "kube-prometheus-stack"
