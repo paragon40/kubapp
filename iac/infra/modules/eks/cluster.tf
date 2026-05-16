@@ -26,8 +26,7 @@ resource "aws_eks_cluster" "this" {
     "audit",
     "authenticator",
     "controllerManager",
-    "scheduler",
-    "application"
+    "scheduler"
   ]
 
   tags = merge(var.tags, {

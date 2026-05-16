@@ -1,7 +1,7 @@
 import time
 
 from stream.event_bus import query_events_since
-
+from metrics.health import compute_health_score, detect_anomaly, github_health_score, github_anomaly_flag
 from metrics.registry import (
     github_push_total,
     github_pr_total,
@@ -138,4 +138,14 @@ def run_worker():
         )
 
         time.sleep(5)
+
+health = compute_health_score(sli, burn_rate)
+anomaly = detect_anomaly(sli, burn_rate)
+
+github_health_score.labels(repo=repo).set(health)
+
+github_anomaly_flag.labels(
+    repo=repo,
+    type="workflow"
+).set(1 if anomaly else 0)
 
