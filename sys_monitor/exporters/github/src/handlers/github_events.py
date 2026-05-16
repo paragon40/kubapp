@@ -27,7 +27,7 @@ def handle_push(payload):
     current_count = github_push_total.labels(repo=repo, commit=commit)._value.get()
     detect_push_anomaly(repo, current_count)
     print(f"[PUSH] repo={repo} commit={commit}")
-    calculate_health(repo)
+    calculate_health(repo, "push")
 
 def handle_pull_request(payload):
     repo = payload.get("repository", {}).get("full_name", "unknown")
@@ -36,7 +36,7 @@ def handle_pull_request(payload):
     github_pr_total.labels(repo=repo, action=action).inc()
 
     print(f"[PR] repo={repo} action={action}")
-    calculate_health(repo)
+    calculate_health(repo, "pull_request")
 
 def handle_workflow_run(payload):
     repo = payload.get("repository", {}).get("full_name", "unknown")
@@ -70,7 +70,7 @@ def handle_workflow_run(payload):
         f"[WORKFLOW] repo={repo} workflow={workflow} "
         f"status={status} conclusion={conclusion}"
     )
-    calculate_health(repo)
+    calculate_health(repo, "workflow_run")
 
 def handle_release(payload):
     repo = payload.get("repository", {}).get("full_name", "unknown")
@@ -93,7 +93,7 @@ def handle_release(payload):
         ).set(lead_time)
 
     print(f"[RELEASE] repo={repo} tag={tag}")
-    calculate_health(repo)
+    calculate_health(repo, "release")
 
 
 def handle_issue(payload):
@@ -109,7 +109,7 @@ def handle_issue(payload):
     ).inc()
 
     print(f"[ISSUE] repo={repo} action={action} state={state}")
-    calculate_health(repo)
+    calculate_health(repo, "issue")
 
 
 push_detector = AnomalyDetector()

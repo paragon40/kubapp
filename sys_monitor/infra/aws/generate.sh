@@ -8,7 +8,7 @@ REMOTE=${REMOTE:-true}
 echo "Generating synthetic GitHub events..."
 
 if [[ "$REMOTE" == "false" ]]; then
-  {IP=$(curl ifconfig.me)
+  IP=$(curl ifconfig.me)
 fi
 
 if [[ -z "$IP" ]]; then
