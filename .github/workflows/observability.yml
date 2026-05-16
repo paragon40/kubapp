@@ -8,7 +8,6 @@ on:
 permissions:
   contents: write
   issues: write
-  pull-requests: write
 
 jobs:
   generate-events:
@@ -19,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       # ------------------------------------------------------------
-      # 1. Create Issue (generates issues webhook)
+      # 1. Issue burst (REAL webhook event)
       # ------------------------------------------------------------
       - name: Create Issue Burst
         uses: actions/github-script@v7
@@ -35,40 +34,30 @@ jobs:
             }
 
       # ------------------------------------------------------------
-      # 2. Create Pull Request (generates PR webhook)
+      # 2. Git activity (REAL push events ONLY)
       # ------------------------------------------------------------
-      - name: Create PR
+      - name: Create Git Activity Burst
         run: |
-          git checkout -b chaos-branch-${RANDOM}
-
-          echo "timestamp=$(date)" >> chaos.txt
-          git add chaos.txt
-
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          git commit -m "chaos: generate PR metrics"
-          git push origin HEAD
+          BRANCH="chaos-${RANDOM}"
 
-      - name: Open Pull Request
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: "Chaos PR " + new Date().toISOString(),
-              head: "chaos-branch-" + Math.floor(Math.random() * 100000),
-              base: "main",
-              body: "Auto-generated PR for observability testing"
-            });
+          git checkout -b $BRANCH
+
+          echo "$(date)" >> chaos.txt
+          echo "event=$BRANCH" >> chaos.txt
+
+          git add chaos.txt
+          git commit -m "chaos: generate observability signal"
+          git push origin $BRANCH
 
       # ------------------------------------------------------------
-      # 3. Create Release (generates release webhook)
+      # 3. Release (REAL release event)
       # ------------------------------------------------------------
-      - name: Create Tag + Release
+      - name: Create Release Tag
         run: |
-          TAG="v0.0.${RANDOM}"
+          TAG="v0.0.${GITHUB_RUN_NUMBER}"
           git tag $TAG
           git push origin $TAG
 
@@ -79,11 +68,11 @@ jobs:
           name: Chaos Release ${{ github.run_number }}
 
       # ------------------------------------------------------------
-      # 4. Trigger Workflow Run metric (self-observability)
+      # 4. Self signal (workflow_run metric already handled)
       # ------------------------------------------------------------
       - name: Emit Workflow Activity Event
         run: |
-          echo "Simulating workflow activity burst..."
-          sleep 3
+          echo "workflow simulation running..."
+          sleep 2
           echo "done"
 
