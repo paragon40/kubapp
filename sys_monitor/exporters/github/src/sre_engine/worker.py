@@ -1,5 +1,5 @@
 import time
-
+from prometheus_client import start_http_server
 from stream.event_bus import query_events_since
 
 from metrics.health import (
@@ -57,7 +57,7 @@ def compute_burn_rate(error_rate):
 
 def run_worker():
     print("[SRE ENGINE] Worker started...")
-
+    start_http_server(8000)
     while True:
         now = time.time()
         window_start = now - WINDOW_SECONDS

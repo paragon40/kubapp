@@ -17,6 +17,6 @@ resource "kubernetes_config_map_v1" "fargate_logging" {
   }
 
   depends_on = [
-    kubernetes_namespace_v1.this[aws_observability]
+    kubernetes_namespace_v1.this["aws_observability"]
   ]
 }

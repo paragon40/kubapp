@@ -38,5 +38,7 @@ services:
       dockerfile: sre_engine/Dockerfile
     container_name: sre-engine
     command: python -m sre_engine.worker
+    ports:
+      - "8000:8000"
     depends_on:
       - github_exporter
