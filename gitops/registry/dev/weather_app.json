@@ -1,11 +1,11 @@
 {
   "service": "weather",
   "type": "App",
-  "computeType": "fargate",
+  "computeType": "ec2",
   "context": "docker/weather_app",
   "image": "paragon40/weather_app",
   "image2": "paragon40/weather_app:latest",
-  "tag": "cb5859df4ac3b71befe517f13518c73454d02d20-1778931464",
+  "tag": "43efce4b2f2be5a09b1323e639d90031485e9a27-1778932562",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -22,5 +22,5 @@
   "mount_path": "/tmp",
   "NO_VARS": false,
   "NO_SECRETS": false,
-  "CREATED_AT": "2026-05-16_11-37-44"
+  "CREATED_AT": "2026-05-16_11-56-02"
 }
