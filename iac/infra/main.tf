@@ -127,10 +127,15 @@ module "eks" {
   admin_arn         = var.admin_arn
   fargate_workloads = local.fargate_workloads
 
-  node_instance_type    = "t3.large"
-  node_desired_capacity = 2
-  node_min_capacity     = 1
-  node_max_capacity     = 3
+  node_instance_type    = local.app_nodes.node_instance_type
+  node_desired_capacity = local.app_nodes.node_desired_capacity
+  node_min_capacity     = local.app_nodes.node_min_capacity
+  node_max_capacity     = local.app_nodes.node_max_capacity
+
+  sys_node_instance_types   = local.sys_nodes.node_instance_type
+  sys_node_desired_capacity = local.sys_nodes.node_desired_capacity
+  sys_node_min_capacity     = local.sys_nodes.node_min_capacity
+  sys_node_max_capacity     = local.sys_nodes.node_max_capacity
 
   tags = merge(local.common_tags, {
     layer        = "compute"

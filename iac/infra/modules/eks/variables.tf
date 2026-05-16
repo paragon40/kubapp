@@ -47,6 +47,22 @@ variable "node_max_capacity" {
   type = number
 }
 
+variable "sys_node_instance_type" {
+  type = string
+}
+
+variable "sys_node_desired_capacity" {
+  type = number
+}
+
+variable "sys_node_min_capacity" {
+  type = number
+}
+
+variable "sys_node_max_capacity" {
+  type = number
+}
+
 # IAM MODULE INPUTS
 variable "cluster_role_arn" {
   type = string

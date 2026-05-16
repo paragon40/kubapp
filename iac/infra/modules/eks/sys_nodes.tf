@@ -6,12 +6,12 @@ resource "aws_eks_node_group" "system_nodes" {
   subnet_ids = var.private_subnet_ids
 
   scaling_config {
-    desired_size = 2
-    max_size     = 4
-    min_size     = 2
+    desired_size = var.sys_node_desired_capacity
+    max_size     = var.sys_node_max_capacity
+    min_size     = var.sys_node_min_capacity
   }
 
-  instance_types = [var.node_instance_type]
+  instance_types = [var.sys_node_instance_type]
 
   ami_type  = "AL2023_x86_64_STANDARD"
   disk_size = 30

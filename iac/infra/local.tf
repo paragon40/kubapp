@@ -60,6 +60,7 @@ locals {
       scope     = "network"
     }
   }
+
   efs_access_points = {
     user = {
       path = "/user-app"
@@ -95,6 +96,20 @@ locals {
       }
     }
   }
+
+  base_node_config = {
+    node_instance_type    = "t3.large"
+    node_desired_capacity = 2
+    node_min_capacity     = 1
+    node_max_capacity     = 3
+  }
+
+  app_nodes = local.base_node_config
+
+  system_nodes = merge(local.base_node_config, {
+    node_desired_capacity = 1
+    node_max_capacity     = 2
+  })
 
 }
 
