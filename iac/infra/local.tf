@@ -106,7 +106,7 @@ locals {
 
   app_nodes = local.base_node_config
 
-  system_nodes = merge(local.base_node_config, {
+  sys_nodes = merge(local.base_node_config, {
     node_desired_capacity = 1
     node_max_capacity     = 2
   })
