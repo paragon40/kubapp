@@ -20,6 +20,10 @@ def get_conn():
             timestamp REAL NOT NULL
         )
     """)
+
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_timestamp ON events(timestamp)
+    """)
     return conn
 
 
@@ -77,3 +81,37 @@ def consume_all():
         })
 
     return events
+
+def query_events_since(since_ts: float):
+    """
+    Returns events from SQLite within a time window.
+    """
+    conn = get_conn()
+
+    cursor = conn.execute(
+        """
+        SELECT event_type, repo, payload, timestamp
+        FROM events
+        WHERE timestamp >= ?
+        ORDER BY timestamp ASC
+        """,
+        (since_ts,),
+    )
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    import json
+
+    events = []
+
+    for event_type, repo, payload, timestamp in rows:
+        events.append({
+            "event_type": event_type,
+            "repo": repo,
+            "payload": json.loads(payload),
+            "timestamp": timestamp
+        })
+
+    return events
+

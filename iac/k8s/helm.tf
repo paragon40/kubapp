@@ -147,9 +147,11 @@ resource "helm_release" "fluentbit" {
 
   values = [
     yamlencode({
-      # ------------------------------------------------------------
-      # Service Account
-      # ------------------------------------------------------------
+
+      updateStrategy = {
+        type = "RollingUpdate"
+      }
+
       serviceAccount = {
         create = false
         name   = "fluent-bit"
@@ -199,9 +201,6 @@ resource "helm_release" "fluentbit" {
         }
       ]
 
-      # ------------------------------------------------------------
-      # Resource Requests / Limits
-      # ------------------------------------------------------------
       resources = {
         requests = {
           cpu    = "50m"
@@ -213,14 +212,8 @@ resource "helm_release" "fluentbit" {
         }
       }
 
-      # ------------------------------------------------------------
-      # Pod Labels
-      # ------------------------------------------------------------
       podLabels = local.logs_labels
 
-      # ------------------------------------------------------------
-      # Fluent Bit Configuration
-      # ------------------------------------------------------------
       config = {
         service = <<-EOF
           [SERVICE]

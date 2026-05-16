@@ -1,8 +1,6 @@
-# ./exporters/github/src/sre_engine/worker.py
-
 import time
 
-from stream.event_bus import consume_all
+from stream.event_bus import query_events_since
 
 from metrics.registry import (
     github_push_total,
@@ -18,11 +16,13 @@ from metrics.health import (
 )
 
 # ============================================================
-# SLO CONFIG
+# CONFIG
 # ============================================================
 
 SLO_TARGET = 0.95
 ERROR_BUDGET = 1.0 - SLO_TARGET
+
+WINDOW_SECONDS = 300  # 5 minutes
 
 
 # ============================================================
@@ -48,19 +48,25 @@ def compute_burn_rate(error_rate):
 
 
 # ============================================================
-# WORKER LOOP (SQLITE SOURCE OF TRUTH)
+# WORKER LOOP (HISTORICAL SQLITE SLO)
 # ============================================================
 
 def run_worker():
     print("[SRE ENGINE] Worker started...")
 
     while True:
-        events = consume_all()
+        now = time.time()
+        window_start = now - WINDOW_SECONDS
+
+        # --------------------------------------------------------
+        # READ REAL HISTORY FROM SQLITE
+        # --------------------------------------------------------
+        events = query_events_since(window_start)
 
         workflow_events = []
 
         # --------------------------------------------------------
-        # PROCESS EVENTS (FROM SQLITE REPLAY)
+        # PROCESS EVENTS
         # --------------------------------------------------------
         for event in events:
             repo = event.get("repo", "unknown")
@@ -89,16 +95,20 @@ def run_worker():
                     state=payload.get("issue", {}).get("state", "unknown"),
                 ).inc()
 
-            # WORKFLOW RUN (REAL SLI SIGNAL)
-            elif etype in ("workflow_run_success", "workflow_run_failure", "workflow_run_unknown"):
-                run = payload.get("workflow_run", {})
-
+            # WORKFLOW (REAL SLI SIGNAL)
+            elif etype in (
+                "workflow_run_success",
+                "workflow_run_failure",
+                "workflow_run_unknown"
+            ):
                 success = 1 if etype == "workflow_run_success" else 0
 
                 workflow_events.append({
                     "repo": repo,
                     "success": success
                 })
+
+                run = payload.get("workflow_run", {})
 
                 github_workflow_run_total.labels(
                     repo=repo,
@@ -108,7 +118,7 @@ def run_worker():
                 ).inc()
 
         # --------------------------------------------------------
-        # COMPUTE SLO (FROM REAL SQLITE DATA ONLY)
+        # COMPUTE SLO (FROM REAL SQLITE WINDOW)
         # --------------------------------------------------------
         sli = compute_sli(workflow_events)
         error_rate = compute_error_rate(sli)
@@ -122,8 +132,10 @@ def run_worker():
         error_budget_remaining.labels(repo=repo).set(remaining_budget)
 
         print(
-            f"[SLO] sli={sli:.3f} err={error_rate:.3f} "
+            f"[SLO] window={WINDOW_SECONDS}s "
+            f"sli={sli:.3f} err={error_rate:.3f} "
             f"burn={burn_rate:.2f} budget_left={remaining_budget:.3f}"
         )
 
         time.sleep(5)
+
