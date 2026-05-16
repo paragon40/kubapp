@@ -1,0 +1,36 @@
+name: Sys Monitor Test Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Show Commit Information
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Commit SHA: $GITHUB_SHA"
+          echo "Branch: $GITHUB_REF_NAME"
+          echo "Actor: $GITHUB_ACTOR"
+
+      - name: Simulate Build
+        run: sleep 10
+
+      - name: Simulate Tests
+        run: |
+          echo "Running tests..."
+          sleep 5
+          echo "Tests completed successfully."
+
+      - name: Build Complete
+        run: echo "Pipeline finished successfully."
+

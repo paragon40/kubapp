@@ -163,6 +163,10 @@ done
 # ------------------------------------------------------------
 # Final Output
 # ------------------------------------------------------------
+echo "Generating test data..."
+export IP=$PUBLIC_IP
+bash "$ROOT_PROJECT/scripts/generate.sh"
+
 echo
 echo "============================================================"
 echo "DEPLOYMENT COMPLETE"
