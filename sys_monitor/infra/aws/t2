@@ -3,7 +3,7 @@ set -euo pipefail
 
 FIRST_RUN="${1:-true}"
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PROJECT_ROOT="$HOME/Main/devops/kubapp/sys_monitor"
 TF_DIR="$PROJECT_ROOT/infra/aws"
 
 REMOTE_USER="ubuntu"
@@ -24,16 +24,6 @@ cd "$TF_DIR"
 # ============================================================
 
 terraform init
-
-if [[ "$FIRST_RUN" == "destroy" ]]; then
-  read -rp "Do you want to destroy all Terraform infra? (yes/no): " confirm
-  confirm=${confirm,,}
-  if [[ "$confirm" == "yes" || "$confirm" == "y" ]]; then
-    echo "Running Terraform Destroy.."
-    terraform destroy --auto-approve
-    exit 1
-  fi
-fi
 
 MY_IP="$(curl -s ifconfig.me)/32"
 
