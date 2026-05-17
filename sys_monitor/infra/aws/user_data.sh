@@ -9,7 +9,9 @@ apt-get install -y \
   nginx \
   certbot \
   python3-certbot-nginx \
-  dnsutils
+  dnsutils \
+  curl
+
 
 systemctl enable docker
 systemctl start docker
