@@ -12,10 +12,6 @@ MODE="${1:-first_run}"   # first_run | apply | destroy
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TF_DIR="$PROJECT_ROOT/infra/aws"
 
-DOMAIN="rundailytest.duckdns.org"
-DUCKDNS_DOMAIN="rundailytest"
-DUCKDNS_TOKEN="${DUCKDNS_TOKEN:-your_duckdns_token_here}"
-
 KEY_NAME="tf-web-key"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/${KEY_NAME}.pem}"
 
@@ -94,7 +90,7 @@ docker compose down -v || true
 docker compose up -d --build
 
 # ============================================================
-# WAIT FOR SERVICES (HTTP ONLY)
+# WAIT FOR SERVICES
 # ============================================================
 echo "==> Waiting for services..."
 
@@ -102,38 +98,17 @@ for i in {1..60}; do
   GRAFANA=\$(curl -fs http://localhost:3001/api/health >/dev/null && echo ok || echo no)
   PROM=\$(curl -fs http://localhost:9090/-/ready >/dev/null && echo ok || echo no)
   EXPORTER=\$(curl -fs http://localhost:3000/ >/dev/null && echo ok || echo no)
+  SRE=\$(curl -fs http://localhost:8000/ >/dev/null && echo ok || echo no)
 
-  echo "grafana=\$GRAFANA prom=\$PROM exporter=\$EXPORTER"
+  echo "grafana=\$GRAFANA prom=\$PROM exporter=\$EXPORTER sre=\$SRE"
 
-  if [[ "\$GRAFANA" == "ok" && "\$PROM" == "ok" && "\$EXPORTER" == "ok" ]]; then
+  if [[ "\$GRAFANA" == "ok" && "\$PROM" == "ok" && "\$EXPORTER" == "ok" && "\$SRE" == "ok" ]]; then
     echo "All services READY"
     break
   fi
 
   sleep 5
 done
-
-# ============================================================
-# DUCKDNS UPDATE (IMPORTANT)
-# ============================================================
-echo "==> Updating DuckDNS record"
-
-PUBLIC_IP=\$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 || curl -s ifconfig.me)
-
-curl -s "https://www.duckdns.org/update?domains=${DUCKDNS_DOMAIN}&token=${DUCKDNS_TOKEN}&ip=\$PUBLIC_IP"
-
-# ============================================================
-# INSTALL NGINX (HTTP ONLY)
-# ============================================================
-echo "==> Installing nginx HTTP config"
-
-sudo cp infra/aws/nginx.duckdns.conf /etc/nginx/sites-available/sys-monitor
-sudo ln -sf /etc/nginx/sites-available/sys-monitor /etc/nginx/sites-enabled/sys-monitor
-
-sudo rm -f /etc/nginx/sites-enabled/default || true
-
-sudo nginx -t
-sudo systemctl restart nginx
 
 # ============================================================
 # FINAL CHECK
@@ -143,6 +118,7 @@ echo "==> Final checks"
 curl -fs http://127.0.0.1:3000/ || true
 curl -fs http://127.0.0.1:3001/api/health || true
 curl -fs http://127.0.0.1:9090/-/ready || true
+curl -fs http://127.0.0.1:8000/ || true
 
 echo "DONE"
 EOF
@@ -154,15 +130,22 @@ echo ""
 echo "========================================"
 echo "DEPLOYMENT COMPLETE"
 echo "========================================"
-echo "URL:"
-echo "  http://${DOMAIN}"
-echo "========================================"
+echo ""
+echo "Access your services using EC2 Public IP:"
+echo ""
 echo "Grafana:"
-echo "  http://${DOMAIN}/grafana/"
+echo "  http://${PUBLIC_IP}:3001"
+echo ""
 echo "Prometheus:"
-echo "  http://${DOMAIN}/prometheus/"
-echo "Webhook:"
-echo "  http://${DOMAIN}/webhook/github"
+echo "  http://${PUBLIC_IP}:9090"
+echo ""
+echo "GitHub Exporter:"
+echo "  http://${PUBLIC_IP}:3000"
+echo "  http://${PUBLIC_IP}:3000/metrics"
+echo ""
+echo "SRE Engine:"
+echo "  http://${PUBLIC_IP}:8000"
+echo ""
 echo "========================================"
 echo "EC2 IP: $PUBLIC_IP"
 echo "========================================"

@@ -20,6 +20,10 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.external-url=http://rundailytest.duckdns.org/prometheus/
+      - --web.route-prefix=/
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
@@ -44,6 +48,8 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE= Admin
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/github-overview.json
+      - GF_SERVER_ROOT_URL=http://rundailytest.duckdns.org/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 10s

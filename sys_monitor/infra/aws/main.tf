@@ -3,6 +3,29 @@
 # ============================================================
 
 # ------------------------------------------------------------
+# Availability Zones
+# ------------------------------------------------------------
+data "aws_availability_zones" "available" {}
+
+# ------------------------------------------------------------
+# Ubuntu AMI
+# ------------------------------------------------------------
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+# ------------------------------------------------------------
 # VPC
 # ------------------------------------------------------------
 resource "aws_vpc" "sys_vpc" {
@@ -32,7 +55,7 @@ resource "aws_internet_gateway" "igw" {
 resource "aws_subnet" "public_subnet" {
   vpc_id                  = aws_vpc.sys_vpc.id
   cidr_block              = "10.20.1.0/24"
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
   availability_zone       = data.aws_availability_zones.available.names[0]
 
   tags = {
@@ -62,29 +85,12 @@ resource "aws_route_table_association" "public_assoc" {
 }
 
 # ------------------------------------------------------------
-# Availability Zones
-# ------------------------------------------------------------
-data "aws_availability_zones" "available" {}
-
-# ------------------------------------------------------------
-# Ubuntu AMI
-# ------------------------------------------------------------
-data "aws_ami" "ubuntu" {
-  most_recent = true
-  owners      = ["099720109477"]
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
-  }
-}
-
-# ------------------------------------------------------------
 # Security Group
 # ------------------------------------------------------------
 resource "aws_security_group" "sys_monitor" {
-  name   = "${var.project_name}-sg"
-  vpc_id = aws_vpc.sys_vpc.id
+  name        = "${var.project_name}-sg"
+  description = "Security group for Sys Monitor"
+  vpc_id      = aws_vpc.sys_vpc.id
 
   ingress {
     description = "SSH"
@@ -92,6 +98,14 @@ resource "aws_security_group" "sys_monitor" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = [var.ssh_cidr]
+  }
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
@@ -103,11 +117,27 @@ resource "aws_security_group" "sys_monitor" {
   }
 
   ingress {
-    description = "Http"
-    from_port   = 80
-    to_port     = 80
+    description = "Grafana"
+    from_port   = 3001
+    to_port     = 3001
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.ssh_cidr]
+  }
+
+  ingress {
+    description = "Prometheus"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = [var.ssh_cidr]
+  }
+
+  ingress {
+    description = "GitHub Exporter"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = [var.ssh_cidr]
   }
 
   egress {
@@ -134,13 +164,26 @@ resource "aws_instance" "sys_monitor" {
   associate_public_ip_address = false
 
   root_block_device {
-    volume_size = 20
-    volume_type = "gp3"
+    volume_size           = 20
+    volume_type           = "gp3"
+    delete_on_termination = true
   }
 
   user_data = file("${path.module}/user_data.sh")
 
   tags = {
     Name = var.project_name
+  }
+}
+
+# ------------------------------------------------------------
+# Elastic IP
+# ------------------------------------------------------------
+resource "aws_eip" "sys_eip" {
+  domain   = "vpc"
+  instance = aws_instance.sys_monitor.id
+
+  tags = {
+    Name = "${var.project_name}-eip"
   }
 }
