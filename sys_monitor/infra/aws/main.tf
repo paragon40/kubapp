@@ -121,7 +121,7 @@ resource "aws_security_group" "sys_monitor" {
     from_port   = 3001
     to_port     = 3001
     protocol    = "tcp"
-    cidr_blocks = [var.ssh_cidr]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
@@ -129,7 +129,7 @@ resource "aws_security_group" "sys_monitor" {
     from_port   = 9090
     to_port     = 9090
     protocol    = "tcp"
-    cidr_blocks = [var.ssh_cidr]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
@@ -137,7 +137,7 @@ resource "aws_security_group" "sys_monitor" {
     from_port   = 3000
     to_port     = 3000
     protocol    = "tcp"
-    cidr_blocks = [var.ssh_cidr]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {

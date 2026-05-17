@@ -6,14 +6,19 @@ output "ssh_command" {
   value = "ssh ubuntu@${aws_eip.sys_eip.public_ip}"
 }
 
-output "github_webhook_url" {
-  value = "https://${aws_eip.sys_eip.public_ip}:3000/webhook/github"
-}
 
 output "grafana_url" {
-  value = "https://${aws_eip.sys_eip.public_ip}:3001"
+  value = "http://grafana.${var.domain_name}:3001"
 }
 
 output "prometheus_url" {
-  value = "https://${aws_eip.sys_eip.public_ip}:9090"
+  value = "http://prom.${var.domain_name}:9090"
+}
+
+output "metrics_url" {
+  value = "http://metrics.${var.domain_name}:3000/metrics"
+}
+
+output "github_url" {
+  value = "http://github.${var.domain_name}:3000"
 }

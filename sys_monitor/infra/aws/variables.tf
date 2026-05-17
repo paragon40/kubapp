@@ -10,6 +10,11 @@ variable "project_name" {
   default     = "kubapp-sys-monitor"
 }
 
+variable "domain_name" {
+  type        = string
+  default = "rundailytest.site"
+}
+
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
