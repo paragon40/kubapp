@@ -163,3 +163,6 @@ def run_worker():
         )
 
         time.sleep(5)
+
+if __name__ == "__main__":
+    run_worker()

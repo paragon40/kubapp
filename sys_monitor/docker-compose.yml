@@ -1,13 +1,16 @@
 #version: "3.8"
 
 services:
-
   github_exporter:
     build: ./exporters/github
     container_name: github-exporter
     ports:
       - "3000:3000"
     restart: unless-stopped
+    volumes:
+      - github-db:/data
+    environment:
+      - EVENT_DB_PATH=/data/github_events.db
 
   prometheus:
     image: prom/prometheus:latest
@@ -42,3 +45,10 @@ services:
       - "8000:8000"
     depends_on:
       - github_exporter
+    volumes:
+      - github-db:/data
+    environment:
+      - EVENT_DB_PATH=/data/github_events.db
+
+volumes:
+  github-db:

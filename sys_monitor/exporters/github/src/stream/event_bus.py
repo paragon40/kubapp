@@ -1,13 +1,13 @@
 import sqlite3
 import json
+import os
 from pathlib import Path
 
 # ============================================================
 # SOURCE OF TRUTH: SQLITE EVENT STORE
 # ============================================================
 
-DB_PATH = Path("/tmp/github_events.db")
-
+DB_PATH = Path(os.getenv("EVENT_DB_PATH", "/data/github_events.db"))
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)

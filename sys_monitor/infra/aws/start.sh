@@ -202,12 +202,14 @@ done
 # ------------------------------------------------------------
 # Final Output
 # ------------------------------------------------------------
+echo "Waiting for real GitHub webhook events..."
 echo
 echo "============================================================"
 echo "DEPLOYMENT COMPLETE"
 echo "============================================================"
 echo "EC2 Public IP:      $PUBLIC_IP"
 echo "Webhook Endpoint:   http://${PUBLIC_IP}:3000/webhook/github"
+echo "Sre Engine:         http://${PUBLIC_IP}:8000/metrics"
 echo "Grafana:            http://${PUBLIC_IP}:3001"
 echo "Prometheus:         http://${PUBLIC_IP}:9090"
 echo "SSH:"
