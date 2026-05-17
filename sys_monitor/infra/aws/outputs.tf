@@ -1,19 +1,19 @@
 output "public_ip" {
-  value = aws_instance.sys_monitor.public_ip
+  value = aws_eip.sys_eip.public_ip
 }
 
 output "ssh_command" {
-  value = "ssh ubuntu@${aws_instance.sys_monitor.public_ip}"
+  value = "ssh ubuntu@${aws_eip.sys_eip.public_ip}"
 }
 
 output "github_webhook_url" {
-  value = "http://${aws_instance.sys_monitor.public_ip}:3000/webhook/github"
+  value = "https://${aws_eip.sys_eip.public_ip}:3000/webhook/github"
 }
 
 output "grafana_url" {
-  value = "http://${aws_instance.sys_monitor.public_ip}:3001"
+  value = "https://${aws_eip.sys_eip.public_ip}:3001"
 }
 
 output "prometheus_url" {
-  value = "http://${aws_instance.sys_monitor.public_ip}:9090"
+  value = "https://${aws_eip.sys_eip.public_ip}:9090"
 }

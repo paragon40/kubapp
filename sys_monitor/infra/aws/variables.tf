@@ -21,6 +21,11 @@ variable "key_name" {
   type        = string
 }
 
+variable "zone_id" {
+  description = "zone id"
+  type        = string
+}
+
 variable "ssh_cidr" {
   description = "Public IP in CIDR format"
   type        = string

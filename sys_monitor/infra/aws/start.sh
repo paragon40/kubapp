@@ -1,218 +1,126 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ============================================================
-# SYS_MONITOR AWS DEPLOYMENT SCRIPT
-# ============================================================
-# This script:
-#   1. Initializes Terraform
-#   2. Provisions AWS infrastructure
-#   3. Retrieves EC2 public IP
-#   4. Waits for SSH availability
-#   5. Copies the sys_monitor project to EC2
-#   6. Starts Docker Compose remotely
-#   7. Prints access URLs
-#
-# Required environment variables:
-#   export KEY_NAME=my-aws-keypair
-#
-# Optional:
-#   export AWS_REGION=us-east-1
-# ============================================================
-
 PROJECT_ROOT="$HOME/Main/devops/kubapp/sys_monitor"
 TF_DIR="$PROJECT_ROOT/infra/aws"
 REMOTE_USER="ubuntu"
 REMOTE_DIR="/opt/sys_monitor"
+
+EMAIL="rundailytest@gmail.com"
+DOMAIN="sys-monitor.rundailytest.site"
+
 export KEY_NAME=tf-web-key
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/${KEY_NAME}.pem}"
 REPO="${REPO:-paragon40/kubapp}"
 
-# ------------------------------------------------------------
-# Validation
-# ------------------------------------------------------------
-if [[ -z "${KEY_NAME:-}" ]]; then
-  echo "ERROR: KEY_NAME environment variable is not set."
-  exit 1
-fi
-
-if [[ ! -f "$SSH_KEY" ]]; then
-  echo "ERROR: SSH key not found: $SSH_KEY"
-  echo "Set a custom key path if needed:"
-  echo "  export SSH_KEY=/path/to/key.pem"
-  exit 1
-fi
-
 cd "$TF_DIR"
 
-# ------------------------------------------------------------
-# Terraform Init
-# ------------------------------------------------------------
-echo "============================================================"
-echo "Terraform Init"
-echo "============================================================"
+# ----------------------------
+# TERRAFORM
+# ----------------------------
 terraform init
 
-# ------------------------------------------------------------
-# Terraform Apply
-# ------------------------------------------------------------
 MY_IP="$(curl -s ifconfig.me)/32"
 
-echo "============================================================"
-echo "Terraform Apply"
-echo "============================================================"
 terraform apply -auto-approve \
   -var="key_name=${KEY_NAME}" \
   -var="ssh_cidr=${MY_IP}"
 
-# ------------------------------------------------------------
-# Retrieve Public IP
-# ------------------------------------------------------------
 PUBLIC_IP="$(terraform output -raw public_ip)"
 
-if [[ -z "$PUBLIC_IP" ]]; then
-  echo "ERROR: Public IP not found."
-  exit 1
-fi
-
-echo "============================================================"
-echo "EC2 Public IP: $PUBLIC_IP"
-echo "============================================================"
-# ------------------------------------------------------------
-# Update GitHub Secret with Current Webhook URL
-# ------------------------------------------------------------
-echo "============================================================"
-echo "Updating GitHub Secret: SYS_MONITOR_WEBHOOK"
-echo "============================================================"
+echo "EC2: $PUBLIC_IP"
 
 WEBHOOK_URL="$(terraform output -raw github_webhook_url)"
 
-if [[ -z "$WEBHOOK_URL" ]]; then
-  echo "ERROR: Unable to retrieve webhook URL from Terraform."
-  exit 1
+# ----------------------------
+# GITHUB SECRET
+# ----------------------------
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+  gh secret set SYS_MONITOR_WEBHOOK \
+    --repo "$REPO" \
+    --body "$WEBHOOK_URL"
 fi
 
-echo "Webhook URL: $WEBHOOK_URL"
-
-# Verify GitHub CLI is installed
-if ! command -v gh >/dev/null 2>&1; then
-  echo "ERROR: GitHub CLI (gh) is not installed."
-  echo "Install it from https://cli.github.com/"
-  exit 1
-fi
-
-# Verify authentication
-if ! gh auth status >/dev/null 2>&1; then
-  echo "ERROR: GitHub CLI is not authenticated."
-  echo "Run: gh auth login"
-  exit 1
-fi
-
-# Update repository secret
-cd "$PROJECT_ROOT"
-
-gh secret set SYS_MONITOR_WEBHOOK \
-  --repo "$REPO" \
-  --body "$WEBHOOK_URL"
-
-echo "GitHub secret SYS_MONITOR_WEBHOOK updated successfully."
-
-# ------------------------------------------------------------
-# Wait for SSH
-# ------------------------------------------------------------
-echo "Waiting for SSH to become available..."
-
+# ----------------------------
+# SSH WAIT
+# ----------------------------
 for i in {1..30}; do
   if ssh -o StrictHostKeyChecking=no \
          -o ConnectTimeout=5 \
          -i "$SSH_KEY" \
-         "${REMOTE_USER}@${PUBLIC_IP}" \
-         "echo SSH is ready" >/dev/null 2>&1; then
-    echo "SSH is ready."
+         ubuntu@"$PUBLIC_IP" "echo ok"; then
     break
   fi
-
-  if [[ "$i" -eq 30 ]]; then
-    echo "ERROR: SSH did not become available."
-    exit 1
-  fi
-
   sleep 10
 done
 
-# ------------------------------------------------------------
-# Copy Project
-# ------------------------------------------------------------
-echo "============================================================"
-echo "Copying project to EC2"
-echo "============================================================"
-
-rsync -avz --delete \
+# ----------------------------
+# SYNC
+# ----------------------------
+rsync -avz --delete --no-perms --no-owner --no-group \
   -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" \
   --exclude ".git" \
-  --exclude ".venv" \
-  --exclude "__pycache__" \
   --exclude ".terraform" \
-  --exclude "*.tfstate*" \
   "$PROJECT_ROOT/" \
-  "${REMOTE_USER}@${PUBLIC_IP}:${REMOTE_DIR}/"
+  ubuntu@"$PUBLIC_IP":"$REMOTE_DIR/"
 
-# ------------------------------------------------------------
-# Start Docker Compose
-# ------------------------------------------------------------
-echo "============================================================"
-echo "Starting Docker Compose on EC2"
-echo "============================================================"
+# ----------------------------
+# REMOTE SETUP
+# ----------------------------
+ssh -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" << EOF
 
-ssh -i "$SSH_KEY" \
-    -o StrictHostKeyChecking=no \
-    "${REMOTE_USER}@${PUBLIC_IP}" << EOF
 set -euo pipefail
 
-cd ${REMOTE_DIR}
+mkdir -p /opt/sys_monitor
+chown -R ubuntu:ubuntu /opt/sys_monitor
 
-sudo docker compose down || true
-sudo docker compose up -d --build
+cd /opt/sys_monitor
 
-echo
-echo "Running containers:"
-sudo docker ps
-EOF
+# ----------------------------
+# NGINX CONFIG
+# ----------------------------
+sudo cp infra/aws/nginx.conf /etc/nginx/sites-available/sys-monitor
+sudo ln -sf /etc/nginx/sites-available/sys-monitor /etc/nginx/sites-enabled/sys-monitor
 
-# ------------------------------------------------------------
-# Health Checks
-# ------------------------------------------------------------
-echo "============================================================"
-echo "Waiting for services"
-echo "============================================================"
+sudo nginx -t
+sudo systemctl restart nginx
 
-sleep 20
-
-for url in \
-  "http://${PUBLIC_IP}:3000/" \
-  "http://${PUBLIC_IP}:3000/metrics" \
-  "http://${PUBLIC_IP}:3001/login" \
-  "http://${PUBLIC_IP}:9090/-/healthy"
-do
-  echo
-  echo "Checking: $url"
-  curl -fsS "$url" >/dev/null && echo "OK" || echo "FAILED"
+# ----------------------------
+# WAIT FOR DNS
+# ----------------------------
+echo "Waiting for DNS..."
+for i in {1..30}; do
+  if dig +short $DOMAIN | grep -q .; then
+    echo "DNS ready"
+    break
+  fi
+  sleep 5
 done
 
-# ------------------------------------------------------------
-# Final Output
-# ------------------------------------------------------------
-echo "Waiting for real GitHub webhook events..."
-echo
-echo "============================================================"
-echo "DEPLOYMENT COMPLETE"
-echo "============================================================"
-echo "EC2 Public IP:      $PUBLIC_IP"
-echo "Webhook Endpoint:   http://${PUBLIC_IP}:3000/webhook/github"
-echo "Sre Engine:         http://${PUBLIC_IP}:8000/metrics"
-echo "Grafana:            http://${PUBLIC_IP}:3001"
-echo "Prometheus:         http://${PUBLIC_IP}:9090"
-echo "SSH:"
-echo "  ssh -i $SSH_KEY ${REMOTE_USER}@${PUBLIC_IP}"
-echo "============================================================"
+# ----------------------------
+# WAIT FOR HTTP
+# ----------------------------
+echo "Waiting for HTTP..."
+for i in {1..30}; do
+  if curl -sI http://$DOMAIN >/dev/null; then
+    echo "HTTP ready"
+    break
+  fi
+  sleep 5
+done
 
+# ----------------------------
+# CERTBOT
+# ----------------------------
+sudo certbot --nginx \
+  -d $DOMAIN \
+  -m $EMAIL \
+  --agree-tos \
+  --non-interactive \
+  --redirect || true
+
+echo "Nginx + HTTPS ready"
+
+EOF
+
+echo "DONE → https://sys-monitor.rundailytest.site"

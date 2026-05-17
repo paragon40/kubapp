@@ -95,27 +95,19 @@ resource "aws_security_group" "sys_monitor" {
   }
 
   ingress {
-    description = "GitHub Webhook"
-    from_port   = 3000
-    to_port     = 3000
+    description = "HTTPS"
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    description = "Grafana"
-    from_port   = 3001
-    to_port     = 3001
+    description = "Http"
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = [var.ssh_cidr]
-  }
-
-  ingress {
-    description = "Prometheus"
-    from_port   = 9090
-    to_port     = 9090
-    protocol    = "tcp"
-    cidr_blocks = [var.ssh_cidr]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -139,7 +131,7 @@ resource "aws_instance" "sys_monitor" {
   subnet_id                   = aws_subnet.public_subnet.id
   vpc_security_group_ids      = [aws_security_group.sys_monitor.id]
   key_name                    = var.key_name
-  associate_public_ip_address = true
+  associate_public_ip_address = false
 
   root_block_device {
     volume_size = 20
