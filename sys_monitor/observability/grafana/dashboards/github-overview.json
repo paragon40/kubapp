@@ -1,6 +1,7 @@
 {
   "uid": "github-overview",
   "title": "GitHub Overview",
+  "tags": ["github", "sys_monitor"],
   "schemaVersion": 38,
   "version": 2,
   "refresh": "10s",
