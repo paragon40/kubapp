@@ -80,7 +80,7 @@ rsync -az --delete \
 # ============================================================
 # REMOTE DEPLOY
 # ============================================================
-ssh -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" << EOF
+ssh -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" << 'EOF'
 set -euo pipefail
 
 cd /opt/sys_monitor
@@ -95,14 +95,16 @@ docker compose up -d --build
 echo "==> Waiting for services..."
 
 for i in {1..60}; do
-  GRAFANA=\$(curl -fs http://localhost:3001/api/health >/dev/null && echo ok || echo no)
-  PROM=\$(curl -fs http://localhost:9090/-/ready >/dev/null && echo ok || echo no)
-  EXPORTER=\$(curl -fs http://localhost:3000/ >/dev/null && echo ok || echo no)
-  SRE=\$(curl -fs http://localhost:8000/ >/dev/null && echo ok || echo no)
 
-  echo "grafana=\$GRAFANA prom=\$PROM exporter=\$EXPORTER sre=\$SRE"
+  GRAFANA=$(curl -fs http://localhost:3001/api/health >/dev/null && echo ok || echo no)
+  PROM=$(curl -fs http://localhost:9090/-/ready >/dev/null && echo ok || echo no)
+  EXPORTER=$(curl -fs http://localhost:3000/ >/dev/null && echo ok || echo no)
+  SRE=$(curl -fs http://localhost:8000/ >/dev/null && echo ok || echo no)
+  GITOPS=$(curl -fs http://localhost:9105/ >/dev/null && echo ok || echo no)
 
-  if [[ "\$GRAFANA" == "ok" && "\$PROM" == "ok" && "\$EXPORTER" == "ok" && "\$SRE" == "ok" ]]; then
+  echo "grafana=$GRAFANA prom=$PROM exporter=$EXPORTER sre=$SRE gitops=$GITOPS"
+
+  if [[ "$GRAFANA" == "ok" && "$PROM" == "ok" && "$EXPORTER" == "ok" && "$SRE" == "ok" && "$GITOPS" == "ok" ]]; then
     echo "All services READY"
     break
   fi
@@ -119,6 +121,8 @@ curl -fs http://127.0.0.1:3000/ || true
 curl -fs http://127.0.0.1:3001/api/health || true
 curl -fs http://127.0.0.1:9090/-/ready || true
 curl -fs http://127.0.0.1:8000/ || true
+curl -fs http://127.0.0.1:9105/ || true
+curl -fs http://127.0.0.1:9105/metrics || true
 
 echo "DONE"
 EOF
@@ -140,11 +144,14 @@ echo "Prometheus:"
 echo "  http://prom.${DOMAIN}:9090"
 echo ""
 echo "GitHub Exporter:"
-echo "  http://github.${DOMAIN}:3000"
-echo "  http://metrics.${DOMAIN}:3000/metrics"
-echo ""
+echo "  http://app.${DOMAIN}:3000"
+echo "  http://app.${DOMAIN}:3000/metrics"
 echo "SRE Engine:"
 echo "  http://app.${DOMAIN}:8000"
+echo ""
+echo "GitOps Exporter:"
+echo "  http://app.${DOMAIN}:9105"
+echo "  http://app.${DOMAIN}:9105/metrics"
 echo ""
 echo "========================================"
 echo "EC2 IP: $PUBLIC_IP"

@@ -69,5 +69,12 @@ services:
     environment:
       - EVENT_DB_PATH=/data/github_events.db
 
+  gitops-exporter:
+    build: ./exporters/gitops
+    container_name: gitops-exporter
+    ports:
+      - "9105:9105"
+    restart: unless-stopped
+
 volumes:
   github-db:

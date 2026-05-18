@@ -6,8 +6,7 @@ locals {
   subdomains = [
     "grafana",
     "prom",
-    "metrics",
-    "github"
+    "app"
   ]
 }
 
