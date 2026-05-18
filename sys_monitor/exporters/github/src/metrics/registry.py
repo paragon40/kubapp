@@ -48,3 +48,9 @@ github_change_lead_time_seconds = Gauge(
     ["repo", "tag"]
 )
 
+# Workflow jobs
+github_workflow_job_total = Counter(
+    "github_workflow_job_total",
+    "GitHub workflow job events",
+    ["repo", "job", "status", "conclusion"]
+)

@@ -31,6 +31,15 @@ def normalize_event_type(event_type: str, payload: dict) -> str:
 
         return "workflow_run_unknown"
 
+# Workflow job events
+    if event_type == "workflow_job":
+        action = payload.get("action", "unknown")
+        if action == "in_progress":
+            return "workflow_job_in_progress"
+        elif action == "completed":
+            return "workflow_job_completed"
+        return "workflow_job"
+
     # Issues normalization
     if event_type == "issues":
         action = payload.get("action", "")

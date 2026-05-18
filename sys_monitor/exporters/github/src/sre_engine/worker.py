@@ -16,6 +16,7 @@ from metrics.registry import (
     github_push_total,
     github_pr_total,
     github_workflow_run_total,
+    github_workflow_job_total,
     github_issue_total,
 )
 
@@ -119,6 +120,21 @@ def run_worker():
                     workflow=run.get("name", "unknown"),
                     status=run.get("status", "unknown"),
                     conclusion="success" if etype == "workflow_run_success" else "failure",
+                ).inc()
+
+            # WORKFLOW JOB
+            elif etype in (
+                "workflow_job_in_progress",
+                "workflow_job_completed",
+                "workflow_job",
+            ):
+                job = payload.get("workflow_job", {})
+
+                github_workflow_job_total.labels(
+                    repo=repo,
+                    job=job.get("name", "unknown"),
+                    status=job.get("status", "unknown"),
+                    conclusion=job.get("conclusion", "unknown"),
                 ).inc()
 
         # --------------------------------------------------------
