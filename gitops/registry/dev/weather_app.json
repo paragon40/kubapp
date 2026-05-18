@@ -5,7 +5,7 @@
   "context": "docker/weather_app",
   "image": "paragon40/weather_app",
   "image2": "paragon40/weather_app:latest",
-  "tag": "43efce4b2f2be5a09b1323e639d90031485e9a27-1778932562",
+  "tag": "614cf2aad475abfdfd5fdc85d391b445b107df57-1779115194",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -22,5 +22,5 @@
   "mount_path": "/tmp",
   "NO_VARS": false,
   "NO_SECRETS": false,
-  "CREATED_AT": "2026-05-16_11-56-02"
+  "CREATED_AT": "2026-05-18_14-39-54"
 }
