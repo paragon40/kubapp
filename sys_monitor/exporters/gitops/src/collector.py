@@ -1,3 +1,5 @@
+from kubernetes import client, config
+
 from metrics import (
     gitops_app_total,
     gitops_app_healthy_total,
@@ -10,24 +12,53 @@ from metrics import (
 
 def collect_metrics():
     """
-    Placeholder implementation.
-    Later this will query Argo CD Applications.
+    REAL GitOps state collector using Kubernetes API
     """
 
-    total = 10
-    healthy = 8
-    out_of_sync = 1
-    degraded = 1
+    try:
+        config.load_kube_config()
+    except Exception:
+        config.load_incluster_config()
 
-    drift_ratio = out_of_sync / total if total else 0
+    # Argo CD Applications (CRD)
+    api = client.CustomObjectsApi()
 
-    convergence = max(
-        0,
-        100
-        - (out_of_sync / total) * 40
-        - (degraded / total) * 40
+    apps = api.list_cluster_custom_object(
+        group="argoproj.io",
+        version="v1alpha1",
+        plural="applications"
     )
 
+    items = apps.get("items", [])
+
+    total = len(items)
+    healthy = 0
+    out_of_sync = 0
+    degraded = 0
+
+    for app in items:
+        status = app.get("status", {})
+        sync = status.get("sync", {}).get("status", "")
+        health = status.get("health", {}).get("status", "")
+
+        if sync == "Synced":
+            healthy += 1
+        else:
+            out_of_sync += 1
+
+        if health in ("Degraded", "Missing", "Unknown"):
+            degraded += 1
+
+    drift_ratio = (out_of_sync / total) if total else 0.0
+
+    convergence = 100
+    convergence -= drift_ratio * 50
+    convergence -= (degraded / total) * 50 if total else 0
+
+    # clamp
+    convergence = max(0, min(100, convergence))
+
+    # expose metrics
     gitops_app_total.set(total)
     gitops_app_healthy_total.set(healthy)
     gitops_app_out_of_sync_total.set(out_of_sync)

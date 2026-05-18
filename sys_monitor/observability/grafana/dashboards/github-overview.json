@@ -1,6 +1,6 @@
 {
   "uid": "github-overview",
-  "title": "GitOps GitHub Overview",
+  "title": "GitHub Overview",
   "schemaVersion": 38,
   "version": 2,
   "refresh": "10s",
@@ -116,7 +116,7 @@
     },
     {
       "type": "gauge",
-      "title": "GitOps Health Score",
+      "title": "Githubs Health Score",
       "targets": [
         {
           "expr": "github_health_score"
