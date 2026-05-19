@@ -43,7 +43,7 @@ on:
         options: ["true", "false"]
 
 concurrency:
-  group: ingress-reconcile
+  group: using-commit
   cancel-in-progress: false
 
 jobs:

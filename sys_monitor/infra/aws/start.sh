@@ -124,9 +124,59 @@ curl -fs http://127.0.0.1:8000/ || true
 curl -fs http://127.0.0.1:9105/ || true
 curl -fs http://127.0.0.1:9105/metrics || true
 
-echo "Check Kubertes config Connectivity"
-aws sts get-caller-identity
-echo "DONE"
+echo "========================================"
+echo "Validating AWS and Kubernetes Connectivity"
+echo "========================================"
+
+# Check AWS identity
+echo
+echo "[1/4] Checking AWS caller identity..."
+CALLER_ID=$(aws sts get-caller-identity 2>/dev/null || true)
+
+if [[ -z "$CALLER_ID" ]]; then
+  echo "ERROR: Unable to retrieve AWS caller identity."
+  exit 1
+fi
+
+echo "$CALLER_ID"
+
+# Update kubeconfig for EKS cluster
+echo
+echo "[2/4] Updating kubeconfig for EKS cluster 'kubapp-dev'..."
+if ! aws eks update-kubeconfig \
+  --region us-east-1 \
+  --name kubapp-dev; then
+  echo "ERROR: Failed to update kubeconfig."
+  exit 1
+fi
+
+# Verify Kubernetes API access
+echo
+echo "[3/4] Verifying Kubernetes API connectivity..."
+if ! kubectl cluster-info >/dev/null 2>&1; then
+  echo "ERROR: Unable to connect to the Kubernetes cluster."
+  exit 1
+fi
+
+echo "Kubernetes API connection successful."
+
+# Display cluster resources
+echo
+echo "[4/4] Listing cluster resources..."
+echo
+echo "Pods across all namespaces:"
+kubectl get pods -A
+
+echo
+echo "Argo CD Applications:"
+kubectl get applications.argoproj.io -A 2>/dev/null || \
+echo "No Argo CD Application resources found."
+
+echo
+echo "========================================"
+echo "Connectivity checks completed successfully."
+echo "========================================"
+echo "All DONE"
 EOF
 
 # ============================================================

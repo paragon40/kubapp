@@ -8,6 +8,8 @@ on:
       - "Remove App"
     types: [completed]
 
+  workflow_dispatch:
+
 jobs:
   verify:
     runs-on: ubuntu-latest
