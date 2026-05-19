@@ -16,16 +16,19 @@ ingress:
 services:
   - name: grafana
     enabled: true
+    namespace: monitoring
     port: 80
     backend:
       service: kube-prometheus-stack-grafana
   - name: prometheus
     enabled: true
+    namespace: monitoring
     port: 9090
     backend:
       service: kube-prometheus-stack-prometheus
   - name: alertmanager
     enabled: true
+    namespace: monitoring
     port: 9093
     backend:
       service: kube-prometheus-stack-alertmanager
