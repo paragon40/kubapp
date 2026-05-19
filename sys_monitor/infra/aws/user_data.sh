@@ -7,7 +7,7 @@ apt-get install -y \
   docker-compose-v2 \
   git \
   dnsutils \
-  curl
+  curl 
 
 
 systemctl enable docker

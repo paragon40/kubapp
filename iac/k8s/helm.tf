@@ -312,7 +312,7 @@ resource "helm_release" "kube_prometheus_stack" {
   version    = "58.0.0"
 
   timeout         = 2000
-  wait            = true
+  wait            = false
   cleanup_on_fail = true
 
   values = [
