@@ -54,7 +54,7 @@ synthetic_test() {
   local svc=$1
   local url="https://$svc.$DOMAIN/health"
 
-  echo "🔬 Synthetic test: $svc"
+  echo "Synthetic test: $svc via $url"
 
   code=$(curl -s -o /dev/null -w "%{http_code}" "$url" || echo "000")
 
@@ -75,11 +75,11 @@ for i in $(seq 1 $ATTEMPTS); do
   echo "----------------------------------"
 
   for svc in $SERVICES; do
-    APP="${svc}-${ENV}"
+    APP="${svc}"
     URL="https://$svc.$DOMAIN"
 
     echo ""
-    echo "🔍 Checking service: $svc"
+    echo "Checking service: $svc"
 
     ##################################
     # ArgoCD
