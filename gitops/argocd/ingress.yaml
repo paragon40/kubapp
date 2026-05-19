@@ -14,6 +14,9 @@ spec:
           - namespace: monitoring
             env: dev
             stack: monitoring
+          - namespace: argocd
+            env: dev
+            stack: argocd
 
   template:
     metadata:
