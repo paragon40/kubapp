@@ -313,6 +313,7 @@ resource "helm_release" "kube_prometheus_stack" {
 
   timeout         = 2000
   wait            = false
+  atomic          = true
   cleanup_on_fail = true
 
   values = [
