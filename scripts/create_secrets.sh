@@ -3,38 +3,8 @@ set -euo pipefail
 
 # =========================================================
 # CREATE / UPDATE KUBERNETES SECRET FROM SOPS FILE
-#
 # Usage:
 #   create_secret.sh <artifact-json>
-#
-# Requirements:
-#   - artifact JSON contains:
-#       .service
-#       .namespace
-#       .NO_SECRETS
-#   - Secret source file:
-#       docker/<service>/secrets.enc.yaml
-#       OR
-#       docker/<service>/secrets.enc.yml
-#
-# Supported encrypted file format:
-#
-# secrets:
-#   DB_PASSWORD: supersecret
-#   API_KEY: xxxxx
-#
-# This script:
-#   1. Reads artifact metadata.
-#   2. Exits immediately if NO_SECRETS=true.
-#   3. Finds encrypted secret file.
-#   4. Decrypts with sops.
-#   5. Extracts .secrets.
-#   6. Creates/updates Kubernetes Secret:
-#        <service>-secret
-#
-# Result:
-#   Secret is applied directly to Kubernetes.
-#   No secret values are written to artifacts or values.yaml.
 # =========================================================
 
 ARTIFACT_FILE="${1:-}"
@@ -44,10 +14,16 @@ fail() {
   exit 1
 }
 
+line() {
+  printf '%*s\n' "${1:-60}" '' | tr ' ' '#'
+  echo ">>> SCRIPT: $0 <<<"
+}
+
 require() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing dependency: $1"
 }
 
+line
 [[ -n "$ARTIFACT_FILE" ]] || fail "Usage: create_secret.sh <artifact-json>"
 [[ -f "$ARTIFACT_FILE" ]] || fail "Artifact file not found: $ARTIFACT_FILE"
 case "$ARTIFACT_FILE" in

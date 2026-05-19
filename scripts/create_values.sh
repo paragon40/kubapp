@@ -223,7 +223,5 @@ cp /tmp/static-values.yaml "$TARGET_FILE"
 # FINAL PATCH
 yq e -i ".meta.staticFingerprint = \"$STATIC_FP\"" "$TARGET_FILE"
 
-line 80
 echo "✅ Static values ready: $TARGET_FILE"
 cat "$TARGET_FILE"
-line 80

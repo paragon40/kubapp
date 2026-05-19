@@ -68,6 +68,15 @@ if [[ "$ACTION" == "add" ]]; then
   }
 fi
 
+line() {
+  printf '%*s\n' "${1:-60}" '' | tr ' ' '#'
+  echo ">>> SCRIPT: $0 <<<"
+}
+
+sanitize() {
+  echo "$1" | tr '_' '-' | tr '[:upper:]' '[:lower:]'
+}
+
 is_backend_service() {
   [[ "$TYPE" == "Backend" ]] &&
   [[ -n "$BACKEND_SERVICE" ]] &&
@@ -76,11 +85,10 @@ is_backend_service() {
 
 is_argocd() {
   [[ "$TYPE" == "Backend" ]] &&
-  [[ -n "$BACKEND_SERVICE" ]] &&
-  [[ "$BACKEND_SERVICE" == "argocd" ]]
+  [[ "$SERVICE" == "argocd" ]]
 }
 
-echo "================================="
+line
 echo "ACTION : $ACTION"
 echo "SERVICE: $SERVICE_NAME"
 echo "SERVICE TYPE: $TYPE"
@@ -107,9 +115,6 @@ echo "================================="
 # -----------------------------------------
 # Preconditions
 # -----------------------------------------
-sanitize() {
-  echo "$1" | tr '_' '-' | tr '[:upper:]' '[:lower:]'
-}
 
 command -v yq >/dev/null 2>&1 || { echo "yq is required"; exit 1; }
 command -v jq >/dev/null 2>&1 || { echo "jq is required"; exit 1; }
