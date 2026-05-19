@@ -9,6 +9,7 @@ REG_DIR="$ROOT/gitops/registry/$ENV"
 
 echo "=================================="
 echo "ADVANCED RUNTIME VERIFICATION"
+echo "DEBUG ARGS: ENV=$1 DOMAIN=$2"
 echo "ENV: $ENV"
 echo "DOMAIN: $DOMAIN"
 echo "=================================="
