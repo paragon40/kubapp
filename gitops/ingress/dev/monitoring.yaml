@@ -1,4 +1,4 @@
-namespace: ""
+namespace: "monitoring"
 ingress:
   name: kubapp-monitoring-alb
   className: alb
