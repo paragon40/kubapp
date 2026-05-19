@@ -79,7 +79,7 @@ for i in $(seq 1 $ATTEMPTS); do
     URL="https://$svc.$DOMAIN"
 
     echo ""
-    echo "Checking service: $svc"
+    echo "Checking service: $svc via $URL with domain: $DOMAIN in ENV: $ENV"
 
     ##################################
     # ArgoCD
