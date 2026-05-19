@@ -106,6 +106,7 @@ else
   USE_FILE="$VALUES_FILE"
   NS="$ENV"
 fi
+export NS
 echo "ENV    : $ENV"
 echo "NAMESPACE: $NS"
 echo "FILE   : $USE_FILE"
