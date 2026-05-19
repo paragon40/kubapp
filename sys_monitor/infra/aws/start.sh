@@ -125,7 +125,7 @@ curl -fs http://127.0.0.1:9105/ || true
 curl -fs http://127.0.0.1:9105/metrics || true
 
 echo "Check Kubertes config Connectivity"
-
+aws sts get-caller-identity
 echo "DONE"
 EOF
 
