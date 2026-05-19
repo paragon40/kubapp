@@ -24,6 +24,15 @@ line() {
   printf '%*s\n' "${1:-60}" '' | tr ' ' '#'
 }
 
+banner() {
+  line
+  line
+  echo ">>> SCRIPT: $0 <<<"
+  echo " Building static values for $1 with $2"
+  line
+  line
+}
+
 [[ -n "$ARTIFACT_FILE" ]] || fail "Usage: create_values.sh <artifact-json>"
 [[ -f "$ARTIFACT_FILE" ]] || fail "Artifact not found: $ARTIFACT_FILE"
 
@@ -59,7 +68,7 @@ TARGET_FILE="$TARGET_DIR/values.yaml"
 
 mkdir -p "$TARGET_DIR"
 
-echo " Building static values for $SERVICE with $COMPUTE_TYPE"
+banner "$SERVICE" "$COMPUTE_TYPE"
 
 ####################################################
 # STATIC FINGERPRINT
