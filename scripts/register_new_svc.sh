@@ -96,17 +96,17 @@ echo "SERVICE PORT: $PORT"
 if is_backend_service; then
   echo "BACKEND SERVICE: $BACKEND_SERVICE"
   if is_argocd; then
-    NS="argocd"
+    export NS="argocd"
     USE_FILE="$ARGOCD_FILE"
   else
     USE_FILE="$BACKEND_FILE"
-    NS="monitoring"
+    export NS="monitoring"
   fi
 else
   USE_FILE="$VALUES_FILE"
-  NS="$ENV"
+  export NS="$ENV"
 fi
-export NS
+
 echo "ENV    : $ENV"
 echo "NAMESPACE: $NS"
 echo "FILE   : $USE_FILE"
