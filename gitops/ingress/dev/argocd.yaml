@@ -1,0 +1,18 @@
+namespace: ""
+ingress:
+  baseDomain: rundailytest.online
+  certificateArn: arn:aws:acm:us-east-1:198200019771:certificate/8d83b6f3-cab8-44fc-bed4-47267c6b2317
+  name: kubapp--alb
+  className: alb
+  enableSubdomainRouting: true
+  annotations:
+    listenPorts:
+      - HTTP: 80
+      - HTTPS: 443
+services:
+  - name: argocd
+    enabled: true
+    namespace: argocd
+    port: 80
+    backend:
+      service: argocd-server
