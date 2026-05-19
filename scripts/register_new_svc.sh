@@ -85,7 +85,7 @@ is_backend_service() {
 
 is_argocd() {
   [[ "$TYPE" == "Backend" ]] &&
-  [[ "$SERVICE" == "argocd" ]]
+  [[ "$SERVICE_NAME" == "argocd" ]]
 }
 
 line
