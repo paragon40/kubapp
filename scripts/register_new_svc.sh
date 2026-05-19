@@ -132,6 +132,10 @@ cp "$USE_FILE" "$TMP_FILE"
 # INGRESS DYNAMIC CONFIGURATION (ADD ONLY)
 if [[ "$ACTION" == "add" ]]; then
   yq e -i '
+    .namespace = strenv(NS)
+  ' "$TMP_FILE"
+
+  yq e -i '
     .ingress.baseDomain = strenv(DOMAIN)
     | .ingress.certificateArn = strenv(CERT_ARN)
     | .ingress.name = (.ingress.name // ("kubapp-" + strenv(NS) + "-alb"))
@@ -148,6 +152,9 @@ if [[ "$ACTION" == "add" ]]; then
     exit 1
   fi
 fi
+
+# Ensure namespace exists
+yq e -i '.namespace = (.namespace)' "$TMP_FILE"
 
 # Ensure services array exists
 yq e -i '.services = (.services // [])' "$TMP_FILE"
