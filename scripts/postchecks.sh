@@ -2,14 +2,14 @@
 set -euo pipefail
 
 ENV="${1:?ENV required}"
-DOMAIN="${2:?DOMAIN required}"
+DOMAIN="rundailytest.online"
+#"${2:?DOMAIN required}"
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REG_DIR="$ROOT/gitops/registry/$ENV"
 
 echo "=================================="
 echo "ADVANCED RUNTIME VERIFICATION"
-echo "DEBUG ARGS: ENV=$1 DOMAIN=$2"
 echo "ENV: $ENV"
 echo "DOMAIN: $DOMAIN"
 echo "=================================="
