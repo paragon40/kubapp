@@ -118,6 +118,8 @@ jobs:
           ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
+          D="${{ secrets.DOMAIN }}"
+          echo "Domain is: $D"
           export ARGOCD_OPTS="--server $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN"
           bash scripts/postchecks.sh "${{ env.ENV }}" "{{ secrets.DOMAIN }}"
 

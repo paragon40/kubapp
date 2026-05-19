@@ -131,7 +131,6 @@ echo "========================================"
 # Check AWS identity
 echo
 echo "[1/4] Checking AWS caller identity..."
-sudo apt install awscli
 CALLER_ID=$(aws sts get-caller-identity 2>/dev/null || true)
 
 if [[ -z "$CALLER_ID" ]]; then
