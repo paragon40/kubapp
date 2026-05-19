@@ -132,8 +132,6 @@ cp "$USE_FILE" "$TMP_FILE"
 
 # INGRESS DYNAMIC CONFIGURATION (ADD ONLY)
 if [[ "$ACTION" == "add" ]]; then
-  yq e -i ".namespace = \"$NS\"" "$TMP_FILE"
-
   yq e -i '
     .ingress.baseDomain = strenv(DOMAIN)
     | .ingress.certificateArn = strenv(CERT_ARN)
