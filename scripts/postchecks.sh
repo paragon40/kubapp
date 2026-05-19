@@ -29,6 +29,7 @@ CANARY_REQUESTS=10
 ########################################
 check_http() {
   local url=$1
+  echo "URL Recieved is: $url"
 
   success=0
   total=0
@@ -89,10 +90,12 @@ for i in $(seq 1 $ATTEMPTS); do
       --health \
       --timeout 180
 
+    echo "Argocd wait worked"
     ##################################
     # Kubernetes rollout
     ##################################
     kubectl rollout status deploy/"$svc" -n "$ENV" --timeout=120s
+    echo "Kubectl Rollout worked"
 
     ##################################
     # Pod health
@@ -104,6 +107,8 @@ for i in $(seq 1 $ATTEMPTS); do
       echo "❌ Pod instability detected"
       echo "$BAD"
       exit 1
+    else
+      echo "Pod is good"
     fi
 
     ##################################
