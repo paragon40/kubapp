@@ -113,6 +113,10 @@ jobs:
       ####################################################
       # VERIFY RUNTIME
       ####################################################
+      - name: Print secrets
+        run: |
+          echo "SERVER=${{ secrets.ARGOCD_SERVER }}"
+
       - name: Run postchecks (deep verification)
         env:
           ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
