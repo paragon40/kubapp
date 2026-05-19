@@ -119,7 +119,8 @@ jobs:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
           ENV="${{ env.ENV }}"
-          DOM="${{ secrets.DOMAIN }}"
+          #DOM="${{ secrets.DOMAIN }}"
+          DOM="rundailytest.online"
           export ARGOCD_OPTS="--server $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN"
           bash scripts/postchecks.sh "$ENV" "$DOM"
 
