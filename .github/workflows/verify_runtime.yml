@@ -118,10 +118,10 @@ jobs:
           ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          D="${{ secrets.DOMAIN }}"
-          echo "Domain is: $D"
+          ENV="${{ env.ENV }}"
+          DOM="${{ secrets.DOMAIN }}"
           export ARGOCD_OPTS="--server $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN"
-          bash scripts/postchecks.sh "${{ env.ENV }}" "{{ secrets.DOMAIN }}"
+          bash scripts/postchecks.sh "$ENV" "$DOM"
 
       # FAILURE HANDLER
       - name: Suggest rollback
