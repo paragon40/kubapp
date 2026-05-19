@@ -15,8 +15,13 @@ kubectl get ns argocd >/dev/null || {
   exit 1
 }
 
-test -f "$ROOT/gitops/infra/root-app.yml" || {
-  echo "❌ root-app.yml missing"
+test -f "$ROOT/gitops/argocd/appset.yaml" || {
+  echo "❌ appset.yml missing"
+  exit 1
+}
+
+test -f "$ROOT/gitops/argocd/ingress.yaml" || {
+  echo "❌ ingress.yml missing"
   exit 1
 }
 
