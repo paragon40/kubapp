@@ -350,10 +350,13 @@ resource "helm_release" "kube_prometheus_stack" {
           podAntiAffinity = {
             preferredDuringSchedulingIgnoredDuringExecution = [
               {
-                labelSelector = {
-                  matchLabels = local.monitoring_labels
+                weight = 100
+                podAffinityTerm = {
+                  labelSelector = {
+                    matchLabels = local.monitoring_labels
+                  }
+                  topologyKey = "kubernetes.io/hostname"
                 }
-                topologyKey = "kubernetes.io/hostname"
               }
             ]
           }
@@ -385,10 +388,13 @@ resource "helm_release" "kube_prometheus_stack" {
             podAntiAffinity = {
               preferredDuringSchedulingIgnoredDuringExecution = [
                 {
-                  labelSelector = {
-                    matchLabels = local.monitoring_labels
+                  weight = 100
+                  podAffinityTerm = {
+                    labelSelector = {
+                      matchLabels = local.monitoring_labels
+                    }
+                    topologyKey = "kubernetes.io/hostname"
                   }
-                  topologyKey = "kubernetes.io/hostname"
                 }
               ]
             }
@@ -426,10 +432,14 @@ resource "helm_release" "kube_prometheus_stack" {
             podAntiAffinity = {
               preferredDuringSchedulingIgnoredDuringExecution = [
                 {
-                  labelSelector = {
-                    matchLabels = local.monitoring_labels
+                  weight = 100
+
+                  podAffinityTerm = {
+                    labelSelector = {
+                      matchLabels = local.monitoring_labels
+                    }
+                    topologyKey = "kubernetes.io/hostname"
                   }
-                  topologyKey = "kubernetes.io/hostname"
                 }
               ]
             }
