@@ -119,10 +119,11 @@ echo "================================="
 command -v yq >/dev/null 2>&1 || { echo "yq is required"; exit 1; }
 command -v jq >/dev/null 2>&1 || { echo "jq is required"; exit 1; }
 
-[[ -f "$USE_FILE" ]] || {
-  echo "Ingress file not found: $USE_FILE"
-  exit 1
-}
+if [[ ! -f "$USE_FILE" ]]; then
+  echo "⚠️  Ingress file not found: $USE_FILE"
+  echo "⚠️  Creating New Ingress Addition.."
+  touch "$USE_FILE"
+fi
 
 # -----------------------------------------
 # BOOTSTRAP TEMP STATE
