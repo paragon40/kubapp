@@ -21,6 +21,7 @@ TYPE="${SERVICE_TYPE:-}"
 VALUES_FILE="gitops/ingress/${ENV}/values.yaml"
 TMP_FILE="/tmp/ingress-values-${ENV}-$$.yaml"
 BACKEND_FILE="gitops/ingress/${ENV}/monitoring.yaml"
+ARGOCD_FILE="gitops/ingress/${ENV}/argocd.yaml"
 
 # -----------------------------------------
 # Normalize legacy usage
@@ -73,6 +74,12 @@ is_backend_service() {
   [[ "$BACKEND_SERVICE" != "null" ]]
 }
 
+is_argocd() {
+  [[ "$TYPE" == "Backend" ]] &&
+  [[ -n "$BACKEND_SERVICE" ]] &&
+  [[ "$BACKEND_SERVICE" == "argocd" ]]
+}
+
 echo "================================="
 echo "ACTION : $ACTION"
 echo "SERVICE: $SERVICE_NAME"
@@ -80,8 +87,13 @@ echo "SERVICE TYPE: $TYPE"
 echo "SERVICE PORT: $PORT"
 if is_backend_service; then
   echo "BACKEND SERVICE: $BACKEND_SERVICE"
-  USE_FILE="$BACKEND_FILE"
-  NS="monitoring"
+  if is_argocd; then
+    NS="argocd"
+    USE_FILE="$ARGOCD_FILE"
+  else
+    USE_FILE="$BACKEND_FILE"
+    NS="monitoring"
+  fi
 else
   USE_FILE="$VALUES_FILE"
   NS="$ENV"
