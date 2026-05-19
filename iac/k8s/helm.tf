@@ -347,7 +347,7 @@ resource "helm_release" "kube_prometheus_stack" {
 
         affinity = {
           podAntiAffinity = {
-            requiredDuringSchedulingIgnoredDuringExecution = [
+            preferredDuringSchedulingIgnoredDuringExecution = [
               {
                 labelSelector = {
                   matchLabels = local.monitoring_labels
@@ -382,7 +382,7 @@ resource "helm_release" "kube_prometheus_stack" {
 
           affinity = {
             podAntiAffinity = {
-              requiredDuringSchedulingIgnoredDuringExecution = [
+              preferredDuringSchedulingIgnoredDuringExecution = [
                 {
                   labelSelector = {
                     matchLabels = local.monitoring_labels
@@ -423,7 +423,7 @@ resource "helm_release" "kube_prometheus_stack" {
 
           affinity = {
             podAntiAffinity = {
-              requiredDuringSchedulingIgnoredDuringExecution = [
+              preferredDuringSchedulingIgnoredDuringExecution = [
                 {
                   labelSelector = {
                     matchLabels = local.monitoring_labels
