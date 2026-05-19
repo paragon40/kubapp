@@ -154,9 +154,6 @@ if [[ "$ACTION" == "add" ]]; then
   fi
 fi
 
-# Ensure namespace exists
-yq e -i '.namespace = (.namespace)' "$TMP_FILE"
-
 # Ensure services array exists
 yq e -i '.services = (.services // [])' "$TMP_FILE"
 
@@ -257,13 +254,11 @@ build_desired_service() {
   if is_backend_service; then
     jq -n \
       --arg name "$SERVICE_NAME" \
-      --arg ns "$NS" \
       --argjson port "$PORT" \
       --arg backend "$BACKEND_SERVICE" \
       '{
         name: $name,
         enabled: true,
-        namespace: $ns,
         port: $port,
         backend: {
           service: $backend
