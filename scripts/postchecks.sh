@@ -2,8 +2,7 @@
 set -euo pipefail
 
 ENV="${1:?ENV required}"
-DOMAIN="rundailytest.online"
-#"${2:?DOMAIN required}"
+DOMAIN="rundailytest"
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REG_DIR="$ROOT/gitops/registry/$ENV"
