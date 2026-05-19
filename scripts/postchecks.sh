@@ -72,7 +72,7 @@ synthetic_test() {
 ########################################
 for i in $(seq 1 $ATTEMPTS); do
   echo ""
-  echo "🔁 Stability iteration $i/$ATTEMPTS"
+  echo "Stability iteration $i/$ATTEMPTS"
   echo "----------------------------------"
 
   for svc in $SERVICES; do
@@ -110,7 +110,7 @@ for i in $(seq 1 $ATTEMPTS); do
     ##################################
     # CANARY TRAFFIC TEST
     ##################################
-    echo "🐤 Canary testing: $URL"
+    echo "Canary testing: $URL"
 
     PERCENT=$(check_http "$URL")
 
