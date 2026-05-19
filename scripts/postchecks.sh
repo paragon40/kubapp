@@ -75,7 +75,7 @@ for i in $(seq 1 $ATTEMPTS); do
   echo "----------------------------------"
 
   for svc in $SERVICES; do
-    APP="${svc}"
+    APP="${svc}-${ENV}"
     URL="https://$svc.$DOMAIN"
 
     echo ""
