@@ -16,3 +16,8 @@ output "fargate_role_arn" {
   description = "IAM role ARN for Fargate pods"
   value       = aws_iam_role.fargate.arn
 }
+
+output "sys_monitor_ec2_role_arn" {
+  description = "IAM role ARN for system monite pods"
+  value       = aws_iam_role.ec2_role.arn
+}

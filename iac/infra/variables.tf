@@ -30,12 +30,6 @@ variable "admin_arn" {
   sensitive = true
 }
 
-variable "sys_monitor_role_arn" {
-  description = "IAM role ARN used by the sys_monitor EC2 instance"
-  type        = string
-  default     = null
-}
-
 variable "kubernetes_v" {
   description = "Kubernetes version"
   type        = string

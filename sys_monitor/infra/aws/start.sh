@@ -179,9 +179,6 @@ echo "========================================"
 echo "All DONE"
 EOF
 
-# ============================================================
-# OUTPUT
-# ============================================================
 echo ""
 echo "========================================"
 echo "DEPLOYMENT COMPLETE"
@@ -190,10 +187,10 @@ echo ""
 echo "Access your services using EC2 Public IP:"
 echo ""
 echo "Grafana:"
-echo "  http://grafana.${DOMAIN}:3001"
+echo "  http://monitor.${DOMAIN}:3001"
 echo ""
 echo "Prometheus:"
-echo "  http://prom.${DOMAIN}:9090"
+echo "  http://monitor.${DOMAIN}:9090"
 echo ""
 echo "GitHub Exporter:"
 echo "  http://app.${DOMAIN}:3000"

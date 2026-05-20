@@ -4,8 +4,7 @@ data "aws_route53_zone" "main" {
 
 locals {
   subdomains = [
-    "grafana",
-    "prom",
+    "monitor",
     "app"
   ]
 }

@@ -8,7 +8,6 @@ cluster_name   = "kubapp"
 hosted_zone_id = "Z1031443294L16DYR25B4"
 admin_arn = "arn:aws:iam::198200019771:user/admin-codest"
 access_iam_arn = "arn:aws:iam::198200019771:role/GitHubTerraformRole-dev"
-sys_monitor_role_arn = "arn:aws:iam::198200019771:role/sys-monitor-ec2-role"
 env            = "dev"
 
 log_groups = {

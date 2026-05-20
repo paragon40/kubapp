@@ -8,17 +8,17 @@ output "ssh_command" {
 
 
 output "grafana_url" {
-  value = "http://grafana.${var.domain_name}:3001"
+  value = "http://monitor.${var.domain_name}:3001"
 }
 
 output "prometheus_url" {
-  value = "http://prom.${var.domain_name}:9090"
+  value = "http://monitor.${var.domain_name}:9090"
 }
 
-output "metrics_url" {
-  value = "http://metrics.${var.domain_name}:3000/metrics"
+output "github_metrics_url" {
+  value = "http://app.${var.domain_name}:3000/metrics"
 }
 
 output "github_url" {
-  value = "http://github.${var.domain_name}:3000"
+  value = "http://app.${var.domain_name}:3000"
 }
