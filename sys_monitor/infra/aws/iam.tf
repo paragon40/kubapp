@@ -66,19 +66,3 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 }
 
 
-# Eks Access
-resource "aws_eks_access_entry" "sys_monitor" {
-  cluster_name  = "kubapp-dev"
-  principal_arn = aws_iam_role.ec2_role.arn
-  type          = "STANDARD"
-}
-
-resource "aws_eks_access_policy_association" "sys_monitor_view" {
-  cluster_name  = "kubapp-dev"
-  principal_arn = aws_iam_role.ec2_role.arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
-
-  access_scope {
-    type = "cluster"
-  }
-}

@@ -74,6 +74,9 @@ services:
     container_name: gitops-exporter
     ports:
       - "9105:9105"
+    volumes:
+      - /home/ubuntu/.kube:/root/.kube:ro
+      - /home/ubuntu/.aws:/root/.aws:ro
     restart: unless-stopped
 
 volumes:

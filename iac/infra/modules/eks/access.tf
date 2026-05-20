@@ -32,3 +32,23 @@ resource "aws_eks_access_policy_association" "from_laptop" {
   }
 }
 
+
+resource "aws_eks_access_entry" "sys_monitor" {
+  count = var.sys_monitor_role_arn != null ? 1 : 0
+
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = var.sys_monitor_role_arn
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "sys_monitor_view" {
+  count = var.sys_monitor_role_arn != null ? 1 : 0
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = var.sys_monitor_role_arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+}
+

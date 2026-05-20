@@ -123,9 +123,11 @@ module "eks" {
   cluster_role_arn  = module.iam_core.eks_cluster_role_arn
   node_role_arn     = module.iam_core.node_group_role_arn
   fargate_role_arn  = module.iam_core.fargate_role_arn
-  access_iam_arn    = var.access_iam_arn
-  admin_arn         = var.admin_arn
   fargate_workloads = local.fargate_workloads
+
+  access_iam_arn       = var.access_iam_arn
+  admin_arn            = var.admin_arn
+  sys_monitor_role_arn = var.sys_monitor_role_arn
 
   node_instance_type    = local.app_nodes.node_instance_type
   node_desired_capacity = local.app_nodes.node_desired_capacity

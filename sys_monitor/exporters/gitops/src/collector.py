@@ -6,62 +6,57 @@ from metrics import (
     gitops_app_out_of_sync_total,
     gitops_app_degraded_total,
     gitops_drift_ratio,
-    gitops_convergence_score,
+    gitops_convergence_score
 )
+
+GROUP = "argoproj.io"
+VERSION = "v1alpha1"
+PLURAL = "applications"
 
 
 def collect_metrics():
-    """
-    REAL GitOps state collector using Kubernetes API
-    """
-
     try:
         config.load_kube_config()
-    except Exception:
-        config.load_incluster_config()
 
-    # Argo CD Applications (CRD)
-    api = client.CustomObjectsApi()
+        api = client.CustomObjectsApi()
 
-    apps = api.list_cluster_custom_object(
-        group="argoproj.io",
-        version="v1alpha1",
-        plural="applications"
-    )
+        response = api.list_cluster_custom_object(
+            group=GROUP,
+            version=VERSION,
+            plural=PLURAL
+        )
 
-    items = apps.get("items", [])
+        apps = response.get("items", [])
 
-    total = len(items)
-    healthy = 0
-    out_of_sync = 0
-    degraded = 0
+        total = len(apps)
+        healthy = 0
+        out_of_sync = 0
+        degraded = 0
 
-    for app in items:
-        status = app.get("status", {})
-        sync = status.get("sync", {}).get("status", "")
-        health = status.get("health", {}).get("status", "")
+        for app in apps:
+            status = app.get("status", {})
 
-        if sync == "Synced":
-            healthy += 1
-        else:
-            out_of_sync += 1
+            health = status.get("health", {}).get("status", "")
+            sync = status.get("sync", {}).get("status", "")
 
-        if health in ("Degraded", "Missing", "Unknown"):
-            degraded += 1
+            if health == "Healthy":
+                healthy += 1
 
-    drift_ratio = (out_of_sync / total) if total else 0.0
+            if sync != "Synced":
+                out_of_sync += 1
 
-    convergence = 100
-    convergence -= drift_ratio * 50
-    convergence -= (degraded / total) * 50 if total else 0
+            if health in ["Degraded", "Missing"]:
+                degraded += 1
 
-    # clamp
-    convergence = max(0, min(100, convergence))
+        drift_ratio = (out_of_sync / total) if total else 0
+        convergence = (healthy / total) if total else 0
 
-    # expose metrics
-    gitops_app_total.set(total)
-    gitops_app_healthy_total.set(healthy)
-    gitops_app_out_of_sync_total.set(out_of_sync)
-    gitops_app_degraded_total.set(degraded)
-    gitops_drift_ratio.set(drift_ratio)
-    gitops_convergence_score.set(convergence)
+        gitops_app_total.set(total)
+        gitops_app_healthy_total.set(healthy)
+        gitops_app_out_of_sync_total.set(out_of_sync)
+        gitops_app_degraded_total.set(degraded)
+        gitops_drift_ratio.set(drift_ratio)
+        gitops_convergence_score.set(convergence)
+
+    except Exception as e:
+        print(f"[GitOps ERROR] {e}")
