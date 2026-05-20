@@ -122,7 +122,8 @@ resource "helm_release" "argocd" {
 
       configs = {
         params = {
-          "server.url" = "https://argocd.${local.main_domain}"
+          "server.url"      = "https://argocd.${local.main_domain}"
+          "server.insecure" = "true"
         }
       }
     })
