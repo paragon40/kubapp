@@ -124,10 +124,26 @@ resource "helm_release" "argocd" {
         cm = {
           "accounts.ci-user" = "apiKey"
           "accounts.kubapp"  = "login,apiKey"
-          "server.url"       = "https://argocd.${local.main_domain}"
+        }
+
+        rbac = {
+          "policy.csv" = <<-EOT
+               # For CI role
+            p, role:ci, applications, get, */*, allow
+            p, role:ci, applications, sync, */*, allow
+            p, role:ci, applications, action/*, */*, allow
+            g, ci-user, role:ci
+
+            # Admin UI role
+            p, role:admin-ui, applications, *, */*, allow
+            p, role:admin-ui, projects, *, *, allow
+            p, role:admin-ui, clusters, *, *, allow
+            g, kubapp, role:admin-ui
+          EOT
         }
 
         params = {
+          "server.url"      = "https://argocd.${local.main_domain}"
           "server.insecure" = "true"
         }
       }
