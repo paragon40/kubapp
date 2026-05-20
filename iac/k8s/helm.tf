@@ -119,6 +119,12 @@ resource "helm_release" "argocd" {
           type = "ClusterIP"
         }
       }
+
+      configs = {
+        params = {
+          "server.url" = "https://argocd.${local.main_domain}"
+        }
+      }
     })
   ]
 

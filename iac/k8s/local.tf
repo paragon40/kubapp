@@ -18,6 +18,7 @@ locals {
   lb_controller_role_arn = data.terraform_remote_state.infra.outputs.lb_controller_role_arn
   external_dns_role_arn  = data.terraform_remote_state.infra.outputs.external_dns_role_arn
   domain                 = data.terraform_remote_state.infra.outputs.domain
+  main_domain            = data.terraform_remote_state.infra.outputs.main_domain
   cert_arn               = data.terraform_remote_state.infra.outputs.cert_arn
   fluentbit_role_arn     = data.terraform_remote_state.infra.outputs.fluentbit_role_arn
   efs_role_arn           = data.terraform_remote_state.infra.outputs.efs_role_arn

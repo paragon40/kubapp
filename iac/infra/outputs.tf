@@ -87,6 +87,10 @@ output "full_domain" {
   value = local.full_domain
 }
 
+output "main_domain" {
+  value = local.main_domain
+}
+
 output "main_cert_arn" {
   value = module.acm.acm_cert_arn
 }
