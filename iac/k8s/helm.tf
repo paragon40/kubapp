@@ -123,6 +123,7 @@ resource "helm_release" "argocd" {
       configs = {
         cm = {
           "accounts.ci-user" = "apiKey"
+          "accounts.kubapp"  = "login,apiKey"
           "server.url"       = "https://argocd.${local.main_domain}"
         }
 
