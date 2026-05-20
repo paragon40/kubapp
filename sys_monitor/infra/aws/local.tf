@@ -1,1 +1,0 @@
-sys_monitor_ec2_role_arn

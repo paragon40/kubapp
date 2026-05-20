@@ -8,6 +8,7 @@ DOMAIN="${DOMAIN:-rundailytest.online}"
 ENV="${ENV:-dev}"
 ING_FILE="${INGRESS_FILE:-gitops/ingress/$ENV/values.yaml}"
 MON_FILE="${MON_FILE:-gitops/ingress/$ENV/monitoring.yaml}"
+ARGO_FILE="${MON_FILE:-gitops/ingress/$ENV/argocd.yaml}"
 AWS_REGION="${AWS_REGION:-$(aws configure get region)}"
 CERT_ARN="${CERT_ARN:-}"
 
@@ -31,10 +32,12 @@ if [[ -z "$CERT_ARN" ]]; then
   exit 1
 fi
 
-if [[ ! -f "$ING_FILE" ]]; then
-  echo "❌ Ingress file not found: $ING_FILE"
-  exit 1
-fi
+for each in "$ING_FILE" "$MON_FILE" "$ARGO_FILE"; do
+  if [[ ! -f "$each" ]]; then
+    echo "❌ Ingress File not found: $each"
+    exit 1
+  fi
+done
 
 # -------------------------------
 # CERT VALIDATION (HARD GUARANTEE)
@@ -160,7 +163,7 @@ if [[ "$ZONE_EXISTS" == false ]]; then
     --output text
 
   echo ""
-  echo "👉 Add these to Namecheap DNS"
+  echo "Add these to Namecheap DNS"
   echo "===================================="
 fi
 
@@ -170,10 +173,12 @@ fi
 
 APP_SERVICES=$(yq e '.services[].name' "$ING_FILE" 2>/dev/null || true)
 MON_SERVICES=$(yq e '.services[].name' "$MON_FILE" 2>/dev/null || true)
+ARGO_SERVICES=$(yq e '.services[].name' "$ARGO_FILE" 2>/dev/null || true)
 
 ALL_SERVICES=$(printf "%s\n%s\n%s\n" \
   "$APP_SERVICES" \
   "$MON_SERVICES" \
+  "$ARGO_SERVICES" \
   | grep -v '^$' \
   | sort -u)
 
