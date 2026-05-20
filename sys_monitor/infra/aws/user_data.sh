@@ -31,6 +31,8 @@ usermod -aG docker ubuntu
 # Project directory
 mkdir -p /opt/sys_monitor
 chown -R ubuntu:ubuntu /opt/sys_monitor
+mkdir -p /home/ubuntu/.kube
+chown -R ubuntu:ubuntu /home/ubuntu/.kube
 
 aws --version
 kubectl version --client

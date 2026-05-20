@@ -141,11 +141,16 @@ fi
 echo "$CALLER_ID"
 
 # Update kubeconfig for EKS cluster
+export KUBECONFIG=/home/ubuntu/.kube/config
+mkdir -p $HOME/.kube
+chown -R ubuntu:ubuntu $HOME/.kube
+
 echo
 echo "[2/4] Updating kubeconfig for EKS cluster 'kubapp-dev'..."
 if ! aws eks update-kubeconfig \
   --region us-east-1 \
-  --name kubapp-dev; then
+  --name kubapp-dev  \
+  --kubeconfig /home/ubuntu/.kube/config; then
   echo "ERROR: Failed to update kubeconfig."
   exit 1
 fi
