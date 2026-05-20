@@ -90,3 +90,11 @@ output "full_domain" {
 output "main_cert_arn" {
   value = module.acm.acm_cert_arn
 }
+
+output "sys_monitor_ec2_role_arn" {
+  value = module.iam_core.sys_monitor_ec2_role_arn
+}
+
+output "sys_monitor_instance_profile_name" {
+  value = module.iam_core.sys_monitor_instance_profile_name
+}

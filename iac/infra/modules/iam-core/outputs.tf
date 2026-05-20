@@ -21,3 +21,7 @@ output "sys_monitor_ec2_role_arn" {
   description = "IAM role ARN for system monite pods"
   value       = aws_iam_role.ec2_role.arn
 }
+
+output "sys_monitor_instance_profile_name" {
+  value = aws_iam_instance_profile.ec2_profile.name
+}

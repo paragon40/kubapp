@@ -10,6 +10,14 @@ variable "project_name" {
   default     = "kubapp-sys-monitor"
 }
 
+variable "kubapp_bucket" {
+  type = string
+}
+
+variable "kubapp_infra_key" {
+  type = string
+}
+
 variable "domain_name" {
   type        = string
   default = "rundailytest.site"
