@@ -322,9 +322,8 @@ resource "helm_release" "kube_prometheus_stack" {
   chart      = "kube-prometheus-stack"
   version    = "58.0.0"
 
-  timeout         = 2000
-  wait            = false
-  atomic          = true
+  timeout         = 1800
+  wait            = true
   cleanup_on_fail = true
 
   values = [

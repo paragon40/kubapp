@@ -1,49 +1,86 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+########################################
+# INPUT VALIDATION
+########################################
 ENV="${1:?ENV required}"
 DOMAIN="${2:?DOMAIN required}"
 
+: "${ARGOCD_SERVER:?ARGOCD_SERVER not set}"
+: "${ARGOCD_AUTH_TOKEN:?ARGOCD_AUTH_TOKEN not set}"
+
+########################################
+# PATHS
+########################################
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REG_DIR="$ROOT/gitops/registry/$ENV"
 
+if [[ ! -d "$REG_DIR" ]]; then
+  echo "❌ Registry directory not found: $REG_DIR"
+  exit 1
+fi
+
+########################################
+# SETTINGS
+########################################
 ATTEMPTS=3
 SLEEP=20
 CANARY_REQUESTS=10
 SUCCESS_THRESHOLD=90
 
+########################################
+# HEADER
+########################################
 echo "=================================="
-echo " ADVANCED RUNTIME VERIFICATION (STABLE)"
+echo " ADVANCED RUNTIME VERIFICATION"
 echo "ENV: $ENV"
 echo "DOMAIN: $DOMAIN"
+echo "ARGOCD_SERVER: $ARGOCD_SERVER"
 echo "=================================="
 
-SERVICES=$(find "$REG_DIR" -name "*.json" -exec jq -r '.service' {} \;)
+########################################
+# SERVICE DISCOVERY
+########################################
+mapfile -t SERVICES < <(
+  find "$REG_DIR" -name "*.json" \
+    -exec jq -r '.service' {} \; \
+    | sort -u
+)
+
+if [[ ${#SERVICES[@]} -eq 0 ]]; then
+  echo "❌ No services found in $REG_DIR"
+  exit 1
+fi
 
 declare -A RESULT
 
 ########################################
-# SAFE HTTP CHECK
+# HTTP CHECK
 ########################################
 check_http() {
   local url="$1"
+  local success=0
+  local total=0
+  local code
 
   [[ -z "$url" ]] && echo 0 && return
 
-  local success=0
-  local total=0
-
   for _ in $(seq 1 "$CANARY_REQUESTS"); do
-    code=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" "$url" || echo "000")
-    [[ "$code" == "200" ]] && success=$((success + 1))
-    total=$((total + 1))
+    code=$(curl -ksS --max-time 5 \
+      -o /dev/null \
+      -w "%{http_code}" \
+      "$url" || echo "000")
+
+    [[ "$code" == "200" ]] && ((success++))
+    ((total++))
   done
 
   echo $(( success * 100 / total ))
 }
 
 ########################################
-# ROBUST POD HEALTH CHECK
+# POD HEALTH
 ########################################
 check_pods() {
   local svc="$1"
@@ -51,90 +88,147 @@ check_pods() {
   kubectl get pods -n "$ENV" --no-headers \
     | grep "$svc" \
     | awk '{print $3}' \
-    | grep -Ev "Running|Completed" \
+    | grep -Ev 'Running|Completed' \
     || true
 }
 
 ########################################
-# SYNTHETIC TEST (SAFE DEFAULT)
+# SYNTHETIC TEST
 ########################################
 synthetic_test() {
   local svc="$1"
   local url="https://${svc}.${DOMAIN}/health"
+  local code
 
-  curl -s --max-time 5 -o /dev/null -w "%{http_code}" "$url" | grep -q "200"
+  code=$(curl -ksS --max-time 5 \
+    -o /dev/null \
+    -w "%{http_code}" \
+    "$url" || echo "000")
+
+  [[ "$code" == "200" ]]
 }
 
 ########################################
-# ARGOCD WAIT WITH RETRY
+# ARGOCD WAIT
 ########################################
 wait_argocd() {
   local app="$1"
+  local attempt
 
-  for i in {1..3}; do
-    if argocd app wait "$app" --sync --health --timeout 180; then
+  for attempt in 1 2 3; do
+    echo "   ArgoCD attempt $attempt/3"
+
+    if argocd app wait "$app" \
+      --server "$ARGOCD_SERVER" \
+      --auth-token "$ARGOCD_AUTH_TOKEN" \
+      --grpc-web \
+      --sync \
+      --health \
+      --operation \
+      --timeout 180; then
       return 0
     fi
 
-    echo "⚠️ ArgoCD retry $i/3 for $app"
-    sleep 10
+    if [[ "$attempt" -lt 3 ]]; then
+      sleep 10
+    fi
   done
 
   return 1
 }
 
 ########################################
-# SERVICE CHECK
+# ROLLOUT CHECK
+########################################
+check_rollout() {
+  local svc="$1"
+
+  if kubectl get deployment "$svc" -n "$ENV" >/dev/null 2>&1; then
+    kubectl rollout status deployment/"$svc" \
+      -n "$ENV" \
+      --timeout=120s
+    return
+  fi
+
+  if kubectl get statefulset "$svc" -n "$ENV" >/dev/null 2>&1; then
+    kubectl rollout status statefulset/"$svc" \
+      -n "$ENV" \
+      --timeout=120s
+    return
+  fi
+
+  echo "⚠️ No Deployment or StatefulSet named $svc found"
+}
+
+########################################
+# SERVICE VERIFICATION
 ########################################
 verify_service() {
   local svc="$1"
   local app="${svc}-${ENV}"
   local url="https://${svc}.${DOMAIN}"
+  local bad
+  local percent
 
-  echo ""
+  echo
   echo "=================================="
   echo " SERVICE: $svc"
   echo "=================================="
 
   RESULT["$svc"]="PASS"
 
-  echo "[1/4] ArgoCD sync check..."
+  ##################################
+  # 1. ArgoCD
+  ##################################
+  echo "[1/5] ArgoCD sync check..."
   if ! wait_argocd "$app"; then
-    echo "❌ ArgoCD failed"
+    echo "❌ ArgoCD verification failed"
     RESULT["$svc"]="FAIL"
     return
   fi
 
-  echo "[2/4] Kubernetes rollout..."
-  if ! kubectl rollout status deploy/"$svc" -n "$ENV" --timeout=120s; then
+  ##################################
+  # 2. Rollout
+  ##################################
+  echo "[2/5] Kubernetes rollout..."
+  if ! check_rollout "$svc"; then
     echo "❌ Rollout failed"
     RESULT["$svc"]="FAIL"
     return
   fi
 
-  echo "[3/4] Pod health..."
-  BAD=$(check_pods "$svc")
+  ##################################
+  # 3. Pod Health
+  ##################################
+  echo "[3/5] Pod health..."
+  bad=$(check_pods "$svc")
 
-  if [[ -n "$BAD" ]]; then
-    echo "❌ Unhealthy pods:"
-    echo "$BAD"
+  if [[ -n "$bad" ]]; then
+    echo "❌ Unhealthy pods detected:"
+    echo "$bad"
     RESULT["$svc"]="FAIL"
     return
   fi
 
-  echo "[4/5] Canary check..."
-  PERCENT=$(check_http "$url")
-  echo "Success rate: $PERCENT%"
+  ##################################
+  # 4. Canary
+  ##################################
+  echo "[4/5] Canary HTTP check..."
+  percent=$(check_http "$url")
+  echo "Success rate: ${percent}%"
 
-  if (( PERCENT < SUCCESS_THRESHOLD )); then
-    echo "❌ Canary failed"
+  if (( percent < SUCCESS_THRESHOLD )); then
+    echo "❌ Canary threshold failed"
     RESULT["$svc"]="FAIL"
     return
   fi
 
-  echo "[5/5] Synthetic test..."
+  ##################################
+  # 5. Synthetic
+  ##################################
+  echo "[5/5] Synthetic health check..."
   if ! synthetic_test "$svc"; then
-    echo "❌ Synthetic failed"
+    echo "❌ Synthetic test failed"
     RESULT["$svc"]="FAIL"
     return
   fi
@@ -145,41 +239,44 @@ verify_service() {
 ########################################
 # MAIN LOOP
 ########################################
-for i in $(seq 1 "$ATTEMPTS"); do
-  echo ""
+for iteration in $(seq 1 "$ATTEMPTS"); do
+  echo
   echo "=================================="
-  echo " Iteration $i/$ATTEMPTS"
+  echo " Stability iteration $iteration/$ATTEMPTS"
   echo "=================================="
 
-  for svc in $SERVICES; do
+  for svc in "${SERVICES[@]}"; do
     verify_service "$svc"
   done
 
-  [[ $i -lt $ATTEMPTS ]] && sleep "$SLEEP"
+  if [[ "$iteration" -lt "$ATTEMPTS" ]]; then
+    sleep "$SLEEP"
+  fi
 done
 
 ########################################
-# REPORT
+# FINAL REPORT
 ########################################
-echo ""
+echo
 echo "=================================="
-echo " FINAL REPORT"
+echo "FINAL VERIFICATION REPORT"
 echo "=================================="
 
 FAILURES=0
 
-for svc in $SERVICES; do
+for svc in "${SERVICES[@]}"; do
   status="${RESULT[$svc]:-UNKNOWN}"
   echo "$svc => $status"
 
-  [[ "$status" != "PASS" ]] && ((FAILURES++))
+  if [[ "$status" != "PASS" ]]; then
+    ((FAILURES++))
+  fi
 done
 
-echo ""
-
-if [[ "$FAILURES" -gt 0 ]]; then
-  echo "❌ SYSTEM NOT STABLE ($FAILURES failed)"
+echo
+if (( FAILURES > 0 )); then
+  echo "❌ SYSTEM NOT STABLE ($FAILURES services failed)"
   exit 1
 else
-  echo "✅ SYSTEM VERIFIED"
+  echo "✅ SYSTEM VERIFIED (ALL SERVICES HEALTHY)"
 fi
