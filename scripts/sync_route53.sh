@@ -8,7 +8,7 @@ DOMAIN="${DOMAIN:-rundailytest.online}"
 ENV="${ENV:-dev}"
 ING_FILE="${INGRESS_FILE:-gitops/ingress/$ENV/values.yaml}"
 MON_FILE="${MON_FILE:-gitops/ingress/$ENV/monitoring.yaml}"
-ARGO_FILE="${MON_FILE:-gitops/ingress/$ENV/argocd.yaml}"
+ARGO_FILE="${ARGO_FILE:-gitops/ingress/$ENV/argocd.yaml}"
 AWS_REGION="${AWS_REGION:-$(aws configure get region)}"
 CERT_ARN="${CERT_ARN:-}"
 
@@ -209,7 +209,13 @@ aws route53 change-resource-record-sets \
 # -------------------------------
 # SUBDOMAINS
 # -------------------------------
+echo "======================================"
 echo "Updating subdomains..."
+echo "Total Services Found: ${#SERVICES[@]}"
+for svc in "${SERVICES[@]}"; do
+  echo "$svc"
+done
+echo "======================================"
 
 for svc in "${SERVICES[@]}"; do
   FQDN="$svc.$DOMAIN"
