@@ -11,7 +11,9 @@ metadata:
     alb.ingress.kubernetes.io/healthcheck-path: {{ .Values.ingress.annotations.healthcheckPath }}
     alb.ingress.kubernetes.io/group.name: {{ .Values.ingress.annotations.group }}
     alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn }}
-    alb.ingress.kubernetes.io/ssl-redirect:  "{{ if eq .Values.namespace "argocd" }}false{{ else }}443{{ end }}"
+    {{- if ne .Values.namespace "argocd" }}
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    {{- end }}
 
 spec:
   ingressClassName: {{ .Values.ingress.className }}
