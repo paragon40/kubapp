@@ -132,6 +132,7 @@ resource "helm_release" "argocd" {
             p, role:ci, applications, get, */*, allow
             p, role:ci, applications, sync, */*, allow
             p, role:ci, applications, action/*, */*, allow
+            p, role:ci, applications, *, */*, allow
             g, ci-user, role:ci
 
             # Admin UI role
