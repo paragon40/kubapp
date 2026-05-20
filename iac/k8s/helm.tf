@@ -121,8 +121,12 @@ resource "helm_release" "argocd" {
       }
 
       configs = {
+        cm = {
+          "accounts.ci-user" = "apiKey"
+          "server.url"       = "https://argocd.${local.main_domain}"
+        }
+
         params = {
-          "server.url"      = "https://argocd.${local.main_domain}"
           "server.insecure" = "true"
         }
       }

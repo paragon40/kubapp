@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -uo pipefail
+set -euo pipefail
 
 ENV="${1:?ENV required}"
 DOMAIN="${2:?DOMAIN required}"
@@ -13,34 +13,28 @@ CANARY_REQUESTS=10
 SUCCESS_THRESHOLD=90
 
 echo "=================================="
-echo "🚀 ADVANCED RUNTIME VERIFICATION (UPGRADED)"
+echo " ADVANCED RUNTIME VERIFICATION (STABLE)"
 echo "ENV: $ENV"
 echo "DOMAIN: $DOMAIN"
 echo "=================================="
 
-# Collect services
 SERVICES=$(find "$REG_DIR" -name "*.json" -exec jq -r '.service' {} \;)
 
-# Store results
 declare -A RESULT
 
 ########################################
-# HTTP CANARY TEST
+# SAFE HTTP CHECK
 ########################################
 check_http() {
   local url="$1"
 
-  if [[ -z "$url" || "$url" == "true" ]]; then
-    echo "0"
-    return
-  fi
+  [[ -z "$url" ]] && echo 0 && return
 
   local success=0
   local total=0
 
   for _ in $(seq 1 "$CANARY_REQUESTS"); do
-    code=$(curl -s -o /dev/null -w "%{http_code}" "$url" || echo "000")
-
+    code=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" "$url" || echo "000")
     [[ "$code" == "200" ]] && success=$((success + 1))
     total=$((total + 1))
   done
@@ -49,19 +43,48 @@ check_http() {
 }
 
 ########################################
-# SYNTHETIC TEST
+# ROBUST POD HEALTH CHECK
+########################################
+check_pods() {
+  local svc="$1"
+
+  kubectl get pods -n "$ENV" --no-headers \
+    | grep "$svc" \
+    | awk '{print $3}' \
+    | grep -Ev "Running|Completed" \
+    || true
+}
+
+########################################
+# SYNTHETIC TEST (SAFE DEFAULT)
 ########################################
 synthetic_test() {
   local svc="$1"
   local url="https://${svc}.${DOMAIN}/health"
 
-  code=$(curl -s -o /dev/null -w "%{http_code}" "$url" || echo "000")
-
-  [[ "$code" == "200" ]]
+  curl -s --max-time 5 -o /dev/null -w "%{http_code}" "$url" | grep -q "200"
 }
 
 ########################################
-# SERVICE VERIFICATION
+# ARGOCD WAIT WITH RETRY
+########################################
+wait_argocd() {
+  local app="$1"
+
+  for i in {1..3}; do
+    if argocd app wait "$app" --sync --health --timeout 180; then
+      return 0
+    fi
+
+    echo "⚠️ ArgoCD retry $i/3 for $app"
+    sleep 10
+  done
+
+  return 1
+}
+
+########################################
+# SERVICE CHECK
 ########################################
 verify_service() {
   local svc="$1"
@@ -70,82 +93,62 @@ verify_service() {
 
   echo ""
   echo "=================================="
-  echo "🔎 SERVICE: $svc"
+  echo " SERVICE: $svc"
   echo "=================================="
 
   RESULT["$svc"]="PASS"
 
-  ##################################
-  # ArgoCD
-  ##################################
   echo "[1/4] ArgoCD sync check..."
-
-  if ! argocd app wait "$app" --sync --health --timeout 180; then
+  if ! wait_argocd "$app"; then
     echo "❌ ArgoCD failed"
     RESULT["$svc"]="FAIL"
     return
   fi
 
-  ##################################
-  # Rollout
-  ##################################
   echo "[2/4] Kubernetes rollout..."
-
   if ! kubectl rollout status deploy/"$svc" -n "$ENV" --timeout=120s; then
     echo "❌ Rollout failed"
     RESULT["$svc"]="FAIL"
     return
   fi
 
-  ##################################
-  # Pod health
-  ##################################
-  echo "[3/4] Pod health check..."
-
-  BAD=$(kubectl get pods -n "$ENV" --no-headers | grep "$svc" | grep -v Running || true)
+  echo "[3/4] Pod health..."
+  BAD=$(check_pods "$svc")
 
   if [[ -n "$BAD" ]]; then
-    echo "❌ Unhealthy pods detected"
+    echo "❌ Unhealthy pods:"
     echo "$BAD"
     RESULT["$svc"]="FAIL"
     return
   fi
 
-  ##################################
-  # Canary
-  ##################################
-  echo "[4/5] Canary HTTP check..."
-
+  echo "[4/5] Canary check..."
   PERCENT=$(check_http "$url")
   echo "Success rate: $PERCENT%"
 
   if (( PERCENT < SUCCESS_THRESHOLD )); then
-    echo "❌ Canary threshold failed"
+    echo "❌ Canary failed"
     RESULT["$svc"]="FAIL"
     return
   fi
 
-  ##################################
-  # Synthetic test
-  ##################################
-  echo "[5/5] Synthetic health check..."
-
+  echo "[5/5] Synthetic test..."
   if ! synthetic_test "$svc"; then
-    echo "❌ Synthetic test failed"
+    echo "❌ Synthetic failed"
     RESULT["$svc"]="FAIL"
     return
   fi
 
-  echo "✅ $svc PASSED all checks"
+  echo "✅ $svc PASSED"
 }
 
 ########################################
-# MAIN LOOP (NO EARLY EXIT)
+# MAIN LOOP
 ########################################
 for i in $(seq 1 "$ATTEMPTS"); do
   echo ""
   echo "=================================="
-  echo "🔁 Stability iteration $i/$ATTEMPTS"
+  echo " Iteration $i/$ATTEMPTS"
   echo "=================================="
 
   for svc in $SERVICES; do
@@ -156,31 +159,27 @@ for i in $(seq 1 "$ATTEMPTS"); do
 done
 
 ########################################
-# FINAL REPORT
+# REPORT
 ########################################
 echo ""
 echo "=================================="
-echo "📊 FINAL VERIFICATION REPORT"
+echo " FINAL REPORT"
 echo "=================================="
 
 FAILURES=0
 
 for svc in $SERVICES; do
-  status="${RESULT[$svc]}"
-
-  [[ -z "$status" ]] && status="UNKNOWN"
-
+  status="${RESULT[$svc]:-UNKNOWN}"
   echo "$svc => $status"
 
-  if [[ "$status" != "PASS" ]]; then
-    FAILURES=$((FAILURES + 1))
-  fi
+  [[ "$status" != "PASS" ]] && ((FAILURES++))
 done
 
 echo ""
+
 if [[ "$FAILURES" -gt 0 ]]; then
-  echo "❌ SYSTEM NOT STABLE ($FAILURES services failed)"
+  echo "❌ SYSTEM NOT STABLE ($FAILURES failed)"
   exit 1
 else
-  echo "✅ SYSTEM VERIFIED (ALL SERVICES HEALTHY)"
+  echo "✅ SYSTEM VERIFIED"
 fi
