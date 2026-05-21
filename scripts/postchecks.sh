@@ -11,18 +11,12 @@ DOMAIN="${2:?DOMAIN required}"
 : "${ARGOCD_AUTH_TOKEN:?ARGOCD_AUTH_TOKEN not set}"
 
 ########################################
-# OPTIONAL CONFIG (override via env if needed)
+# OPTIONAL CONFIG
 ########################################
 SUCCESS_THRESHOLD="${SUCCESS_THRESHOLD:-90}"
 ATTEMPTS="${ATTEMPTS:-3}"
 SLEEP="${SLEEP:-20}"
 CANARY_REQUESTS="${CANARY_REQUESTS:-10}"
-
-# default health paths (IMPORTANT FIX)
-declare -A HEALTH_PATHS=(
-  [default]="/health"
-  [urlshortener]="/api/health"
-)
 
 ########################################
 # PATHS
@@ -43,7 +37,7 @@ echo "ARGOCD_SERVER: $ARGOCD_SERVER"
 echo "=================================="
 
 ########################################
-# SERVICE DISCOVERY
+# SERVICE DISCOVERY (SOURCE OF TRUTH)
 ########################################
 mapfile -t SERVICES < <(
   find "$REG_DIR" -name "*.json" -exec jq -r '.service' {} \; | sort -u
@@ -58,15 +52,34 @@ declare -A RESULT
 declare -A FAIL_REASON
 
 ########################################
-# HELPERS
+# REGISTRY LOOKUP
 ########################################
+get_service_file() {
+  local svc="$1"
+
+  while IFS= read -r file; do
+    if jq -e --arg svc "$svc" '.service == $svc' "$file" >/dev/null 2>&1; then
+      echo "$file"
+      return 0
+    fi
+  done < <(find "$REG_DIR" -name "*.json")
+}
+
 get_health_path() {
   local svc="$1"
-  echo "${HEALTH_PATHS[$svc]:-${HEALTH_PATHS[default]}}"
+  local file path
+
+  file="$(get_service_file "$svc")"
+
+  [[ -n "$file" ]] || { echo "/health"; return; }
+
+  path="$(jq -r '.healthPath // empty' "$file")"
+
+  [[ -n "$path" && "$path" != "null" ]] && echo "$path" || echo "/health"
 }
 
 ########################################
-# HTTP CHECK (CANARY)
+# HTTP CANARY CHECK
 ########################################
 check_http() {
   local url="$1"
@@ -85,7 +98,7 @@ check_http() {
 }
 
 ########################################
-# POD HEALTH
+# POD HEALTH CHECK
 ########################################
 check_pods() {
   local svc="$1"
@@ -98,21 +111,22 @@ check_pods() {
 }
 
 ########################################
-# SYNTHETIC TEST (FIXED)
+# SYNTHETIC HEALTH CHECK
 ########################################
 synthetic_test() {
   local svc="$1"
-  local path
-  path="$(get_health_path "$svc")"
+  local path url code
 
-  local url="https://${svc}.${DOMAIN}${path}"
+  path="$(get_health_path "$svc")"
+  url="https://${svc}.${DOMAIN}${path}"
 
   code=$(curl -ksS --max-time 5 -o /dev/null -w "%{http_code}" "$url" || echo "000")
+
   [[ "$code" == "200" ]]
 }
 
 ########################################
-# ARGOCD WAIT (ROBUST)
+# ARGOCD WAIT
 ########################################
 wait_argocd() {
   local app="$1"
@@ -233,11 +247,11 @@ for i in $(seq 1 "$ATTEMPTS"); do
     verify_service "$svc"
   done
 
-  [[ $i -lt $ATTEMPTS ]] && sleep "$SLEEP"
+  [[ $i -lt "$ATTEMPTS" ]] && sleep "$SLEEP"
 done
 
 ########################################
-# FINAL REPORT (FIXED + GROUPED)
+# FINAL REPORT
 ########################################
 echo
 echo "=================================="
