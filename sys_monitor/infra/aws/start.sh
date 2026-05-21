@@ -85,6 +85,15 @@ set -euo pipefail
 
 cd /opt/sys_monitor
 
+export KUBECONFIG=/home/ubuntu/.kube/config
+mkdir -p /home/ubuntu/.kube
+chown -R ubuntu:ubuntu $HOME/.kube
+
+aws eks update-kubeconfig \
+  --region us-east-1 \
+  --name kubapp-dev \
+  --kubeconfig /home/ubuntu/.kube/config
+
 echo "==> Starting Docker stack"
 docker compose down -v || true
 docker compose up -d --build
@@ -139,11 +148,6 @@ if [[ -z "$CALLER_ID" ]]; then
 fi
 
 echo "$CALLER_ID"
-
-# Update kubeconfig for EKS cluster
-export KUBECONFIG=/home/ubuntu/.kube/config
-mkdir -p $HOME/.kube
-chown -R ubuntu:ubuntu $HOME/.kube
 
 echo
 echo "[2/4] Updating kubeconfig for EKS cluster 'kubapp-dev'..."

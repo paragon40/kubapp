@@ -32,8 +32,6 @@ def collect_metrics():
         # =========================================================
         # ArgoCD applications check
         # =========================================================
-        api = client.CustomObjectsApi()
-
         response = api.list_cluster_custom_object(
             group=GROUP,
             version=VERSION,

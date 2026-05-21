@@ -6,11 +6,14 @@ def get_k8s_client():
 
     try:
         config.load_kube_config(config_file=kubeconfig)
-        print("[GitOps] Loaded kubeconfig:", kubeconfig)
+        print(f"[GitOps] Loaded kubeconfig: {kubeconfig}")
     except Exception as e:
-        print("[GitOps] kubeconfig failed:", e)
-        config.load_incluster_config()
-        print("[GitOps] Loaded in-cluster config")
+        print(f"[GitOps] kubeconfig failed: {e}")
+        raise
 
-    return client.CustomObjectsApi()
+    api_client = client.ApiClient()
 
+    return {
+        "custom": client.CustomObjectsApi(api_client),
+        "core": client.CoreV1Api(api_client)
+    }
