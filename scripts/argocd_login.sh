@@ -16,3 +16,5 @@ argocd account update-password \
   --account kubapp \
   --current-password "$ADMIN_PASSWORD" \
   --new-password 'MyStrongDevopsPassword!'
+
+argocd account generate-token --account kubapp
