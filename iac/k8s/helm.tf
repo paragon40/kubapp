@@ -476,6 +476,7 @@ resource "helm_release" "kube_prometheus_stack" {
       # ALERTMANAGER
       # -------------------------
       alertmanager = {
+        enabled = true
         alertmanagerSpec = {
           retention = "120h"
 
