@@ -350,9 +350,6 @@ resource "helm_release" "kube_prometheus_stack" {
         podLabels = local.monitoring_labels
       }
 
-      # -------------------------
-      # NODE EXPORTER (EXCLUDE FARGATEe )
-      # -------------------------
       prometheus-node-exporter = {
         affinity = {
           nodeAffinity = {
@@ -373,9 +370,6 @@ resource "helm_release" "kube_prometheus_stack" {
         }
       }
 
-      # -------------------------
-      # GRAFANA
-      # -------------------------
       grafana = {
         initChownData = {
           enabled = false
@@ -391,6 +385,7 @@ resource "helm_release" "kube_prometheus_stack" {
           "auth.anonymous" = {
             enabled = false
           }
+
           "security" = {
             disable_initial_admin_creation = false
           }
@@ -426,9 +421,6 @@ resource "helm_release" "kube_prometheus_stack" {
         podLabels = local.monitoring_labels
       }
 
-      # -------------------------
-      # PROMETHEUS
-      # -------------------------
       prometheus = {
         prometheusSpec = {
           retention     = "7d"
@@ -471,9 +463,6 @@ resource "helm_release" "kube_prometheus_stack" {
         }
       }
 
-      # -------------------------
-      # ALERTMANAGER
-      # -------------------------
       alertmanager = {
         enabled = true
 
@@ -516,15 +505,17 @@ resource "helm_release" "kube_prometheus_stack" {
           }
         }
 
-
         config = {
           global = {
-            resolve_timeout = "5m"
+            resolve_timeout    = "5m"
+            smtp_smarthost     = "smtp.gmail.com:587"
+            smtp_from          = local.alert_email
+            smtp_auth_username = local.alert_email
+            smtp_auth_password = local.alert_email_password
           }
 
           route = {
-            receiver = "default"
-
+            receiver        = "default"
             group_by        = ["alertname"]
             group_wait      = "30s"
             group_interval  = "5m"
@@ -542,12 +533,11 @@ resource "helm_release" "kube_prometheus_stack" {
               ]
             }
           ]
+
+          inhibit_rules = []
         }
       }
 
-      # -------------------------
-      # GLOBAL NODE SELECTOR
-      # -------------------------
       nodeSelector = {
         "kubernetes.io/os" = "linux"
       }
