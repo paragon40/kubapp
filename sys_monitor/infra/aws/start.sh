@@ -177,11 +177,11 @@ echo "Argo CD Applications:"
 kubectl get applications.argoproj.io -A 2>/dev/null || \
 echo "No Argo CD Application resources found."
 
-echo
 echo "========================================"
 echo "Connectivity checks completed successfully."
 echo "========================================"
-echo "All DONE"
+echo "Check gitops docker logs."
+docker logs $(docker ps --filter "name=gitops-exporter" -q)
 EOF
 
 echo ""

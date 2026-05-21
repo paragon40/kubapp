@@ -77,6 +77,10 @@ services:
     volumes:
       - /home/ubuntu/.kube:/root/.kube:ro
       - /home/ubuntu/.aws:/root/.aws:ro
+    environment:
+      - KUBECONFIG=/root/.kube/config
+      - AWS_PROFILE=default
+      - AWS_REGION=us-east-1
     restart: unless-stopped
 
 volumes:

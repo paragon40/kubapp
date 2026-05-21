@@ -1,4 +1,6 @@
-from kubernetes import client, config
+from k8s_client import get_k8s_client
+import os
+from kubernetes import client
 
 from metrics import (
     gitops_app_total,
@@ -16,8 +18,20 @@ PLURAL = "applications"
 
 def collect_metrics():
     try:
-        config.load_kube_config()
+        api = get_k8s_client()
+        # =========================================================
+        # DEBUG: prove cluster access works
+        # =========================================================
+        v1 = client.CoreV1Api()
+        nodes = v1.list_node()
 
+        print(f"[DEBUG] Nodes found: {len(nodes.items)}")
+        for n in nodes.items[:3]:
+            print(f"[DEBUG] Node: {n.metadata.name}")
+
+        # =========================================================
+        # ArgoCD applications check
+        # =========================================================
         api = client.CustomObjectsApi()
 
         response = api.list_cluster_custom_object(
