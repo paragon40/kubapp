@@ -219,25 +219,84 @@ for svc in "${SERVICES[@]}"; do
 done
 echo "======================================"
 
-for svc in "${SERVICES[@]}"; do
-  FQDN="$svc.$DOMAIN"
+# ============================================================
+# 🔥 EXTENSION: DELETE SUPPORT (ONLY IN DESTROY MODE)
+# ============================================================
+if [[ "$SYNC_MODE" == "destroy" ]]; then
+  echo "======================================"
+  echo "DESTROY MODE: CLEANING ROUTE53 RECORDS"
+  echo "======================================"
 
-  aws route53 change-resource-record-sets \
+  EXISTING_RECORDS=$(aws route53 list-resource-record-sets \
     --hosted-zone-id "$ZONE_ID" \
-    --change-batch "{
-      \"Changes\": [{
-        \"Action\": \"UPSERT\",
-        \"ResourceRecordSet\": {
-          \"Name\": \"$FQDN\",
-          \"Type\": \"CNAME\",
-          \"TTL\": 60,
-          \"ResourceRecords\": [{\"Value\": \"$ALB\"}]
-        }
-      }]
-    }"
+    --query "ResourceRecordSets[?Type=='CNAME'].Name" \
+    --output text)
 
-  echo "→ $FQDN updated"
-done
+  mapfile -t EXISTING_ARR <<< "$EXISTING_RECORDS"
+
+  DESIRED=()
+  for svc in "${SERVICES[@]}"; do
+    DESIRED+=("$svc.$DOMAIN.")
+  done
+
+  for record in "${EXISTING_ARR[@]}"; do
+    SKIP=false
+
+    for d in "${DESIRED[@]}"; do
+      if [[ "$record" == "$d" ]]; then
+        SKIP=true
+        break
+      fi
+    done
+
+    if [[ "$SKIP" == false ]]; then
+      echo "🗑 Deleting stale record: $record"
+
+      aws route53 change-resource-record-sets \
+        --hosted-zone-id "$ZONE_ID" \
+        --change-batch "{
+          \"Changes\": [{
+            \"Action\": \"DELETE\",
+            \"ResourceRecordSet\": {
+              \"Name\": \"$record\",
+              \"Type\": \"CNAME\",
+              \"TTL\": 60,
+              \"ResourceRecords\": [{\"Value\": \"$ALB\"}]
+            }
+          }]
+        }" || true
+    fi
+  done
+
+  echo "======================================"
+  echo "DESTROY CLEANUP COMPLETE"
+  echo "======================================"
+fi
+
+# ============================================================
+# APPLY MODE (UNCHANGED LOGIC)
+# ============================================================
+if [[ "$SYNC_MODE" == "apply" ]]; then
+  for svc in "${SERVICES[@]}"; do
+    FQDN="$svc.$DOMAIN"
+
+    aws route53 change-resource-record-sets \
+      --hosted-zone-id "$ZONE_ID" \
+      --change-batch "{
+        \"Changes\": [{
+          \"Action\": \"UPSERT\",
+          \"ResourceRecordSet\": {
+            \"Name\": \"$FQDN\",
+            \"Type\": \"CNAME\",
+            \"TTL\": 60,
+            \"ResourceRecords\": [{\"Value\": \"$ALB\"}]
+          }
+        }]
+      }"
+
+    echo "→ $FQDN updated"
+  done
+fi
 
 echo "===================================="
 echo "DNS SYNC COMPLETE"
