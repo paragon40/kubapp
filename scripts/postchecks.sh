@@ -272,21 +272,21 @@ verify_service() {
   ##################################
   echo "[1/5] ArgoCD sync check..."
 
-  wait_argocd "$app"
-  argocd_result=$?
+  if wait_argocd "$app"; then
+    :
+  else
+    argocd_result=$?
 
-  if [[ "$argocd_result" -eq 2 ]]; then
-    RESULT["$svc"]="FAIL"
-    FAIL_REASON["$svc"]="ArgoCD permission denied"
+    if [[ "$argocd_result" -eq 2 ]]; then
+      RESULT["$svc"]="FAIL"
+      FAIL_REASON["$svc"]="ArgoCD permission denied"
+    else
+      RESULT["$svc"]="FAIL"
+      FAIL_REASON["$svc"]="ArgoCD sync failed"
+    fi
+
     return
   fi
-
-  if [[ "$argocd_result" -ne 0 ]]; then
-    RESULT["$svc"]="FAIL"
-    FAIL_REASON["$svc"]="ArgoCD sync failed"
-    return
-  fi
-
   ##################################
   echo "[2/5] Kubernetes rollout..."
 
