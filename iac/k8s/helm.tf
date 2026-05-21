@@ -351,7 +351,7 @@ resource "helm_release" "kube_prometheus_stack" {
       }
 
       # -------------------------
-      # NODE EXPORTER (excludedd for faragte)
+      # NODE EXPORTER (EXCLUDE FARGATEe )
       # -------------------------
       prometheus-node-exporter = {
         affinity = {
@@ -391,7 +391,6 @@ resource "helm_release" "kube_prometheus_stack" {
           "auth.anonymous" = {
             enabled = false
           }
-
           "security" = {
             disable_initial_admin_creation = false
           }
@@ -477,6 +476,7 @@ resource "helm_release" "kube_prometheus_stack" {
       # -------------------------
       alertmanager = {
         enabled = true
+
         alertmanagerSpec = {
           retention = "120h"
 
@@ -485,7 +485,6 @@ resource "helm_release" "kube_prometheus_stack" {
               preferredDuringSchedulingIgnoredDuringExecution = [
                 {
                   weight = 100
-
                   podAffinityTerm = {
                     labelSelector = {
                       matchLabels = local.monitoring_labels
@@ -517,17 +516,15 @@ resource "helm_release" "kube_prometheus_stack" {
           }
         }
 
+
         config = {
           global = {
-            resolve_timeout    = "5m"
-            smtp_smarthost     = "smtp.gmail.com:587"
-            smtp_from          = local.alert_email
-            smtp_auth_username = local.alert_email
-            smtp_auth_password = local.alert_email_password
+            resolve_timeout = "5m"
           }
 
           route = {
-            receiver        = "default"
+            receiver = "default"
+
             group_by        = ["alertname"]
             group_wait      = "30s"
             group_interval  = "5m"
@@ -549,7 +546,7 @@ resource "helm_release" "kube_prometheus_stack" {
       }
 
       # -------------------------
-      # NODE SELECTOR
+      # GLOBAL NODE SELECTOR
       # -------------------------
       nodeSelector = {
         "kubernetes.io/os" = "linux"
@@ -564,5 +561,3 @@ resource "helm_release" "kube_prometheus_stack" {
     kubernetes_namespace_v1.this["monitoring"]
   ]
 }
-
-
