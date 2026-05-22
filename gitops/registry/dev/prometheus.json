@@ -1,8 +1,9 @@
 {
   "service": "prometheus",
   "type": "Backend",
+  "stack": "monitoring",
   "backendService": "kube-prometheus-stack-prometheus",
   "env": "dev",
   "port": 9090,
-  "timestamp": "2026-05-18_14-40-46"
+  "timestamp": "2026-05-22_13-05-05"
 }
