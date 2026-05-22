@@ -17,6 +17,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Install tools
         run: |
@@ -52,7 +55,12 @@ jobs:
       - name: Resolve commit
         id: commit
         run: |
+          git fetch --tags origin
           COMMIT=$(git rev-list -n 1 ${{ steps.tag.outputs.tag }})
+          if [[ -z "$COMMIT" ]]; then
+            echo "❌ Failed To Resolve Commit"
+            exit 1
+          fi
           echo "COMMIT=$COMMIT"
           echo "commit=$COMMIT" >> $GITHUB_OUTPUT
 
@@ -97,7 +105,6 @@ jobs:
           gh run download ${{ steps.run.outputs.run_id }} \
             --name deployment-snapshot
 
-      # Show snapshot (DEPLOY STATE)
       - name: Show snapshot
         run: |
           DIR=$(find . artifacts -type d)
