@@ -104,9 +104,15 @@ jobs:
 
       - name: Show snapshot
         run: |
-          DIR=$(find . artifacts -type d)
+          set -euo pipefail
           echo "=============================="
           echo "DEPLOYMENT SNAPSHOT"
           echo "=============================="
-          cat "$DIR"/*.json
+
+          SNAPSHOT_DIR=$(find . -type d -name "deployment-snapshot" | head -1)
+          if [[ -z "$SNAPSHOT_DIR" ]]; then
+            echo "❌ Snapshot directory not found"
+            exit 1
+          fi
+          find "$SNAPSHOT_DIR" -type f -name "*.json" -exec cat {} \;
 
