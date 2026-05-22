@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/url_shortener
-  tag: 614cf2aad475abfdfd5fdc85d391b445b107df57-1779115195
+  tag: d0bdfda344c5029a06974706bb2fd530bfe1684e-1779455068
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -59,7 +59,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: d882d65204ed4afd42b1d002d2189eff2847433e8ecf57ebe372615ceae7d8b1
-  generatedAt: 2026-05-22T11:19:10Z
+  generatedAt: 2026-05-22T13:06:14Z
   source: build-pipeline
 storage:
   volumes:
