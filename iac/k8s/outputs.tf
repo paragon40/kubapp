@@ -23,6 +23,13 @@ output "cluster_name" {
   value = local.cluster_name
 }
 
+output "cluster_endpoint" {
+  value = local.cluster_endpoint
+}
+
+output "cluster_ca_certificate" {
+  value = local.cluster_ca_cert
+}
 output "Environment" {
   value = local.env
 }

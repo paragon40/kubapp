@@ -111,6 +111,4 @@ EOT
       ]
     }
   }
-
-  depends_on = [helm_release.kube_prometheus_stack]
 }

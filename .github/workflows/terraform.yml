@@ -303,6 +303,140 @@ jobs:
         run: terraform apply -auto-approve -var-file=k8s.tfvars
 
 # =========================================================
+# Manifest PLAN
+# =========================================================
+  Manifest_plan:
+    if: ${{ github.event.inputs.action == 'apply' }}
+    name: Manifest - Plan
+    needs: k8s_apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Install SOPS
+        run: |
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Setup AGE key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+
+      - name: Set ENV
+        run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
+
+      - name: Init Kubernetes Manifests
+        working-directory: iac/manifests
+        run: terraform init -reconfigure
+
+      - name: Validate Manifests
+        working-directory: iac/manifests
+        run: |
+          terraform fmt
+          terraform fmt -check
+          terraform validate
+
+      - name: Load tfvars
+        working-directory: iac/manifests
+        run: sops -d envs/${ENV}/manifests.tfvars.enc > manifests.tfvars
+
+      - name: Plan Manifests
+        working-directory: iac/manifests
+        run: terraform plan -out=manifests.plan -var-file=manifests.tfvars
+
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: manifests-plan-${{ github.event.inputs.env }}
+          path: iac/manifests/manifests.plan
+
+
+# =========================================================
+# Manifest APPROVAL
+# =========================================================
+  Manifests_approve:
+    if: ${{ github.event.inputs.action == 'apply' && github.event.inputs.env == 'prod' }}
+    name: Manifests - Approval
+    needs: Manifests_plan
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Download Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: manifests-plan-${{ github.event.inputs.env }}
+          path: manifests-plan
+
+      - name: Show Plan
+        run: terraform show manifests-plan/manifests.plan
+
+
+# =========================================================
+# MANIFESTS APPLY
+# =========================================================
+
+  Manifests_apply:
+    name: Manifests - Apply
+    needs: Manifests_plan
+    if: ${{ github.event.inputs.action == 'apply' }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.env }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Install SOPS
+        run: |
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Setup AGE key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+
+      - name: Set ENV
+        run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
+
+      - name: Init
+        working-directory: iac/manifests
+        run: terraform init -reconfigure
+
+      - name: Load tfvars
+        working-directory: iac/manifests
+        run: sops -d envs/${ENV}/manifests.tfvars.enc > manifests.tfvars
+
+      - name: Apply K8s Manifests
+        working-directory: iac/manifests
+        run: terraform apply -auto-approve -var-file=manifests.tfvars
+
+
+# =========================================================
 # DESTROY (K8S → INFRA)
 # =========================================================
   destroy:
@@ -386,7 +520,16 @@ jobs:
         env:
           TF_CREATED_NS: "${{ env.NAMESPACES }}"
 
-      - name: Destroy K8s
+      - name: Destroy K8s Manifests
+        working-directory: iac/manifests
+        run: |
+          set -euo pipefail
+          terraform init -reconfigure
+          terraform validate
+          sops -d envs/${ENV}/manifests.tfvars.enc > manifests.tfvars
+          terraform destroy -auto-approve -var-file=manifests.tfvars
+
+      - name: Destroy K8s Core
         working-directory: iac/k8s
         run: |
           set -euo pipefail

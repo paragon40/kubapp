@@ -114,6 +114,4 @@ resource "kubernetes_manifest" "alert_infra" {
       ]
     }
   }
-
-  depends_on = [helm_release.kube_prometheus_stack]
 }

@@ -42,8 +42,4 @@ resource "kubernetes_manifest" "alert_test" {
       ]
     }
   }
-
-  depends_on = [
-    helm_release.kube_prometheus_stack
-  ]
 }
