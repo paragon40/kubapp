@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/metrics_app
-  tag: 31949826e9f33a135be168c22fd260cfb7df32f4-1779459036
+  tag: e1e8712c2b617b3f92be0817b1ad8624c2908832-1779482894
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -59,7 +59,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 6eb65282886a0603f8c86255c84251d376fa95d72df49a6392d9bc346965da9f
-  generatedAt: 2026-05-22T14:12:52Z
+  generatedAt: 2026-05-22T20:50:06Z
   source: build-pipeline
 storage:
   volumes:
@@ -68,10 +68,5 @@ storage:
   volumeMounts:
     - name: metrics
       mountPath: /data
-nodeSelector:
-  compute: ec2
-tolerations:
-  - key: compute
-    operator: Equal
-    value: ec2
-    effect: NoSchedule
+labels:
+  compute: fargate

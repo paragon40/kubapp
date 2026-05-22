@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/admin_app
-  tag: 31949826e9f33a135be168c22fd260cfb7df32f4-1779459036
+  tag: e1e8712c2b617b3f92be0817b1ad8624c2908832-1779482894
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -59,7 +59,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: be9cdf8b48982e22e4b67e6b6345e115a9ffde654c29143eaf57dff2b5007ecb
-  generatedAt: 2026-05-22T14:12:52Z
+  generatedAt: 2026-05-22T20:50:06Z
   source: build-pipeline
 storage:
   volumes:
@@ -68,5 +68,10 @@ storage:
   volumeMounts:
     - name: admin
       mountPath: /data
-labels:
-  compute: fargate
+nodeSelector:
+  compute: ec2
+tolerations:
+  - key: compute
+    operator: Equal
+    value: ec2
+    effect: NoSchedule
