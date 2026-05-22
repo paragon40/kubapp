@@ -531,6 +531,9 @@ resource "helm_release" "kube_prometheus_stack" {
                   send_resolved = true
                 }
               ]
+            },
+            {
+              name = "null"
             }
           ]
 
