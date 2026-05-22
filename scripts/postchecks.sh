@@ -414,7 +414,7 @@ for i in $(seq 1 "$ATTEMPTS"); do
     break
   fi
 
-  PENDING=("${NEXT[@]}"
+  PENDING=("${NEXT[@]}")
 
   [[ $i -lt "$ATTEMPTS" ]] && sleep "$SLEEP"
 done
