@@ -14,6 +14,6 @@ variable "region" {
 }
 
 variable "enable_alerts" {
-  type = boolean
+  type = bool
   default = true
 }
