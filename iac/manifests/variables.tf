@@ -1,3 +1,7 @@
+variable "project" {
+  type = string
+  default = "kubapp"
+}
 
 variable "env" {
   type = string
