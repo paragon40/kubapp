@@ -1,60 +1,118 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+########################################
+# INPUT VALIDATION
+########################################
 ENV="${1:?ENV required}"
 DOMAIN="${2:?DOMAIN required}"
 
 : "${ARGOCD_SERVER:?ARGOCD_SERVER not set}"
 : "${ARGOCD_AUTH_TOKEN:?ARGOCD_AUTH_TOKEN not set}"
 
+########################################
+# OPTIONAL CONFIG
+########################################
 SUCCESS_THRESHOLD="${SUCCESS_THRESHOLD:-90}"
 ATTEMPTS="${ATTEMPTS:-3}"
 SLEEP="${SLEEP:-20}"
 CANARY_REQUESTS="${CANARY_REQUESTS:-10}"
 
+########################################
+# PATHS
+########################################
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REG_DIR="$ROOT/gitops/registry/$ENV"
 
-[[ -d "$REG_DIR" ]] || { echo "❌ Registry not found: $REG_DIR"; exit 1; }
+[[ -d "$REG_DIR" ]] || {
+  echo "❌ Registry not found: $REG_DIR"
+  exit 1
+}
 
+########################################
+# HEADER
+########################################
 echo "=================================="
 echo "RUNTIME VERIFICATION"
 echo "ENV: $ENV"
 echo "DOMAIN: $DOMAIN"
+echo "ARGOCD_SERVER: $ARGOCD_SERVER"
 echo "=================================="
 
+########################################
+# SERVICE DISCOVERY
+########################################
 mapfile -t SERVICES < <(
-  find "$REG_DIR" -name "*.json" -exec jq -r '.service' {} \; | sort -u
+  find "$REG_DIR" -name "*.json" \
+    -exec jq -r '.service' {} \; \
+    | sort -u
 )
 
-declare -A RESULT FAIL_REASON SERVICE_FILES
+[[ ${#SERVICES[@]} -gt 0 ]] || {
+  echo "❌ No services found"
+  exit 1
+}
 
+########################################
+# STATE
+########################################
+declare -A RESULT
+declare -A FAIL_REASON
+declare -A SERVICE_FILES
+
+########################################
+# PRELOAD FILE MAP
+########################################
 while IFS= read -r file; do
   svc="$(jq -r '.service' "$file" 2>/dev/null || true)"
-  [[ -n "$svc" && "$svc" != "null" ]] && SERVICE_FILES["$svc"]="$file"
+
+  if [[ -n "$svc" && "$svc" != "null" ]]; then
+    SERVICE_FILES["$svc"]="$file"
+  fi
 done < <(find "$REG_DIR" -name "*.json")
 
 ########################################
 # HELPERS
 ########################################
-
-get_file() { echo "${SERVICE_FILES[$1]:-}"; }
+get_file() {
+  echo "${SERVICE_FILES[$1]:-}"
+}
 
 get_stack() {
-  local f; f="$(get_file "$1")"
-  [[ -z "$f" ]] && { echo "app"; return; }
+  local file
+  file="$(get_file "$1")"
 
-  local v
-  v="$(jq -r '.stack // empty' "$f")"
-  [[ -n "$v" ]] && echo "$v" || echo "app"
+  [[ -z "$file" ]] && {
+    echo "app"
+    return
+  }
+
+  jq -r '.stack // "app"' "$file"
+}
+
+get_namespace() {
+  local stack
+  stack="$(get_stack "$1")"
+
+  case "$stack" in
+    monitoring)
+      echo "monitoring"
+      ;;
+    argocd)
+      echo "argocd"
+      ;;
+    *)
+      echo "$ENV"
+      ;;
+  esac
 }
 
 get_argocd_app() {
   local svc="$1"
   local stack
+
   stack="$(get_stack "$svc")"
 
-  # SYSTEM STACKS -> FIXED INFRA APPS
   case "$stack" in
     monitoring)
       echo "ingress-${ENV}-monitoring"
@@ -68,44 +126,147 @@ get_argocd_app() {
   esac
 }
 
-get_path() {
-  local f; f="$(get_file "$1")"
-  [[ -z "$f" ]] && { echo "/"; return; }
+get_base_path() {
+  local file
+  file="$(get_file "$1")"
 
-  jq -r '.basePath // "/"' "$f"
+  [[ -z "$file" ]] && {
+    echo "/"
+    return
+  }
+
+  jq -r '.basePath // "/"' "$file"
 }
 
+get_health_path() {
+  local file
+  file="$(get_file "$1")"
+
+  [[ -z "$file" ]] && {
+    echo "/health"
+    return
+  }
+
+  jq -r '.healthPath // "/health"' "$file"
+}
+
+########################################
+# HTTP CANARY
+########################################
 check_http() {
   local url="$1"
-  local ok=0 total=0 code
+  local success=0
+  local total=0
+  local code
 
   for _ in $(seq 1 "$CANARY_REQUESTS"); do
-    code=$(curl -ksS --max-time 5 -o /dev/null -w "%{http_code}" "$url" || echo 000)
-    [[ "$code" =~ ^2 ]] && ((ok++))
+    code=$(
+      curl -ksS \
+        --max-time 5 \
+        -o /dev/null \
+        -w "%{http_code}" \
+        "$url" || echo "000"
+    )
+
+    if [[ "$code" =~ ^2 ]]; then
+      ((success++))
+    fi
+
     ((total++))
   done
 
-  echo $((ok * 100 / total))
+  echo $(( success * 100 / total ))
 }
 
+########################################
+# POD HEALTH
+########################################
 check_pods() {
-  kubectl get pods -n "$ENV" --no-headers 2>/dev/null | grep -v "Running" || true
+  local svc="$1"
+  local ns="$2"
+
+  kubectl get pods -n "$ns" --no-headers 2>/dev/null \
+    | grep -i "$svc" \
+    | awk '{print $2 " " $3}' \
+    | grep -Ev '^[0-9]+/[0-9]+ Running|Completed' \
+    || true
 }
 
+########################################
+# ROLLOUT CHECK
+########################################
+check_rollout() {
+  local svc="$1"
+  local ns="$2"
+
+  kubectl get deploy -n "$ns" --no-headers 2>/dev/null \
+    | grep -iq "$svc"
+
+  if [[ $? -eq 0 ]]; then
+    deploy_name="$(
+      kubectl get deploy -n "$ns" --no-headers \
+        | grep -i "$svc" \
+        | head -1 \
+        | awk '{print $1}'
+    )"
+
+    kubectl rollout status deployment/"$deploy_name" \
+      -n "$ns" \
+      --timeout=180s
+
+    return
+  fi
+
+  kubectl get statefulset -n "$ns" --no-headers 2>/dev/null \
+    | grep -iq "$svc"
+
+  if [[ $? -eq 0 ]]; then
+    sts_name="$(
+      kubectl get statefulset -n "$ns" --no-headers \
+        | grep -i "$svc" \
+        | head -1 \
+        | awk '{print $1}'
+    )"
+
+    kubectl rollout status statefulset/"$sts_name" \
+      -n "$ns" \
+      --timeout=180s
+
+    return
+  fi
+
+  echo "⚠️ No rollout resource found"
+}
+
+########################################
+# SYNTHETIC CHECK
+########################################
 synthetic_test() {
   local svc="$1"
-  local f; f="$(get_file "$svc")"
 
-  # ONLY FOR APP STACKS
-  local stack
-  stack="$(get_stack "$svc")"
-  [[ "$stack" != "app" ]] && return 0
+  local path
+  local url
+  local code
 
-  local url="https://${svc}.${DOMAIN}$(jq -r '.healthPath // "/health"' "$f")"
+  path="$(get_health_path "$svc")"
+  url="https://${svc}.${DOMAIN}${path}"
 
-  curl -ksS --max-time 5 -o /dev/null -w "%{http_code}" "$url" | grep -q "^2"
+  echo "Health URL: $url"
+
+  code=$(
+    curl -ksS \
+      --max-time 5 \
+      -o /dev/null \
+      -w "%{http_code}" \
+      "$url" || echo "000"
+  )
+
+  [[ "$code" =~ ^2 ]]
 }
 
+########################################
+# ARGOCD WAIT
+########################################
 wait_argocd() {
   local app="$1"
 
@@ -119,99 +280,169 @@ wait_argocd() {
     --timeout 180
 }
 
+########################################
+# VERIFY SERVICE
+########################################
 verify_service() {
   local svc="$1"
-  local stack app url base
+
+  local stack
+  local namespace
+  local app
+  local base_path
+  local url
+  local bad
+  local percent
 
   stack="$(get_stack "$svc")"
+  namespace="$(get_namespace "$svc")"
   app="$(get_argocd_app "$svc")"
-  base="$(get_path "$svc")"
-  url="https://${svc}.${DOMAIN}${base}"
+
+  base_path="$(get_base_path "$svc")"
+  url="https://${svc}.${DOMAIN}${base_path}"
 
   echo
+  echo "=================================="
   echo "SERVICE: $svc"
   echo "STACK: $stack"
+  echo "NAMESPACE: $namespace"
   echo "ARGOCD APP: $app"
+  echo "=================================="
 
   RESULT["$svc"]="VERIFYING"
+  FAIL_REASON["$svc"]=""
 
   ##################################
-  echo "[1/5] ArgoCD sync check..."
+  echo "[1/4] ArgoCD sync check..."
 
+  if ! wait_argocd "$app"; then
+    RESULT["$svc"]="FAIL"
+    FAIL_REASON["$svc"]="ArgoCD failed"
+    return
+  fi
+
+  ##################################
+  echo "[2/4] Rollout validation..."
+
+  if ! check_rollout "$svc" "$namespace"; then
+    RESULT["$svc"]="FAIL"
+    FAIL_REASON["$svc"]="Rollout failed"
+    return
+  fi
+
+  ##################################
+  echo "[3/4] Pod health..."
+
+  bad="$(check_pods "$svc" "$namespace")"
+
+  if [[ -n "$bad" ]]; then
+    echo "$bad"
+
+    RESULT["$svc"]="FAIL"
+    FAIL_REASON["$svc"]="Unhealthy pods"
+    return
+  fi
+
+  ##################################
+  # ONLY APP STACKS GET HTTP TESTS
+  ##################################
   if [[ "$stack" == "app" ]]; then
-    if ! wait_argocd "$app"; then
+    echo "[4/4] Canary + synthetic..."
+
+    percent="$(check_http "$url")"
+
+    echo "Success rate: ${percent}%"
+
+    if (( percent < SUCCESS_THRESHOLD )); then
       RESULT["$svc"]="FAIL"
-      FAIL_REASON["$svc"]="ArgoCD failed"
+      FAIL_REASON["$svc"]="Canary failed"
+      return
+    fi
+
+    if ! synthetic_test "$svc"; then
+      RESULT["$svc"]="FAIL"
+      FAIL_REASON["$svc"]="Synthetic failed"
       return
     fi
   else
-    echo "Skipping ArgoCD (system stack: $stack)"
-    kubectl get pods -n "$stack" >/dev/null 2>&1 || true
-  fi
-
-  ##################################
-  echo "[2/5] Pod health..."
-  if [[ -n "$(check_pods)" ]]; then
-    RESULT["$svc"]="FAIL"
-    FAIL_REASON["$svc"]="Pod issues"
-    return
-  fi
-
-  ##################################
-  echo "[3/5] Canary..."
-  percent="$(check_http "$url")"
-  echo "Success: $percent%"
-  (( percent < SUCCESS_THRESHOLD )) && {
-    RESULT["$svc"]="FAIL"
-    FAIL_REASON["$svc"]="Canary fail"
-    return
-  }
-
-  ##################################
-  echo "[4/5] Synthetic..."
-  if ! synthetic_test "$svc"; then
-    RESULT["$svc"]="FAIL"
-    FAIL_REASON["$svc"]="Synthetic fail"
-    return
+    echo "[4/4] Skipping frontend checks for system stack"
   fi
 
   RESULT["$svc"]="PASS"
-  echo "✅ $svc OK"
+
+  echo "✅ $svc PASSED"
 }
 
 ########################################
 # MAIN LOOP
 ########################################
-
 PENDING=("${SERVICES[@]}")
 
 for i in $(seq 1 "$ATTEMPTS"); do
+  echo
   echo "=================================="
-  echo "ITERATION $i/$ATTEMPTS"
+  echo "CONVERGENCE ITERATION $i/$ATTEMPTS"
   echo "=================================="
 
   NEXT=()
 
-  for s in "${PENDING[@]}"; do
-    verify_service "$s"
-    [[ "${RESULT[$s]}" != "PASS" ]] && NEXT+=("$s")
+  for svc in "${PENDING[@]}"; do
+    verify_service "$svc"
+
+    if [[ "${RESULT[$svc]}" != "PASS" ]]; then
+      NEXT+=("$svc")
+    fi
   done
 
-  [[ ${#NEXT[@]} -eq 0 ]] && break
-  PENDING=("${NEXT[@]}")
-  sleep "$SLEEP"
+  echo
+  echo "PASSED SO FAR:"
+
+  for svc in "${SERVICES[@]}"; do
+    [[ "${RESULT[$svc]:-}" == "PASS" ]] && echo "  - $svc"
+  done
+
+  echo
+  echo "REMAINING:"
+
+  if [[ ${#NEXT[@]} -eq 0 ]]; then
+    echo "  - none"
+  else
+    printf "  - %s\n" "${NEXT[@]}"
+  fi
+
+  if [[ ${#NEXT[@]} -eq 0 ]]; then
+    break
+  fi
+
+  PENDING=("${NEXT[@]}"
+
+  [[ $i -lt "$ATTEMPTS" ]] && sleep "$SLEEP"
 done
 
 ########################################
-# REPORT
+# FINAL REPORT
 ########################################
-
+echo
 echo "=================================="
 echo "FINAL REPORT"
 echo "=================================="
 
-for s in "${SERVICES[@]}"; do
-  echo "$s -> ${RESULT[$s]:-UNKNOWN} (${FAIL_REASON[$s]:-})"
+FAIL=0
+
+for svc in "${SERVICES[@]}"; do
+  status="${RESULT[$svc]:-UNKNOWN}"
+  reason="${FAIL_REASON[$svc]:-}"
+
+  echo "$svc -> $status ($reason)"
+
+  [[ "$status" != "PASS" ]] && FAIL=1
 done
 
-[[ ${#PENDING[@]} -gt 0 ]] && exit 1 || exit 0
+echo
+
+if [[ "$FAIL" -eq 1 ]]; then
+  echo "❌ SYSTEM NOT STABLE"
+  exit 1
+else
+  echo "✅ SYSTEM VERIFIED"
+fi
