@@ -187,10 +187,28 @@ resource "helm_release" "fluentbit" {
       }
 
       # ------------------------------------------------------------
-      # Schedule on all Linux nodes, including tainted app nodes
+      # Schedule on all Linux nodes, including tainted app nodes but exclude fargte
       # ------------------------------------------------------------
       nodeSelector = {
         "kubernetes.io/os" = "linux"
+      }
+
+      affinity = {
+        nodeAffinity = {
+          requiredDuringSchedulingIgnoredDuringExecution = {
+            nodeSelectorTerms = [
+              {
+                matchExpressions = [
+                  {
+                    key      = "eks.amazonaws.com/compute-type"
+                    operator = "NotIn"
+                    values   = ["fargate"]
+                  }
+                ]
+              }
+            ]
+          }
+        }
       }
 
       tolerations = [
