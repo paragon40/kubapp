@@ -305,9 +305,9 @@ jobs:
 # =========================================================
 # Manifest PLAN
 # =========================================================
-  Manifest_plan:
+  Manifests_plan:
     if: ${{ github.event.inputs.action == 'apply' }}
-    name: Manifest - Plan
+    name: Manifests - Plan
     needs: k8s_apply
     runs-on: ubuntu-latest
 
