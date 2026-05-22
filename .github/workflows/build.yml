@@ -212,7 +212,6 @@ jobs:
           jq -n \
             --arg service "$SERVICE_NAME" \
             --arg type "App" \
-            --arg stack "App" \
             --arg compute "$COMPUTE_TYPE" \
             --arg context "$CONTEXT" \
             --arg image1 "$IMAGE" \
@@ -238,7 +237,6 @@ jobs:
             '{
               service: $service,
               type: $type,
-              stack: $stack,
               computeType: $compute,
               context: $context,
               image: $image1,
