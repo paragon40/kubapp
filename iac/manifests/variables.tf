@@ -12,3 +12,8 @@ variable "region" {
   type = string
   default = "us-east-1"
 }
+
+variable "enable_alerts" {
+  type = boolean
+  default = true
+}

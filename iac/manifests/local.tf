@@ -22,7 +22,7 @@ locals {
     resource-type = "kubernetes"
     env           = var.env
     project       = var.project
-    plane         = "k8s"
+    plane         = "k8s manifests"
     runtime       = "helm"
     trace-id      = "${local.cluster_name}-kubernetes"
   }
