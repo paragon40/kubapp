@@ -76,14 +76,33 @@ done < <(find "$REG_DIR" -name "*.json")
 ########################################
 get_service_file() {
   local svc="$1"
-
   echo "${SERVICE_FILES[$svc]:-}"
+}
+
+get_stack() {
+  local svc="$1"
+  local file
+
+  file="$(get_service_file "$svc")"
+
+  if [[ -z "$file" ]]; then
+    echo "app"
+    return
+  fi
+
+  local stack
+  stack="$(jq -r '.stack' "$file' 2>/dev/null || true)"
+
+  if [[ -n "$stack" && "$stack" != "null" ]]; then
+    echo "$stack"
+  else
+    echo "app"
+  fi
 }
 
 get_health_path() {
   local svc="$1"
-  local file
-  local path
+  local file path
 
   file="$(get_service_file "$svc")"
 
@@ -103,8 +122,7 @@ get_health_path() {
 
 get_base_path() {
   local svc="$1"
-  local file
-  local path
+  local file path
 
   file="$(get_service_file "$svc")"
 
@@ -171,9 +189,7 @@ check_pods() {
 ########################################
 synthetic_test() {
   local svc="$1"
-  local path
-  local url
-  local code
+  local path url code
 
   path="$(get_health_path "$svc")"
   url="https://${svc}.${DOMAIN}${path}"
@@ -251,12 +267,16 @@ check_rollout() {
 ########################################
 verify_service() {
   local svc="$1"
-  local app="${svc}-${ENV}"
+  local stack
+  local app
   local base_path
   local url
   local bad
   local percent
   local argocd_result
+
+  stack="$(get_stack "$svc")"
+  app="ingress-${ENV}-${stack}"
 
   base_path="$(get_base_path "$svc")"
   url="https://${svc}.${DOMAIN}${base_path}"
@@ -264,6 +284,8 @@ verify_service() {
   echo
   echo "=================================="
   echo "SERVICE: $svc"
+  echo "STACK: $stack"
+  echo "ARGOCD APP: $app"
   echo "=================================="
 
   RESULT["$svc"]="VERIFYING"
@@ -284,9 +306,9 @@ verify_service() {
       RESULT["$svc"]="FAIL"
       FAIL_REASON["$svc"]="ArgoCD sync failed"
     fi
-
     return
   fi
+
   ##################################
   echo "[2/5] Kubernetes rollout..."
 
@@ -303,7 +325,6 @@ verify_service() {
 
   if [[ -n "$bad" ]]; then
     echo "$bad"
-
     RESULT["$svc"]="FAIL"
     FAIL_REASON["$svc"]="Unhealthy pods"
     return
@@ -313,7 +334,6 @@ verify_service() {
   echo "[4/5] Canary HTTP check..."
 
   percent="$(check_http "$url")"
-
   echo "Success rate: ${percent}%"
 
   if (( percent < SUCCESS_THRESHOLD )); then
@@ -332,7 +352,6 @@ verify_service() {
   fi
 
   RESULT["$svc"]="PASS"
-
   echo "✅ $svc PASSED"
 }
 
@@ -357,40 +376,22 @@ for i in $(seq 1 "$ATTEMPTS"); do
     fi
   done
 
-  ##################################
-  # ITERATION SUMMARY
-  ##################################
   echo
   echo "PASSED SO FAR:"
-
   for svc in "${SERVICES[@]}"; do
-    if [[ "${RESULT[$svc]:-}" == "PASS" ]]; then
-      echo "  - $svc"
-    fi
+    [[ "${RESULT[$svc]:-}" == "PASS" ]] && echo "  - $svc"
   done
 
   echo
   echo "REMAINING:"
+  [[ ${#NEXT_PENDING[@]} -eq 0 ]] && echo "  - none" || printf "  - %s\n" "${NEXT_PENDING[@]}"
 
   if [[ ${#NEXT_PENDING[@]} -eq 0 ]]; then
-    echo "  - none"
-  else
-    for svc in "${NEXT_PENDING[@]}"; do
-      echo "  - $svc"
-    done
-  fi
-
-  ##################################
-  # ALL PASSED
-  ##################################
-  if [[ ${#NEXT_PENDING[@]} -eq 0 ]]; then
-    echo
     echo "✅ All services passed convergence phase"
     break
   fi
 
   PENDING_SERVICES=("${NEXT_PENDING[@]}")
-
   [[ $i -lt "$ATTEMPTS" ]] && sleep "$SLEEP"
 done
 
@@ -406,12 +407,7 @@ if [[ ${#PENDING_SERVICES[@]} -eq 0 ]]; then
   for svc in "${SERVICES[@]}"; do
     echo
     echo "Re-validating stable service: $svc"
-
     verify_service "$svc"
-
-    if [[ "${RESULT[$svc]}" != "PASS" ]]; then
-      FAIL_REASON["$svc"]="Failed stability recheck"
-    fi
   done
 else
   echo
@@ -435,47 +431,23 @@ for svc in "${SERVICES[@]}"; do
   reason="${FAIL_REASON[$svc]:-}"
 
   case "$status" in
-    PASS)
-      PASS_LIST+=("$svc")
-      ;;
-    FAIL)
-      FAIL_LIST+=("$svc ($reason)")
-      ;;
-    *)
-      UNKNOWN_LIST+=("$svc")
-      ;;
+    PASS) PASS_LIST+=("$svc") ;;
+    FAIL) FAIL_LIST+=("$svc ($reason)") ;;
+    *) UNKNOWN_LIST+=("$svc") ;;
   esac
 done
 
 echo
 echo "PASS:"
-if [[ ${#PASS_LIST[@]} -eq 0 ]]; then
-  echo "  - none"
-else
-  for s in "${PASS_LIST[@]}"; do
-    echo "  - $s"
-  done
-fi
+printf "  - %s\n" "${PASS_LIST[@]:-none}"
 
 echo
 echo "FAIL:"
-if [[ ${#FAIL_LIST[@]} -eq 0 ]]; then
-  echo "  - none"
-else
-  for s in "${FAIL_LIST[@]}"; do
-    echo "  - $s"
-  done
-fi
+printf "  - %s\n" "${FAIL_LIST[@]:-none}"
 
 echo
 echo "UNKNOWN:"
-if [[ ${#UNKNOWN_LIST[@]} -eq 0 ]]; then
-  echo "  - none"
-else
-  for s in "${UNKNOWN_LIST[@]}"; do
-    echo "  - $s"
-  done
-fi
+printf "  - %s\n" "${UNKNOWN_LIST[@]:-none}"
 
 echo
 

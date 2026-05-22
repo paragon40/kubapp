@@ -212,6 +212,7 @@ jobs:
           jq -n \
             --arg service "$SERVICE_NAME" \
             --arg type "App" \
+            --arg stack "App" \
             --arg compute "$COMPUTE_TYPE" \
             --arg context "$CONTEXT" \
             --arg image1 "$IMAGE" \
@@ -237,6 +238,7 @@ jobs:
             '{
               service: $service,
               type: $type,
+              stack: $stack,
               computeType: $compute,
               context: $context,
               image: $image1,
@@ -396,18 +398,22 @@ jobs:
               grafana)
                 PORT=3000
                 BACKEND_SERVICE="kube-prometheus-stack-grafana"
+                STACK="monitoring"
               ;;
               prometheus)
                 PORT=9090
                 BACKEND_SERVICE="kube-prometheus-stack-prometheus"
+                STACK="monitoring"
               ;;
               alertmanager)
                 PORT=9093
                 BACKEND_SERVICE="kube-prometheus-stack-alertmanager"
+                STACK="monitoring"
               ;;
               argocd)
                 PORT=8080
                 BACKEND_SERVICE="argocd-server"
+                STACK="argocd"
               ;;
             esac
 
@@ -418,6 +424,7 @@ jobs:
             jq -n \
               --arg service "$svc" \
               --arg type "Backend" \
+              --arg stack "$STACK" \
               --arg backendService "$BACKEND_SERVICE" \
               --arg env "$ENV" \
               --argjson port "$PORT" \
@@ -425,6 +432,7 @@ jobs:
               '{
                 service: $service,
                 type: $type,
+                stack: $stack,
                 backendService: $backendService,
                 env: $env,
                 port: $port,
