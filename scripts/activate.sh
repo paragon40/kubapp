@@ -55,5 +55,5 @@ else
 fi
 
 echo "=============================="
-echo "✅ ACTIVATION COMPLETE"
+echo "✅ ACTIVATION COMPLETE: $(date '+%Y-%m-%d_%H:%M:%S')"
 echo "=============================="
