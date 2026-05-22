@@ -19,7 +19,7 @@ variable "kubapp_infra_key" {
 }
 
 variable "domain_name" {
-  type        = string
+  type    = string
   default = "rundailytest.site"
 }
 

@@ -156,7 +156,7 @@ resource "aws_instance" "sys_monitor" {
   vpc_security_group_ids      = [aws_security_group.sys_monitor.id]
   key_name                    = var.key_name
   associate_public_ip_address = false
-  iam_instance_profile = data.terraform_remote_state.platform.outputs.sys_monitor_instance_profile_name
+  iam_instance_profile        = data.terraform_remote_state.platform.outputs.sys_monitor_instance_profile_name
 
   root_block_device {
     volume_size           = 20
