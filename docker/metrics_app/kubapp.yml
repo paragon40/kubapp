@@ -1,7 +1,7 @@
 
 service:
   name: metrics
-  compute: node
+  compute: fargate
 
 app:
   port: 8080

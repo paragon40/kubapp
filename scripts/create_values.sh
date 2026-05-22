@@ -42,12 +42,12 @@ SVC_TYPE=$(jq -r '.type' "$ARTIFACT_FILE")
 require jq
 require yq
 
-SERVICE=$(jq -r '.service' "$ARTIFACT_FILE")
-ENV=$(jq -r '.env' "$ARTIFACT_FILE")
-NAMESPACE=$(jq -r '.namespace' "$ARTIFACT_FILE")
-PORT=$(jq -r '.port' "$ARTIFACT_FILE")
-IMAGE=$(jq -r '.image' "$ARTIFACT_FILE")
-TAG=$(jq -r '.tag' "$ARTIFACT_FILE")
+SERVICE=$(jq -r '.service // ""' "$ARTIFACT_FILE")
+ENV=$(jq -r '.env // "dev"' "$ARTIFACT_FILE")
+NAMESPACE=$(jq -r '.namespace // ""' "$ARTIFACT_FILE")
+PORT=$(jq -r '.port // ""' "$ARTIFACT_FILE")
+IMAGE=$(jq -r '.image // ""' "$ARTIFACT_FILE")
+TAG=$(jq -r '.tag // ""' "$ARTIFACT_FILE")
 CONTAINER_UID=$(jq -r '.containerUid // 10001' "$ARTIFACT_FILE")
 HEALTH=$(jq -r '.healthPath // "/health"' "$ARTIFACT_FILE")
 LIVE=$(jq -r '.livePath // "/live"' "$ARTIFACT_FILE")

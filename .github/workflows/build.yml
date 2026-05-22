@@ -167,10 +167,6 @@ jobs:
             MNT_PATH=$(yq e '.storage.volumeMounts[0].mountPath // "/tmp"' "$APP_FILE")
             SVC_MONITOR_ENAB=$(yq e '.features.serviceMonitor.enabled // false' "$APP_FILE")
 
-            # Include Defaults for all
-            [[ "$COMPUTE_TYPE" == "null" ]] && COMPUTE_TYPE="fargate"
-
-
             VAR_COUNT=$(yq e '.runtime.env // {} | length' "$APP_FILE")
             if [[ "$VAR_COUNT" -gt 0 ]]; then
               NO_VARS=false

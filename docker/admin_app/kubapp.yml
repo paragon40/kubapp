@@ -1,7 +1,7 @@
 
 service:
   name: admin
-  compute: fargate
+  compute: ec2
 
 app:
   port: 4000
