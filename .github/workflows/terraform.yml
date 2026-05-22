@@ -438,6 +438,10 @@ jobs:
             echo "❌ LEFTOVERS Variable Not Discovered"
           fi
 
+      - name: Remove Route53 Config
+        run: |
+          SYNC_MODE=destroy bash scripts/sync_route53.sh
+
       - name: Finally
         if: success()
         run: echo "✅ $CLUSTER_NAME Terraform Workflow Passed!"
