@@ -70,10 +70,7 @@ jobs:
           echo "COMMIT DETAILS"
           echo "=============================="
 
-          git init
-          git remote add origin https://github.com/${{ github.repository }}.git
           git fetch --depth=1 origin ${{ steps.commit.outputs.commit }}
-
           git show ${{ steps.commit.outputs.commit }}
 
       - name: Get run ID
