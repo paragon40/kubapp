@@ -101,6 +101,7 @@ jobs:
         run: |
           gh run download ${{ steps.run.outputs.run_id }} \
             --name deployment-snapshot
+            --dir deployment-snapshot
 
       - name: Show snapshot
         run: |
