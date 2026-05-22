@@ -60,9 +60,6 @@ NO_SECRETS=$(jq -r '.NO_SECRETS // ""' "$ARTIFACT_FILE")
 SECRET_NAME="${SERVICE}-secrets"
 COMPUTE_TYPE=$(jq -r '.computeType // "fargate"' "$ARTIFACT_FILE")
 
-require jq
-require yq
-
 TARGET_DIR="gitops/envs/$ENV/apps/$SERVICE"
 TARGET_FILE="$TARGET_DIR/values.yaml"
 
