@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ENV="${1:-dev}"
+PUSH="${PUSH:-no}"
+PUSH="${PUSH,,}"
 
 echo "=============================="
 echo "ACTIVATION PIPELINE"
@@ -31,29 +33,37 @@ echo "--------------------------------------------------"
 echo "[INFO] GIT OPERATIONS"
 echo "--------------------------------------------------"
 
-read -rp "Push to GitHub? (yes/no): " CONFIRM
+End() {
+echo "====================================================="
+echo "✅ ACTIVATION COMPLETE: $(date '+%Y-%m-%d_%H:%M:%S')"
+echo "====================================================="
+exit 0
+}
 
-if [[ "$CONFIRM" == "yes" ]]; then
-  echo "[INFO] Staging changes..."
-  git add .
-
-  COMMIT_MSG="[CHORE (Activate)]: run activation pipeline for $ENV - $(date '+%Y-%m-%d %H:%M:%S')"
-
-  echo "[INFO] Creating commit..."
-  git commit -m "$COMMIT_MSG" || echo "[WARN] ⚠️ No changes to commit"
-
-  echo "[INFO] Pushing to remote..."
-  if git push; then
-  echo "[INFO] ✅ Push successful"
+if [[ "$PUSH" == "no" ]]; then
+  read -rp "Push to GitHub? (yes/no): " CONFIRM
+  if [[ "$CONFIRM" == "yes" ]]; then
+    echo "[INFO] Staging changes..."
   else
-    echo "[WARN] ⚠️  Remote State Changed, Rebasing First..."
-    git pull --rebase && git push
-    echo "[INFO] ✅ Push successful"
+    echo "[WARN] ⚠️ Push skipped by user"
+    End
   fi
-else
-  echo "[WARN] ⚠️ Push skipped by user"
 fi
 
-echo "=============================="
-echo "✅ ACTIVATION COMPLETE: $(date '+%Y-%m-%d_%H:%M:%S')"
-echo "=============================="
+git add .
+
+COMMIT_MSG="[CHORE (Activate)]: run activation pipeline for $ENV - $(date '+%Y-%m-%d %H:%M:%S')"
+
+echo "[INFO] Creating commit..."
+git commit -m "$COMMIT_MSG" || echo "[WARN] ⚠️ No changes to commit"
+
+echo "[INFO] Pushing to remote..."
+if git push; then
+  echo "[INFO] ✅ Push successful"
+else
+  echo "[WARN] ⚠️  Remote State Changed, Rebasing First..."
+  git pull --rebase && git push
+  echo "[INFO] ✅ Push successful"
+fi
+
+End
