@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../iac" && pwd)"
-STACKS=("infra" "k8s")
+STACKS=("infra" "k8s" "manifests")
 
 ENV="${1:-dev}"
 
