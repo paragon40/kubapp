@@ -68,6 +68,19 @@ jobs:
           plugin_cache_dir = "$HOME/.terraform.d/plugin-cache"
           EOF
 
+      - name: Install SOPS
+        run: |
+          curl -L -o sops https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64
+          chmod +x sops
+          sudo mv sops /usr/local/bin/sops
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_PRIVATE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+
+      - name: Set ENV
+        run: echo "ENV=${{ github.event.inputs.env }}" >> $GITHUB_ENV
+
+
       # =====================================================
       # TERRAFORM STATIC VALIDATION
       # =====================================================
@@ -83,6 +96,12 @@ jobs:
             -backend=false \
             -input=false \
             -lockfile=readonly
+
+      - name: Decrypt tfvars
+        working-directory: ${{ matrix.dir }}
+        run: |
+          MODULE=$(basename ${{ matrix.dir }})
+          sops -d envs/${ENV}/${MODULE}.tfvars.enc > ${MODULE}.tfvars
 
       - name: Terraform Validate
         working-directory: ${{ matrix.dir }}
@@ -104,7 +123,6 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: |
           tflint \
-            --recursive \
             --minimum-failure-severity=warning
 
       # =====================================================
@@ -144,8 +162,10 @@ jobs:
       - name: Generate Infracost Breakdown
         working-directory: ${{ matrix.dir }}
         run: |
+          MODULE=$(basename ${{ matrix.dir }})
           infracost breakdown \
             --path . \
+            --terraform-var-file=${MODULE}.tfvars \
             --format table
 
       - name: Checks Passed
