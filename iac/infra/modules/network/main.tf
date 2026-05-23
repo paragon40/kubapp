@@ -11,9 +11,9 @@ resource "aws_vpc" "main" {
     {
       resource-type = "vpc"
       network-scope = "core"
-      eni-cluster = var.cluster_name
-      eni-domain  = "network"
-      Name = "${var.name}-vpc"
+      eni-cluster   = var.cluster_name
+      eni-domain    = "network"
+      Name          = "${var.name}-vpc"
     }
   )
 }
@@ -63,8 +63,8 @@ resource "aws_iam_role_policy" "flow_logs" {
 }
 
 resource "aws_flow_log" "vpc" {
-  vpc_id = aws_vpc.main.id
-  traffic_type = "ALL"
+  vpc_id               = aws_vpc.main.id
+  traffic_type         = "ALL"
   log_destination_type = "cloud-watch-logs"
   log_destination      = var.vpc_flow_log_arn
   iam_role_arn         = aws_iam_role.flow_logs.arn
@@ -98,7 +98,7 @@ resource "aws_subnet" "public" {
   availability_zone       = var.azs[count.index]
   map_public_ip_on_launch = true
   tags = merge(var.tags, {
-    Name = "${var.name}-public-${count.index}"
+    Name          = "${var.name}-public-${count.index}"
     resource-type = "subnet"
     subnet-type   = "public"
     az            = var.azs[count.index]
@@ -119,11 +119,11 @@ resource "aws_subnet" "private" {
   cidr_block        = var.private_subnets[count.index]
   availability_zone = var.azs[count.index]
   tags = merge(var.tags, {
-    Name = "${var.name}-private-${count.index}"
-    resource-type = "subnet"
-    subnet-type   = "private"
-    az            = var.azs[count.index]
-    routing       = "nat"
+    Name                                = "${var.name}-private-${count.index}"
+    resource-type                       = "subnet"
+    subnet-type                         = "private"
+    az                                  = var.azs[count.index]
+    routing                             = "nat"
     "kubernetes.io/cluster/${var.name}" = "shared"
     "kubernetes.io/role/internal-elb"   = "1"
   })
@@ -177,7 +177,7 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.igw.id
   }
   tags = merge(var.tags, {
-    Name = "${var.name}-public-rt"
+    Name          = "${var.name}-public-rt"
     resource-type = "route-table"
     subnet-type   = "public"
   })
@@ -216,7 +216,7 @@ resource "aws_route_table" "private" {
 # Private Route Table Association
 ############################################
 resource "aws_route_table_association" "private" {
-  count = length(var.private_subnets)
+  count     = length(var.private_subnets)
   subnet_id = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private[
     var.azs[count.index]

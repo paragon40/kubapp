@@ -30,11 +30,11 @@ resource "aws_eks_cluster" "this" {
   ]
 
   tags = merge(var.tags, {
-    Name = var.cluster_name
+    Name          = var.cluster_name
     resource-type = "eks-cluster"
 
-    cluster-role  = "control-plane"
-    eks-scope     = "cluster"
+    cluster-role    = "control-plane"
+    eks-scope       = "cluster"
     networking-mode = "vpc-native"
   })
 }

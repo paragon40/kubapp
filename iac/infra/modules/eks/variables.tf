@@ -13,7 +13,7 @@ variable "admin_arn" {
 variable "sys_monitor_role_arn" {
   description = "IAM role ARN used by the sys_monitor EC2 instance"
   type        = string
-  default = null
+  default     = null
 }
 
 variable "kubernetes_version" {

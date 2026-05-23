@@ -26,14 +26,14 @@ resource "aws_eks_node_group" "system_nodes" {
   }
 
   tags = merge(var.tags, {
-    Name = "${var.cluster_name}-system-node"
+    Name          = "${var.cluster_name}-system-node"
     resource-type = "eks-node-group"
     eks-scope     = "system-node-group"
     node-type     = "ec2"
     node-group    = "secondary"
     node-role     = "worker"
-    workload     = "system"
-    eni-cluster = var.cluster_name
+    workload      = "system"
+    eni-cluster   = var.cluster_name
     eni-domain    = "compute"
     capacity-type = "on-demand"
   })

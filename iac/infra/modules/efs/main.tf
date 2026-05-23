@@ -1,5 +1,5 @@
 resource "aws_security_group" "efs" {
-  name = "${var.name_prefix}-efs-sg"
+  name        = "${var.name_prefix}-efs-sg"
   description = "Allow NFS access to EFS"
   vpc_id      = var.vpc_id
 
@@ -29,7 +29,7 @@ resource "aws_security_group" "efs" {
 
 resource "aws_efs_file_system" "this" {
   creation_token = "${var.name_prefix}-efs"
-  encrypted = true
+  encrypted      = true
   tags = merge(var.tags, {
     name          = "${var.name_prefix}-efs"
     resource-type = "efs"

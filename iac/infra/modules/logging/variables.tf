@@ -12,7 +12,7 @@ variable "log_groups" {
     name      = string
     retention = number
     log_type  = string
-    scope  = string
+    scope     = string
   }))
 }
 

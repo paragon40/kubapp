@@ -14,7 +14,7 @@ resource "aws_ecr_repository" "kubapp" {
   }
 
   tags = merge(var.tags, {
-    name = "${var.name_prefix}-${each.value}"
+    name          = "${var.name_prefix}-${each.value}"
     resource-type = "ecr-repository"
     layer         = "artifact-registry"
     cluster       = var.cluster_name

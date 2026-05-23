@@ -1,17 +1,17 @@
 resource "aws_eks_fargate_profile" "workloads" {
   for_each = var.fargate_workloads
 
-  cluster_name         = aws_eks_cluster.this.name
-  fargate_profile_name = "${var.cluster_name}-${each.key}"
+  cluster_name           = aws_eks_cluster.this.name
+  fargate_profile_name   = "${var.cluster_name}-${each.key}"
   pod_execution_role_arn = var.fargate_role_arn
-  subnet_ids = var.private_subnet_ids
+  subnet_ids             = var.private_subnet_ids
   selector {
     namespace = each.key
     labels    = each.value.labels
   }
 
   tags = merge(var.tags, {
-    name = "${var.cluster_name}-${each.key}-fargate"
+    name          = "${var.cluster_name}-${each.key}-fargate"
     resource-type = "eks-fargate-profile"
     eks-scope     = "fargate"
     node-type     = "fargate"
@@ -42,7 +42,7 @@ resource "aws_security_group" "fargate_pods" {
   }
 
   tags = merge(var.tags, {
-    name = "${var.cluster_name}-fargate-sg"
+    name          = "${var.cluster_name}-fargate-sg"
     resource-type = "security-group"
     layer         = "security"
     attached-to   = "fargate"

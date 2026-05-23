@@ -5,7 +5,7 @@ locals {
 
       ingress = {
         description = "Network entry point (ingress)"
-        workload  = "ingress"
+        workload    = "ingress"
 
         ingress = [
           {

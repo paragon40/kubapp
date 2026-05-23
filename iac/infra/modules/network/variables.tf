@@ -16,7 +16,7 @@ variable "vpc_cidr" {
 
 variable "vpc_flow_log_arn" {
   description = "CloudWatch log group configuration for VPC flow logs"
-  type = string
+  type        = string
 }
 
 variable "azs" {

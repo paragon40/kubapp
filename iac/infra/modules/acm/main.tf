@@ -3,7 +3,7 @@ resource "aws_acm_certificate" "kubapp" {
   subject_alternative_names = ["*.${var.domain}"]
 
   validation_method = "DNS"
-  tags = var.tags
+  tags              = var.tags
 
   lifecycle {
     create_before_destroy = true
@@ -22,10 +22,10 @@ resource "aws_route53_record" "acm_validation" {
 
   zone_id = var.zone_id
 
-  name    = each.value.name
-  type    = each.value.type
-  records = [each.value.record]
-  ttl     = 60
+  name            = each.value.name
+  type            = each.value.type
+  records         = [each.value.record]
+  ttl             = 60
   allow_overwrite = true
 }
 
