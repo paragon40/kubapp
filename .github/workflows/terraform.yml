@@ -128,7 +128,7 @@ jobs:
       # Trivy
       # =====================================================
       - name: Run Trivy config scan
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: config
           scan-ref: ${{ matrix.dir }}
