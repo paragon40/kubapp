@@ -24,7 +24,12 @@ concurrency:
   group: terraform-${{ github.event.inputs.env }}
   cancel-in-progress: false
 
-
+strategy:
+  matrix:
+    dir:
+      - iac/infra
+      - iac/k8s
+      - iac/manifests
 # =========================================================
 # INFRA PLAN
 # =========================================================
@@ -42,6 +47,15 @@ jobs:
 
       - name: Check Oidc issue
         run: echo $ACTIONS_ID_TOKEN_REQUEST_TOKEN
+
+      - name: Run tfsec
+        if: ${{ github.event.inputs.action != 'destroy' }}
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: ${{ matrix.dir }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          additional_args: --minimum-severity MEDIUM
+          soft_fail: true
 
       - name: Install SOPS
         run: |
