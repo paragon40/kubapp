@@ -106,10 +106,10 @@ for stack in infra k8s; do
   fi
 
   echo "[INFO] Formatting: $DIR"
-  terraform fmt "$DIR"
+  terraform fmt -recursive "$DIR"
 
   echo "[INFO] Checking format: $DIR"
-  terraform fmt -check "$DIR" \
+  terraform fmt -check -recursive "$DIR" \
     || fail "Terraform format/syntax issue in $DIR"
 done
 
