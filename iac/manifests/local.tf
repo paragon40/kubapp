@@ -10,12 +10,12 @@ data "terraform_remote_state" "infra" {
 }
 
 locals {
-  env                    = try(data.terraform_remote_state.infra.outputs.env, "${var.env}")
-  cluster_name           = try(data.terraform_remote_state.infra.outputs.cluster_name, "${var.project}-${var.env}")
-  cluster_endpoint       = data.terraform_remote_state.infra.outputs.cluster_endpoint
-  cluster_ca_cert        = data.terraform_remote_state.infra.outputs.cluster_ca_certificate
+  env              = try(data.terraform_remote_state.infra.outputs.env, "${var.env}")
+  cluster_name     = try(data.terraform_remote_state.infra.outputs.cluster_name, "${var.project}-${var.env}")
+  cluster_endpoint = data.terraform_remote_state.infra.outputs.cluster_endpoint
+  cluster_ca_cert  = data.terraform_remote_state.infra.outputs.cluster_ca_certificate
 
-  name_prefix          = "kubapp-${var.env}"
+  name_prefix = "kubapp-${var.env}"
 
   k8s_manifest_labels = {
     cluster_name  = local.cluster_name

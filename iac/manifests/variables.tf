@@ -1,19 +1,19 @@
 variable "project" {
-  type = string
+  type    = string
   default = "kubapp"
 }
 
 variable "env" {
-  type = string
+  type    = string
   default = "dev"
 }
 
 variable "region" {
-  type = string
+  type    = string
   default = "us-east-1"
 }
 
 variable "enable_alerts" {
-  type = bool
+  type    = bool
   default = true
 }
