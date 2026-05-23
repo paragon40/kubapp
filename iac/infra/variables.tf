@@ -46,16 +46,6 @@ variable "main_domain" {
   type        = string
 }
 
-variable "root_domain" {
-  description = "Domain from manually set up route53 (for test)"
-  type        = string
-}
-
-variable "subdomain" {
-  description = "Service subdomain for test"
-  type        = string
-}
-
 variable "cluster_name" {
   description = "Base cluster name (no env suffix here)"
   type        = string

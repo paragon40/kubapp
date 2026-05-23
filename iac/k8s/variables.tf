@@ -26,7 +26,7 @@ variable "alert_email_password" {
   sensitive = true
 }
 
-variable "domain" {
+variable "main_domain" {
   type = string
 }
 

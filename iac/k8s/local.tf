@@ -17,7 +17,7 @@ locals {
   cluster_ca_cert        = data.terraform_remote_state.infra.outputs.cluster_ca_certificate
   lb_controller_role_arn = data.terraform_remote_state.infra.outputs.lb_controller_role_arn
   external_dns_role_arn  = data.terraform_remote_state.infra.outputs.external_dns_role_arn
-  domain                 = try(data.terraform_remote_state.infra.outputs.main_domain, var.domain)
+  main_domain            = try(data.terraform_remote_state.infra.outputs.main_domain, var.main_domain)
   fluentbit_role_arn     = data.terraform_remote_state.infra.outputs.fluentbit_role_arn
   efs_role_arn           = data.terraform_remote_state.infra.outputs.efs_role_arn
   efs_id                 = data.terraform_remote_state.infra.outputs.efs_id
