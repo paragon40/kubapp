@@ -2,7 +2,7 @@ namespace: argocd
 ingress:
   name: kubapp-argocd-alb
   baseDomain: rundailytest.online
-  certificateArn: arn:aws:acm:us-east-1:198200019771:certificate/3c23a42c-3c87-402f-adfa-688be2f00f2c
+  certificateArn: arn:aws:acm:us-east-1:198200019771:certificate/83f60367-f0cb-4f29-b953-155dae9a4d79
   className: alb
   enableSubdomainRouting: true
   annotations:
