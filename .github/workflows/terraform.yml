@@ -24,59 +24,140 @@ concurrency:
   group: terraform-${{ github.event.inputs.env }}
   cancel-in-progress: false
 
-# =========================================================
-# Shift Left Security Practice
-# =========================================================
 jobs:
 
   run_checks:
     if: ${{ github.event.inputs.action == 'apply' }}
-    name: Infra - Plan
+    name: Static Checks
+    runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         dir:
           - iac/infra
           - iac/k8s
           - iac/manifests
-    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Cache Terraform
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            ${{ matrix.dir }}/.terraform
+          key: terraform-${{ runner.os }}-${{ hashFiles(format('{0}/**/*.tf', matrix.dir)) }}
+          restore-keys: |
+            terraform-${{ runner.os }}-
+
+      - name: Configure Terraform Plugin Cache
+        run: |
+          mkdir -p ~/.terraform.d/plugin-cache
+
+          cat > ~/.terraformrc <<EOF
+          plugin_cache_dir = "$HOME/.terraform.d/plugin-cache"
+          EOF
+
+      # =====================================================
+      # TERRAFORM STATIC VALIDATION
+      # =====================================================
+
+      - name: Terraform Format Check
+        working-directory: ${{ matrix.dir }}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        working-directory: ${{ matrix.dir }}
+        run: |
+          terraform init \
+            -backend=false \
+            -input=false \
+            -lockfile=readonly
+
+      - name: Terraform Validate
+        working-directory: ${{ matrix.dir }}
+        run: |
+          terraform validate
+
+      # =====================================================
+      # TFLINT
+      # =====================================================
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Init TFLint
+        working-directory: ${{ matrix.dir }}
+        run: tflint --init
+
+      - name: Run TFLint
+        working-directory: ${{ matrix.dir }}
+        run: |
+          tflint \
+            --recursive \
+            --minimum-failure-severity=warning
+
+      # =====================================================
+      # TFSEC
+      # =====================================================
+
       - name: Run tfsec
-        if: ${{ github.event.inputs.action != 'destroy' }}
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
           working_directory: ${{ matrix.dir }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          additional_args: --minimum-severity MEDIUM
-          soft_fail: true
+          additional_args: |
+            --minimum-severity HIGH
+            --soft-fail=false
 
-      - name: Terraform Init
-        working-directory: ${{ matrix.dir }}
-        run: terraform init -backend=false
+      # =====================================================
+      # CHECKOV
+      # =====================================================
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: ${{ matrix.dir }}
+          framework: terraform
+          quiet: true
+          soft_fail: false
+
+      # =====================================================
+      # INFRACOST
+      # =====================================================
 
       - name: Setup Infracost
-        if: ${{ github.event.inputs.action != 'destroy' }}
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
-      - name: Infracost Breakdown
-        if: ${{ github.event.inputs.action != 'destroy' }}
-        run: infracost breakdown --path ${{ matrix.dir }} --format json --out-file infracost.json
+      - name: Generate Infracost Breakdown
+        working-directory: ${{ matrix.dir }}
+        run: |
+          infracost breakdown \
+            --path . \
+            --format table
 
-      - name: Infracost Diff
-        if: ${{ github.event.inputs.action != 'destroy' }}
-        run: infracost diff --path ${{ matrix.dir }} --compare-to infracost.json
+      - name: Checks Passed
+        run: |
+          echo "======================================"
+          echo "✅ ALL STATIC CHECKS PASSED"
+          echo "Directory: ${{ matrix.dir }}"
+          echo "======================================"
 
-      - name: Log Security Pass
-        if: ${{ github.event.inputs.action == 'apply' }}
-        run: echo "✅ First Level Security Checks Passed"
-
+  # =====================================================
+  # INFRA PLAN
+  # =====================================================
   infra_plan:
     if: ${{ github.event.inputs.action == 'apply' }}
     name: Infra - Plan
