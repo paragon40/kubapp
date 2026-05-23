@@ -10,21 +10,17 @@ data "terraform_remote_state" "infra" {
 }
 
 locals {
-  env                    = try(data.terraform_remote_state.infra.outputs.env, "${var.env}")
+  env                    = try(data.terraform_remote_state.infra.outputs.env, var.env)
   vpc_id                 = data.terraform_remote_state.infra.outputs.vpc_id
   cluster_name           = try(data.terraform_remote_state.infra.outputs.cluster_name, "${var.project}-${var.env}")
   cluster_endpoint       = data.terraform_remote_state.infra.outputs.cluster_endpoint
   cluster_ca_cert        = data.terraform_remote_state.infra.outputs.cluster_ca_certificate
   lb_controller_role_arn = data.terraform_remote_state.infra.outputs.lb_controller_role_arn
   external_dns_role_arn  = data.terraform_remote_state.infra.outputs.external_dns_role_arn
-  domain                 = data.terraform_remote_state.infra.outputs.domain
-  main_domain            = data.terraform_remote_state.infra.outputs.main_domain
-  cert_arn               = data.terraform_remote_state.infra.outputs.cert_arn
+  domain                 = try(data.terraform_remote_state.infra.outputs.main_domain, var.domain)
   fluentbit_role_arn     = data.terraform_remote_state.infra.outputs.fluentbit_role_arn
   efs_role_arn           = data.terraform_remote_state.infra.outputs.efs_role_arn
   efs_id                 = data.terraform_remote_state.infra.outputs.efs_id
-  efs_dns_name           = data.terraform_remote_state.infra.outputs.efs_dns_name
-  efs_security_group_id  = data.terraform_remote_state.infra.outputs.efs_security_group_id
   ebs_csi_irsa_arn       = data.terraform_remote_state.infra.outputs.ebs_csi_irsa_arn
   app_logs               = data.terraform_remote_state.infra.outputs.log_group_names["app_logs"]
 

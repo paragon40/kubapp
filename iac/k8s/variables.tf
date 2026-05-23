@@ -34,18 +34,3 @@ variable "domain" {
   type = string
 }
 
-variable "DOCKER_PASSWORD" {
-  type      = string
-  sensitive = true
-}
-
-variable "DOCKER_USERNAME" {
-  type      = string
-  sensitive = true
-}
-
-variable "tags" {
-  description = "Additional tags"
-  type        = map(string)
-  default     = {}
-}

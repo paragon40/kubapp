@@ -30,6 +30,11 @@ output "cluster_endpoint" {
 output "cluster_ca_certificate" {
   value = local.cluster_ca_cert
 }
+
 output "Environment" {
   value = local.env
+}
+
+output "domain" {
+  value = local.domain
 }
