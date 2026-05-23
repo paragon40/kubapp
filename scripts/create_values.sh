@@ -43,8 +43,11 @@ require jq
 require yq
 
 SERVICE=$(jq -r '.service // ""' "$ARTIFACT_FILE")
+[[ -n "$SERVICE" ]] || fail "❌ Service does Not exit"
 ENV=$(jq -r '.env // "dev"' "$ARTIFACT_FILE")
 NAMESPACE=$(jq -r '.namespace // ""' "$ARTIFACT_FILE")
+[[ -n "$NAMESPACE" ]] || fail "❌ Namespace does Not exit"
+
 PORT=$(jq -r '.port // ""' "$ARTIFACT_FILE")
 IMAGE=$(jq -r '.image // ""' "$ARTIFACT_FILE")
 TAG=$(jq -r '.tag // ""' "$ARTIFACT_FILE")
@@ -56,7 +59,7 @@ MNT_VOL=$(jq -r '.mount_vol // ""' "$ARTIFACT_FILE")
 MNT_PATH=$(jq -r '.mount_path // ""' "$ARTIFACT_FILE")
 TMP_ENABLED=$(jq -r '.tmp_enabled // false' "$ARTIFACT_FILE")
 SVC_MONITOR_ENAB=$(jq -r '.svc_monitor_enabled // false' "$ARTIFACT_FILE")
-NO_SECRETS=$(jq -r '.NO_SECRETS' "$ARTIFACT_FILE")
+NO_SECRETS=$(jq -r '.NO_SECRETS // false' "$ARTIFACT_FILE")
 SECRET_NAME="${SERVICE}-secrets"
 COMPUTE_TYPE=$(jq -r '.computeType // "fargate"' "$ARTIFACT_FILE")
 
