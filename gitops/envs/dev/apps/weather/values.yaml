@@ -59,7 +59,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 1f3b831b2cf66454cfd85ffc89c9a88645d5eae258e7587330db355c10509795
-  generatedAt: 2026-05-23T14:36:37Z
+  generatedAt: 2026-05-23T14:44:49Z
   source: build-pipeline
 storage:
   volumes:
@@ -68,5 +68,8 @@ storage:
   volumeMounts:
     - name: edgepaas-vol
       mountPath: /tmp
+secret:
+  enabled: true
+  name: weather-secrets
 labels:
   compute: fargate
