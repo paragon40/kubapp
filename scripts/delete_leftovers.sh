@@ -37,7 +37,7 @@ log "VPC=$VPC_ID REGION=$REGION CLUSTER=$CLUSTER_NAME"
 enis=$(awsq ec2 describe-network-interfaces \
   --filters Name=vpc-id,Values="$VPC_ID" \
   --query "NetworkInterfaces[].NetworkInterfaceId" \
-  --output text)
+  --output text 2>/dev/null || true)
 
 [[ -z "$enis" ]] && { log "NO ENIs FOUND"; exit 0; }
 
@@ -56,7 +56,12 @@ for eni in $enis; do
 
   json=$(awsq ec2 describe-network-interfaces \
     --network-interface-ids "$eni" \
-    --output json)
+    --output json 2>/dev/null || true)
+
+  if [[ -z "$json" || "$json" == "null" ]]; then
+    log "ENI DISAPPEARED (already deleted) → SKIP"
+    continue
+  fi
 
   desc=$(echo "$json" | jq -r '.NetworkInterfaces[0].Description // ""')
   status=$(echo "$json" | jq -r '.NetworkInterfaces[0].Status // ""')

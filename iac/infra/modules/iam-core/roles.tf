@@ -153,3 +153,29 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   name = "sys-monitor-ec2-profile"
   role = aws_iam_role.ec2_role.name
 }
+
+# Cross-Account role
+resource "aws_iam_role" "eks_cross_account_role" {
+  name = "sys-monitor-cross-account-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        AWS = var.sys_monitor_ec2_role_arn
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "eks_access" {
+  role       = aws_iam_role.eks_cross_account_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSViewPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_admin" {
+  role       = aws_iam_role.eks_cross_account_role.name
+  policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+}
