@@ -19,6 +19,7 @@ PLURAL = "applications"
 def collect_metrics():
     try:
         api = get_k8s_client()
+        custom = api["custom"]
         # =========================================================
         # DEBUG: prove cluster access works
         # =========================================================
@@ -32,7 +33,7 @@ def collect_metrics():
         # =========================================================
         # ArgoCD applications check
         # =========================================================
-        response = api.list_cluster_custom_object(
+        response = custom.list_cluster_custom_object(
             group=GROUP,
             version=VERSION,
             plural=PLURAL

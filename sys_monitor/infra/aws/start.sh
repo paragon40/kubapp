@@ -85,14 +85,48 @@ set -euo pipefail
 
 cd /opt/sys_monitor
 
-export KUBECONFIG=/home/ubuntu/.kube/config
 mkdir -p /home/ubuntu/.kube
 chown -R ubuntu:ubuntu $HOME/.kube
 
-aws eks update-kubeconfig \
-  --region us-east-1 \
-  --name kubapp-dev \
-  --kubeconfig /home/ubuntu/.kube/config
+cat > /home/ubuntu/.kube/config <<EOF
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: $(aws eks describe-cluster \
+      --name "$TARGET_CLUSTER_NAME" \
+      --region us-east-1 \
+      --query "cluster.endpoint" \
+      --output text)
+    certificate-authority-data: $(aws eks describe-cluster \
+      --name "$TARGET_CLUSTER_NAME" \
+      --region us-east-1 \
+      --query "cluster.certificateAuthority.data" \
+      --output text)
+  name: kubapp
+
+contexts:
+- context:
+    cluster: kubapp
+    user: aws
+  name: kubapp
+
+current-context: kubapp
+
+users:
+- name: aws
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1beta1
+      command: aws
+      args:
+        - eks
+        - get-token
+        - --cluster-name
+        - kubapp-dev
+        - --region
+        - us-east-1
+EOF
 
 echo "==> Starting Docker stack"
 docker compose down -v || true

@@ -2,14 +2,9 @@ from kubernetes import client, config
 import os
 
 def get_k8s_client():
-    kubeconfig = os.getenv("KUBECONFIG", "/root/.kube/config")
 
-    try:
-        config.load_kube_config(config_file=kubeconfig)
-        print(f"[GitOps] Loaded kubeconfig: {kubeconfig}")
-    except Exception as e:
-        print(f"[GitOps] kubeconfig failed: {e}")
-        raise
+    kubeconfig_path = os.getenv("KUBECONFIG", "/root/.kube/config")
+    config.load_kube_config(config_file=kubeconfig_path)
 
     api_client = client.ApiClient()
 
