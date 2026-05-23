@@ -143,7 +143,8 @@ jobs:
           trivy config ${{ matrix.dir }} \
             --severity CRITICAL,HIGH \
             --format table \
-            --exit-code 0
+            --ignorefile ${{ github.workspace }}/.trivyignore \
+            --exit-code 1
 
       # =====================================================
       # CHECKOV

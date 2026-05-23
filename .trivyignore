@@ -1,18 +1,9 @@
-# =====================================================
-# IAM (IRSA + platform roles)
-# =====================================================
+# IAM wildcard policies (IRSA / EKS access patterns)
+AWS-0039
+AWS-0040
+AWS-0041
 
-AWS.IAM.PolicyWildcard
-AWS.IAM.PolicyActionWildcard
+# NETWORK (intentional design choices)
+AWS-0164
+AWS-0104
 
-# =====================================================
-# NETWORK (intentional public subnet usage for ingress)
-# =====================================================
-
-AWS.VPC.SubnetPublicIP
-
-# =====================================================
-# LOGGING (CloudWatch access via IAM roles)
-# =====================================================
-
-AWS.CloudWatch.*
