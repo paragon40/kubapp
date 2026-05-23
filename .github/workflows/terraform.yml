@@ -190,10 +190,13 @@ jobs:
             --out-file infracost.json
 
       - name: Upload Infracost Report
+        working-directory: ${{ matrix.dir }}
         run: |
+          echo "Checking file..."
+          ls -la infracost.json
           cat infracost.json || true
           infracost upload \
-           --path ${{ matrix.dir }}/infracost.json
+           --path infracost.json
 
 
       - name: Checks Passed
