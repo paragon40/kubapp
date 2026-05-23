@@ -127,15 +127,12 @@ jobs:
       # =====================================================
       # TFSEC
       # =====================================================
+      - name: Install tfsec
+        run: |
+          curl -sSL https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
 
       - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3
-        with:
-          working_directory: ${{ matrix.dir }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          additional_args: |
-            --minimum-severity HIGH
-            --soft-fail=false
+        run: tfsec ${{ matrix.dir }} --minimum-severity HIGH --soft-fail=false
 
       # =====================================================
       # CHECKOV
