@@ -36,5 +36,5 @@ output "Environment" {
 }
 
 output "domain" {
-  value = local.domain
+  value = local.main_domain
 }
