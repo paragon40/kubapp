@@ -113,14 +113,13 @@ jobs:
 
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Init TFLint
-        working-directory: ${{ matrix.dir }}
-        run: tflint --init
-
-      - name: Run TFLint
+      - name: Init and run TFLint
         working-directory: ${{ matrix.dir }}
         run: |
+          tflint --init
           tflint \
             --minimum-failure-severity=warning
 
@@ -130,6 +129,8 @@ jobs:
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+          sudo mv ./bin/trivy /usr/local/bin/trivy
+          trivy --version
 
       - name: Cache Trivy DB
         uses: actions/cache@v4
@@ -140,10 +141,10 @@ jobs:
       - name: Run Trivy config scan
         run: |
           trivy config ${{ matrix.dir }} \
-            --severity: CRITICAL,HIGH \
-            --ignore-unfixed: true \
-            --format: table \
-            --exit-code: 1
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --format table \
+            --exit-code 1
 
       # =====================================================
       # CHECKOV
