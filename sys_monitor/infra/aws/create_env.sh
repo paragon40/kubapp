@@ -2,10 +2,11 @@
 set -euo pipefail
 
 # -------- INPUTS --------
-MODE="${MODE:-local}"              # default to local if not set
-ACCOUNT_ID="${ACCOUNT_ID:?ACCOUNT_ID is required}"  # must be provided
+MODE="${MODE:-local}"
+ACCOUNT_ID="${ACCOUNT_ID:?ACCOUNT_ID is required}"
+ENABLE_NODE_DEBUG="${ENABLE_NODE_DEBUG:-}"
 
-# Optional overrides (can also be exported before running)
+
 TARGET_CLUSTER_NAME="${TARGET_CLUSTER_NAME:-kubapp-dev}"
 TARGET_REGION="${TARGET_REGION:-us-east-1}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
@@ -26,6 +27,7 @@ fi
 # -------- WRITE .ENV --------
 cat > "$ENV_FILE" <<EOF
 CLUSTER_MODE=${CLUSTER_MODE}
+ENABLE_NODE_DEBUG=${ENABLE_NODE_DEBUG}
 TARGET_ROLE_ARN=${TARGET_ROLE_ARN}
 TARGET_CLUSTER_NAME=${TARGET_CLUSTER_NAME}
 TARGET_REGION=${TARGET_REGION}

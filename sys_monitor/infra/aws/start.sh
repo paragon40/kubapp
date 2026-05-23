@@ -7,6 +7,7 @@ set -euo pipefail
 MODE="${1:-first_run}"   # first_run | apply | destroy
 ENV="${ENV:-local}"
 ACC_ID="${ACCOUNT_ID:-}"
+ENABLE_NODE_DEBUG="${ENABLE_NODE_DEBUG:-true}"
 
 if [[ -z "$ACC_ID" || "$ACC_ID" == "null" ]]; then
   echo "❌ ACC_ID NOT Set"
@@ -94,7 +95,7 @@ set -euo pipefail
 cd /opt/sys_monitor
 
 echo "==> Setting Up .env file for docker compose.."
-ACCOUNT_ID="$ACC_ID" MODE="$ENV" bash create_env.sh
+ACCOUNT_ID="$ACC_ID" MODE="$ENV" ENABLE_NODE_DEBUG="$ENABLE_NODE_DEBUG" bash create_env.sh
 
 # ============================================================
 # START CONTAINERS
