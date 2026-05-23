@@ -74,17 +74,8 @@ services:
     container_name: gitops-exporter
     ports:
       - "9105:9105"
-    volumes:
-      - /home/ubuntu/.kube:/root/.kube:ro
-      - /home/ubuntu/.aws:/root/.aws:ro
-    environment:
-      - CLUSTER_MODE=local
-      - TARGET_CLUSTER_NAME=kubapp-dev
-      - TARGET_REGION=us-east-1
-      - TARGET_ROLE_ARN=arn:aws:iam::<B_ACCOUNT_ID>:role/EKSReadOnlyRole
-      - KUBECONFIG=/root/.kube/config
-      - AWS_PROFILE=default
-      - AWS_REGION=us-east-1
+    env_file:
+      - infra/aws/.env
     restart: unless-stopped
 
 volumes:

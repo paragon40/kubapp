@@ -5,6 +5,13 @@ set -euo pipefail
 # MODE
 # ============================================================
 MODE="${1:-first_run}"   # first_run | apply | destroy
+ENV="${ENV:-local}"
+ACC_ID="${ACCOUNT_ID:-}"
+
+if [[ -z "$ACC_ID" || "$ACC_ID" == "null" ]]; then
+  echo "❌ ACC_ID NOT Set"
+  exit 1
+fi
 
 # ============================================================
 # CONFIG
@@ -12,6 +19,7 @@ MODE="${1:-first_run}"   # first_run | apply | destroy
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TF_DIR="$PROJECT_ROOT/infra/aws"
 DOMAIN="${DOMAIN:-rundailytest.site}"
+
 KEY_NAME="tf-web-key"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/${KEY_NAME}.pem}"
 
@@ -54,7 +62,7 @@ for i in {1..40}; do
 done
 
 # ============================================================
-# FIRST RUN BOOTSTRAP WAIT
+# FIRST RUN WAIT
 # ============================================================
 if [[ "$MODE" == "first_run" ]]; then
   echo "==> Waiting for cloud-init..."
@@ -85,49 +93,12 @@ set -euo pipefail
 
 cd /opt/sys_monitor
 
-mkdir -p /home/ubuntu/.kube
-chown -R ubuntu:ubuntu $HOME/.kube
+echo "==> Setting Up .env file for docker compose.."
+ACCOUNT_ID="$ACC_ID" MODE="$ENV" bash create_env.sh
 
-cat > /home/ubuntu/.kube/config <<EOF
-apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    server: $(aws eks describe-cluster \
-      --name "$TARGET_CLUSTER_NAME" \
-      --region us-east-1 \
-      --query "cluster.endpoint" \
-      --output text)
-    certificate-authority-data: $(aws eks describe-cluster \
-      --name "$TARGET_CLUSTER_NAME" \
-      --region us-east-1 \
-      --query "cluster.certificateAuthority.data" \
-      --output text)
-  name: kubapp
-
-contexts:
-- context:
-    cluster: kubapp
-    user: aws
-  name: kubapp
-
-current-context: kubapp
-
-users:
-- name: aws
-  user:
-    exec:
-      apiVersion: client.authentication.k8s.io/v1beta1
-      command: aws
-      args:
-        - eks
-        - get-token
-        - --cluster-name
-        - kubapp-dev
-        - --region
-        - us-east-1
-EOF
-
+# ============================================================
+# START CONTAINERS
+# ============================================================
 echo "==> Starting Docker stack"
 docker compose down -v || true
 docker compose up -d --build
@@ -156,11 +127,10 @@ for i in {1..60}; do
 done
 
 # ============================================================
-# FINAL CHECK
+# FINAL CHECKS (SERVICE ONLY)
 # ============================================================
 echo "==> Final checks"
 
-curl -fs http://127.0.0.1:3000/ || true
 curl -fs http://127.0.0.1:3001/api/health || true
 curl -fs http://127.0.0.1:9090/-/ready || true
 curl -fs http://127.0.0.1:8000/ || true
@@ -168,66 +138,22 @@ curl -fs http://127.0.0.1:9105/ || true
 curl -fs http://127.0.0.1:9105/metrics || true
 
 echo "========================================"
-echo "Validating AWS and Kubernetes Connectivity"
+echo "SERVICE BOOT COMPLETE"
 echo "========================================"
 
-# Check AWS identity
-echo
-echo "[1/4] Checking AWS caller identity..."
-CALLER_ID=$(aws sts get-caller-identity 2>/dev/null || true)
-
-if [[ -z "$CALLER_ID" ]]; then
-  echo "ERROR: Unable to retrieve AWS caller identity."
-  exit 1
-fi
-
-echo "$CALLER_ID"
-
-echo
-echo "[2/4] Updating kubeconfig for EKS cluster 'kubapp-dev'..."
-if ! aws eks update-kubeconfig \
-  --region us-east-1 \
-  --name kubapp-dev  \
-  --kubeconfig /home/ubuntu/.kube/config; then
-  echo "ERROR: Failed to update kubeconfig."
-  exit 1
-fi
-
-# Verify Kubernetes API access
-echo
-echo "[3/4] Verifying Kubernetes API connectivity..."
-if ! kubectl cluster-info >/dev/null 2>&1; then
-  echo "ERROR: Unable to connect to the Kubernetes cluster."
-  exit 1
-fi
-
-echo "Kubernetes API connection successful."
-
-# Display cluster resources
-echo
-echo "[4/4] Listing cluster resources..."
-echo
-echo "Pods across all namespaces:"
-kubectl get pods -A
-
-echo
-echo "Argo CD Applications:"
-kubectl get applications.argoproj.io -A 2>/dev/null || \
-echo "No Argo CD Application resources found."
-
-echo "========================================"
-echo "Connectivity checks completed successfully."
-echo "========================================"
-echo "Check gitops docker logs."
-docker logs $(docker ps --filter "name=gitops-exporter" -q)
+# ============================================================
+# AWS / K8S CONNECTIVITY (DEFERRED TO APP LOGIC)
+# ============================================================
+echo "NOTE: Kubernetes connectivity is now handled inside container via AWS SDK exec-auth."
 EOF
 
+# ============================================================
+# OUTPUT
+# ============================================================
 echo ""
 echo "========================================"
 echo "DEPLOYMENT COMPLETE"
 echo "========================================"
-echo ""
-echo "Access your services using EC2 Public IP:"
 echo ""
 echo "Grafana:"
 echo "  http://monitor.${DOMAIN}:3001"
@@ -238,6 +164,7 @@ echo ""
 echo "GitHub Exporter:"
 echo "  http://app.${DOMAIN}:3000"
 echo "  http://app.${DOMAIN}:3000/metrics"
+echo ""
 echo "SRE Engine:"
 echo "  http://app.${DOMAIN}:8000"
 echo ""
