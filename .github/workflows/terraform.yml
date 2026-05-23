@@ -183,7 +183,7 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: |
           MODULE=$(basename ${{ matrix.dir }})
-          infracost diff \
+          infracost breakdown \
             --path . \
             --terraform-var-file=${MODULE}.tfvars \
             --format json \
