@@ -163,19 +163,10 @@ resource "aws_iam_role" "eks_cross_account_role" {
     Statement = [{
       Effect = "Allow"
       Principal = {
-        AWS = var.sys_monitor_ec2_role_arn
+        AWS = aws_iam_role.ec2_role.sys_monitor_ec2_role.arn
       }
       Action = "sts:AssumeRole"
     }]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "eks_access" {
-  role       = aws_iam_role.eks_cross_account_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSViewPolicy"
-}
-
-resource "aws_iam_role_policy_attachment" "eks_admin" {
-  role       = aws_iam_role.eks_cross_account_role.name
-  policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-}
