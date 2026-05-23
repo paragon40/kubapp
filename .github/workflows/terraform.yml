@@ -142,7 +142,6 @@ jobs:
         run: |
           trivy config ${{ matrix.dir }} \
             --severity CRITICAL,HIGH \
-            --ignore-unfixed \
             --format table \
             --exit-code 1
 
