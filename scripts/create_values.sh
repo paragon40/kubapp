@@ -182,7 +182,7 @@ secret:
   name: $SECRET_NAME
 EOF
 else
-  echo "$SERVICE App has No secret"
+  echo "$SERVICE App has No secret: NO_SECRETS=$NO_SECRETS"
 fi
 
 ####################################################
