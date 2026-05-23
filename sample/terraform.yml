@@ -125,17 +125,14 @@ jobs:
             --minimum-failure-severity=warning
 
       # =====================================================
-      # Trivy
+      # TFSEC
       # =====================================================
-      - name: Run Trivy config scan
-        uses: aquasecurity/trivy-action@0.24.0
-        with:
-          scan-type: config
-          scan-ref: ${{ matrix.dir }}
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          format: table
-          exit-code: 1
+      - name: Install tfsec
+        run: |
+          curl -sSL https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+
+      - name: Run tfsec
+        run: tfsec ${{ matrix.dir }} --minimum-severity HIGH --soft-fail=false
 
       # =====================================================
       # CHECKOV
