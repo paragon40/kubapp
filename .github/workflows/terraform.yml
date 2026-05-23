@@ -186,7 +186,14 @@ jobs:
           infracost breakdown \
             --path . \
             --terraform-var-file=${MODULE}.tfvars \
-            --format table
+            --format table \
+            --out-file infracost.json
+
+      - name: Upload Infracost Report
+        run: |
+          infracost upload \
+           --path ${{ matrix.dir }}/infracost.json
+
 
       - name: Checks Passed
         run: |

@@ -181,6 +181,8 @@ secret:
   enabled: true
   name: $SECRET_NAME
 EOF
+else
+  echo "$SERVICE App has No secret"
 fi
 
 ####################################################

@@ -64,7 +64,7 @@ if [[ -n "$NO_SECRETS" && "$NO_SECRETS" == "true" ]]; then
   echo "No secrets defined for $SERVICE"
   exit 0
 elif [[ -z "$NO_SECRETS" ]]; then
-  echo "❌ Secrets Value for $SERVICE is Empty"
+  echo "❌ Secrets defined BUT Value for $SERVICE is Empty"
   exit 0
 fi
 
@@ -120,7 +120,7 @@ echo "Found $COUNT secret entries"
 # =========================================================
 # BUILD SECRET MANIFEST
 # =========================================================
-SECRET_NAME="${SERVICE}-secret"
+SECRET_NAME="${SERVICE}-secrets"
 
 if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
   echo "Namespace '$NAMESPACE' does not exist. Creating..."
