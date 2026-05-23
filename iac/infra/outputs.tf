@@ -55,10 +55,6 @@ output "external_dns_role_arn" {
   value = module.iam_irsa.external_dns_role_arn
 }
 
-output "domain" {
-  value = "${var.subdomain}.${var.root_domain}"
-}
-
 output "cert_arn" {
   value = var.CERT_ARN
 }
@@ -102,3 +98,4 @@ output "sys_monitor_ec2_role_arn" {
 output "sys_monitor_instance_profile_name" {
   value = module.iam_core.sys_monitor_instance_profile_name
 }
+

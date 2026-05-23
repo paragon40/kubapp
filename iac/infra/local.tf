@@ -2,11 +2,6 @@ locals {
   name_prefix  = "${var.project}-${var.env}"
   cluster_name = "${var.cluster_name}-${var.env}"
 
-  full_domain = (var.env == "prod"
-    ? "${var.subdomain}.${var.root_domain}"
-    : "${var.env}.${var.subdomain}.${var.root_domain}"
-  )
-
   main_domain = var.main_domain
 
   # GLOBAL TRACE ID 
@@ -61,26 +56,6 @@ locals {
     }
   }
 
-  efs_access_points = {
-    user = {
-      path = "/user-app"
-      uid  = 1000
-      gid  = 1000
-    }
-
-    admin = {
-      path = "/admin-app"
-      uid  = 1001
-      gid  = 1001
-    }
-
-    monitoring = {
-      path = "/monitoring-app"
-      uid  = 1002
-      gid  = 1002
-    }
-  }
-
   fargate_workloads = {
     dev = {
       role = "applications"
@@ -110,6 +85,9 @@ locals {
     node_desired_capacity = 2
     node_max_capacity     = 2
   })
+
+  # Just for tag
+  full_domain = "${var.env}.${var.main_domain}"
 
 }
 

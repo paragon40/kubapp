@@ -26,10 +26,6 @@ variable "alert_email_password" {
   sensitive = true
 }
 
-variable "cert_arn" {
-  type = string
-}
-
 variable "domain" {
   type = string
 }

@@ -61,11 +61,6 @@ variable "cluster_name" {
   type        = string
 }
 
-variable "hosted_zone_id" {
-  description = "Route53 hosted zone"
-  type        = string
-}
-
 variable "log_groups" {
   description = "CloudWatch log group definitions"
   type = map(object({

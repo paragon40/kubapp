@@ -196,17 +196,3 @@ module "acm" {
   })
 }
 
-############################################
-# ECR
-############################################
-#module "ecr" {
-#  source = "./modules/ecr"
-#  name_prefix = local.name_prefix
-#  cluster_name = local.cluster_name
-#  repositories = ["user", "admin", "monitoring"]
-#  tags = merge(local.common_tags, {
-#    resource-type = "ecr"
-#    layer         = "storage"
-#  })
-#}
-
