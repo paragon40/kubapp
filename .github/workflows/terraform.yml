@@ -127,15 +127,23 @@ jobs:
       # =====================================================
       # Trivy
       # =====================================================
-      - name: Run Trivy config scan
-        uses: aquasecurity/trivy-action@0.28.0
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+
+      - name: Cache Trivy DB
+        uses: actions/cache@v4
         with:
-          scan-type: config
-          scan-ref: ${{ matrix.dir }}
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          format: table
-          exit-code: 1
+          path: ~/.cache/trivy
+          key: trivy-db
+
+      - name: Run Trivy config scan
+        run: |
+          trivy config ${{ matrix.dir }} \
+            --severity: CRITICAL,HIGH \
+            --ignore-unfixed: true \
+            --format: table \
+            --exit-code: 1
 
       # =====================================================
       # CHECKOV
