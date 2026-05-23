@@ -183,20 +183,18 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: |
           MODULE=$(basename ${{ matrix.dir }})
-          infracost breakdown \
+          infracost diff \
             --path . \
             --terraform-var-file=${MODULE}.tfvars \
             --format json \
             --out-file infracost.json
 
-      - name: Upload Infracost Report
+      - name: Show Infracost Report
         working-directory: ${{ matrix.dir }}
         run: |
           echo "Checking file..."
           ls -la infracost.json
           cat infracost.json || true
-          infracost upload \
-           --path infracost.json
 
 
       - name: Checks Passed
