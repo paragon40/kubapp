@@ -94,8 +94,7 @@ jobs:
         run: |
           terraform init \
             -backend=false \
-            -input=false \
-            -lockfile=readonly
+            -input=false
 
       - name: Decrypt tfvars
         working-directory: ${{ matrix.dir }}
