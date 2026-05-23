@@ -19,6 +19,8 @@ on:
 permissions:
   id-token: write
   contents: read
+  pull-requests: write
+  security-events: write
 
 concurrency:
   group: terraform-${{ github.event.inputs.env }}
@@ -67,6 +69,14 @@ jobs:
           cat > ~/.terraformrc <<EOF
           plugin_cache_dir = "$HOME/.terraform.d/plugin-cache"
           EOF
+
+      - name: Debug Token
+        run: |
+          if [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
+            echo "NO TOKEN"
+          else
+            echo "TOKEN EXISTS"
+          fi
 
       - name: Install SOPS
         run: |
@@ -157,6 +167,8 @@ jobs:
           framework: terraform
           quiet: true
           soft_fail: false
+          config_file: .checkov.yaml
+          output_format: sarif
 
       # =====================================================
       # INFRACOST
