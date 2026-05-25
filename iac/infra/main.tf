@@ -120,11 +120,11 @@ module "eks" {
   private_subnet_ids = module.network.private_subnet_ids
   sg_ids             = module.security.sg_ids
 
-  cluster_role_arn                       = module.iam_core.eks_cluster_role_arn
-  node_role_arn                          = module.iam_core.node_group_role_arn
-  fargate_role_arn                       = module.iam_core.fargate_role_arn
-  fargate_workloads                      = local.fargate_workloads
-  sys_monitor_role_arn                   = module.iam_core.sys_monitor_ec2_role_arn
+  cluster_role_arn  = module.iam_core.eks_cluster_role_arn
+  node_role_arn     = module.iam_core.node_group_role_arn
+  fargate_role_arn  = module.iam_core.fargate_role_arn
+  fargate_workloads = local.fargate_workloads
+  #sys_monitor_ec2_role_arn                   = module.iam_core.sys_monitor_ec2_role_arn
   sys_monitor_eks_cross_account_role_arn = module.iam_core.sys_monitor_eks_cross_account_role
 
   access_iam_arn = var.access_iam_arn
