@@ -14,6 +14,7 @@ data "terraform_remote_state" "platform" {
     bucket = var.kubapp_bucket
     key    = var.kubapp_infra_key
     region = var.aws_region
+    role_arn = "arn:aws:iam::${var.eks_account_id}:role/sys-monitor-cross-account-role"
   }
 }
 

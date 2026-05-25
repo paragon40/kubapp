@@ -10,10 +10,9 @@ variable "admin_arn" {
   type = string
 }
 
-variable "sys_monitor_role_arn" {
+variable "sys_monitor_eks_cross_account_role_arn" {
   description = "IAM role ARN used by the sys_monitor EC2 instance"
   type        = string
-  default     = null
 }
 
 variable "kubernetes_version" {

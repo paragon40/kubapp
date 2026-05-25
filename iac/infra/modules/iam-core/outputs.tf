@@ -25,3 +25,7 @@ output "sys_monitor_ec2_role_arn" {
 output "sys_monitor_instance_profile_name" {
   value = aws_iam_instance_profile.ec2_profile.name
 }
+
+outputs "sys_monitor_eks_cross_account_role" {
+  value = aws_iam_role.sys_monitor_cross_account_role.arn
+}

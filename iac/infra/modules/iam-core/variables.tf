@@ -3,7 +3,7 @@ variable "cluster_name" {
   type        = string
 }
 
-variable "sys_monitor_acc" {
+variable "sys_monitor_acc_arn" {
   type = string
 }
 

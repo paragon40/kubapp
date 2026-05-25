@@ -1,8 +1,8 @@
 
-variable "profile" {
-  description = "AWS CLI profile used to create backend resources"
-  type        = string
-}
+#variable "profile" {
+#  description = "AWS CLI profile used to create backend resources"
+#  type        = string
+#}
 
 variable "region" {
   description = "AWS region for backend resources"

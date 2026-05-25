@@ -155,7 +155,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 }
 
 # Cross-Account role
-resource "aws_iam_role" "eks_cross_account_role" {
+resource "aws_iam_role" "sys_monitor_cross_account_role" {
   name = "sys-monitor-cross-account-role"
 
   assume_role_policy = jsonencode({
@@ -163,97 +163,51 @@ resource "aws_iam_role" "eks_cross_account_role" {
     Statement = [{
       Effect = "Allow"
       Principal = {
-        AWS = [aws_iam_role.ec2_role.arn, var.sys_monitor_acc]
+        AWS = [aws_iam_role.ec2_role.arn, var.sys_monitor_acc_arn]
       }
       Action = "sts:AssumeRole"
     }]
   })
 }
 
-# S3 Access
-resource "aws_iam_role" "tf_backend_access_role" {
-  name = "tf-backend-access-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-
-      Principal = {
-        AWS = [aws_iam_role.ec2_role.arn, var.sys_monitor_acc]
-      }
-
-      Action = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_policy" "tf_backend_policy" {
-  name = "tf-backend-policy"
+resource "aws_iam_role_policy" "cross_account_policy" {
+  role = aws_iam_role.sys_monitor_cross_account_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
 
-      # Terraform State Bucket
+      # EKS full access
+      {
+        Effect = "Allow"
+        Action = [
+          "eks:DescribeCluster",
+          "eks:AccessKubernetesApi"
+        ]
+        Resource = "*"
+      },
+
+      # S3 access
       {
         Effect = "Allow"
         Action = [
           "s3:GetObject",
           "s3:PutObject",
-          "s3:DeleteObject"
+          "s3:ListBucket"
         ]
         Resource = [
+          "arn:aws:s3:::kubapp-tf-state",
           "arn:aws:s3:::kubapp-tf-state/*"
         ]
       },
 
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:ListBucket"
-        ]
-        Resource = [
-          "arn:aws:s3:::kubapp-tf-state"
-        ]
-      },
-
-      # DynamoDB lock table
-      {
-        Effect = "Allow"
-        Action = [
-          "dynamodb:GetItem",
-          "dynamodb:PutItem",
-          "dynamodb:DeleteItem",
-          "dynamodb:UpdateItem"
-        ]
-        Resource = "*"
-      },
-
       # Route53
       {
-        Effect = "Allow"
-        Action = [
-          "route53:*"
-        ]
-        Resource = "*"
-      },
-
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2:*",
-          "iam:*",
-          "eks:*"
-        ]
+        Effect   = "Allow"
+        Action   = "route53:*"
         Resource = "*"
       }
     ]
   })
-}
-
-resource "aws_iam_role_policy_attachment" "tf_attach" {
-  role       = aws_iam_role.tf_backend_access_role.name
-  policy_arn = aws_iam_policy.tf_backend_policy.arn
 }
 

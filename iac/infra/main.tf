@@ -79,9 +79,9 @@ module "security" {
 # IAM 
 ############################################
 module "iam_core" {
-  source          = "./modules/iam-core"
-  cluster_name    = local.cluster_name
-  sys_monitor_acc = var.sys_monitor_acc
+  source              = "./modules/iam-core"
+  cluster_name        = local.cluster_name
+  sys_monitor_acc_arn = var.sys_monitor_acc
   tags = merge(local.common_tags, {
     resource-type = "iam"
     layer         = "identity"
@@ -120,13 +120,15 @@ module "eks" {
   private_subnet_ids = module.network.private_subnet_ids
   sg_ids             = module.security.sg_ids
 
-  cluster_role_arn     = module.iam_core.eks_cluster_role_arn
-  node_role_arn        = module.iam_core.node_group_role_arn
-  fargate_role_arn     = module.iam_core.fargate_role_arn
-  fargate_workloads    = local.fargate_workloads
-  sys_monitor_role_arn = module.iam_core.sys_monitor_ec2_role_arn
-  access_iam_arn       = var.access_iam_arn
-  admin_arn            = var.admin_arn
+  cluster_role_arn                       = module.iam_core.eks_cluster_role_arn
+  node_role_arn                          = module.iam_core.node_group_role_arn
+  fargate_role_arn                       = module.iam_core.fargate_role_arn
+  fargate_workloads                      = local.fargate_workloads
+  sys_monitor_role_arn                   = module.iam_core.sys_monitor_ec2_role_arn
+  sys_monitor_eks_cross_account_role_arn = module.iam_core.sys_monitor_eks_cross_account_role
+
+  access_iam_arn = var.access_iam_arn
+  admin_arn      = var.admin_arn
 
   node_instance_type    = local.app_nodes.node_instance_type
   node_desired_capacity = local.app_nodes.node_desired_capacity
