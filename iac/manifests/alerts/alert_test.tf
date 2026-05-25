@@ -4,7 +4,7 @@ resource "kubernetes_manifest" "alert_test" {
     kind       = "PrometheusRule"
 
     metadata = {
-      name      = "alert-test"
+      name      = "kybapp-alert-test"
       namespace = "monitoring"
 
       labels = {
@@ -21,7 +21,7 @@ resource "kubernetes_manifest" "alert_test" {
 
           rules = [
             {
-              alert = "TestAlertAlwaysFiring"
+              alert = "KubappAlertAlwaysFiring"
 
               expr = "vector(1)"
 
@@ -33,7 +33,7 @@ resource "kubernetes_manifest" "alert_test" {
               }
 
               annotations = {
-                summary     = "TEST ALERT: This alert always fires"
+                summary     = "TEST ALERT: This alert always fires to Ensure things are working fine"
                 description = "Used to verify Alertmanager routing and notification delivery"
               }
             }
