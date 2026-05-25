@@ -170,3 +170,90 @@ resource "aws_iam_role" "eks_cross_account_role" {
   })
 }
 
+# S3 Access
+resource "aws_iam_role" "tf_backend_access_role" {
+  name = "tf-backend-access-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+
+      Principal = {
+        AWS = var.sys_monitor_ec2_role_arn
+      }
+
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_policy" "tf_backend_policy" {
+  name = "tf-backend-policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+
+      # Terraform State Bucket
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+        Resource = [
+          "arn:aws:s3:::kubapp-tf-state/*"
+        ]
+      },
+
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "arn:aws:s3:::kubapp-tf-state"
+        ]
+      },
+
+      # DynamoDB lock table
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:UpdateItem"
+        ]
+        Resource = "*"
+      },
+
+      # Route53
+      {
+        Effect = "Allow"
+        Action = [
+          "route53:*"
+        ]
+        Resource = "*"
+      },
+
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:*",
+          "iam:*",
+          "eks:*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "tf_attach" {
+  role       = aws_iam_role.tf_backend_access_role.name
+  policy_arn = aws_iam_policy.tf_backend_policy.arn
+}
+

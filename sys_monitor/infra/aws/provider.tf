@@ -11,5 +11,8 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+  assume_role {
+    role_arn = "arn:aws:iam::${var.eks_account_id}:role/tf-backend-access-role"
+  }
 }
 

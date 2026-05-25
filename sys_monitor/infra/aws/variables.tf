@@ -43,3 +43,8 @@ variable "ssh_cidr" {
   description = "Public IP in CIDR format"
   type        = string
 }
+
+variable "eks_account_id" {
+  type = string
+  default = ""
+}
