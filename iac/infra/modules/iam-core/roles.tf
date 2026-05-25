@@ -180,7 +180,7 @@ resource "aws_iam_role" "tf_backend_access_role" {
       Effect = "Allow"
 
       Principal = {
-        AWS = var.sys_monitor_ec2_role_arn
+        AWS = aws_iam_role.ec2_role.arn
       }
 
       Action = "sts:AssumeRole"
