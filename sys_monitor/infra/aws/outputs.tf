@@ -22,3 +22,15 @@ output "github_metrics_url" {
 output "github_url" {
   value = "http://app.${var.domain_name}:3000"
 }
+
+output "key_used" {
+  value = local.key_name
+}
+
+output "profile_used" {
+  value = aws_instance.sys_monitor.iam_instance_profile
+}
+
+output "running_mode" {
+  value = var.cluster_mode
+}

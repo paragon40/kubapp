@@ -1,190 +1,190 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -u
 
 # ============================================================
-# MODE
+# SAFE EXECUTION FRAMEWORK
 # ============================================================
-MODE="${1:-first_run}"   # first_run | apply | destroy
+
+MODE="${1:-first_run}"
 ENV="${ENV:-local}"
-ACC_ID="${ACCOUNT_ID:-}"
+ACCOUNT_ID="${ACCOUNT_ID:-}"
 ENABLE_NODE_DEBUG="${ENABLE_NODE_DEBUG:-true}"
-
-if [[ -z "$ACC_ID" || "$ACC_ID" == "null" ]]; then
-  echo "❌ ACCOUNT_ID NOT Set"
-  echo "Dont forget to indicate ENV=local/cross"
-  exit 1
-fi
-
-# ============================================================
-# CONFIG
-# ============================================================
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-TF_DIR="$PROJECT_ROOT/infra/aws"
-DOMAIN="${DOMAIN:-rundailytest.site}"
-
-KEY_NAME="tf-web-key"
+KEY_NAME="${KEY_NAME:-}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/${KEY_NAME}.pem}"
 
 REMOTE_DIR="/opt/sys_monitor"
+DOMAIN="${DOMAIN:-rundailytest.site}"
 
-cd "$TF_DIR"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-# ============================================================
-# DESTROY MODE
-# ============================================================
 if [[ "$MODE" == "destroy" ]]; then
-  echo "🔥 DESTROY MODE"
-  terraform destroy -auto-approve
-  cd ./boot
-  echo "Destroying backend too!"
-  MODE=auto bash runner.sh destroy
-  exit 0
+  echo "Destroying Activated..."
+  terraform destroy --auto-approve
+  MODE=auto bash boot/runner.sh destroy
+  exit 1
 fi
 
-# ============================================================
-# TERRAFORM INIT + APPLY
-# ============================================================
-if terraform init -upgrade; then
-  echo "Terraform Initialized"
-else
-  echo "Terraform init Failed.. Booting Backend First"
-  cd ./boot
-  bash runner.sh
-  cd "$TF_DIR"
-fi
+# ---------------- ERROR HANDLER ----------------
+fail() {
+  echo ""
+  echo "========================================"
+  echo "❌ CONTROLLED FAILURE"
+  echo "STEP: $1"
+  echo "REASON: $2"
+  echo "EXIT CODE: $3"
+  echo "========================================"
+  exit "$3"
+}
 
-echo "==> Terraform apply"
+log() { echo "==> $1"; }
+
+# ============================================================
+# VALIDATION
+# ============================================================
+for v in ACCOUNT_ID KEY_NAME SSH_KEY; do
+  if [[ -z "${!v:-}" || "${!v}" == "null" ]]; then
+    fail "VALIDATION" "$v missing" 10
+  fi
+done
+
+# ============================================================
+# TERRAFORM
+# ============================================================
+log "Terraform init"
+terraform init -upgrade || fail "TF_INIT" "failed" 20
+
+log "Terraform apply"
 terraform apply -auto-approve \
   -var="cluster_mode=${ENV}" \
   -var="key_name=${KEY_NAME}" \
-  -var="ssh_cidr=$(curl -s ifconfig.me)/32"
+  -var="ssh_cidr=$(curl -s ifconfig.me)/32" \
+  || fail "TF_APPLY" "failed" 21
 
-PUBLIC_IP="$(terraform output -raw public_ip)"
+PUBLIC_IP="$(terraform output -raw public_ip || true)"
 
-echo "EC2 Public IP: $PUBLIC_IP"
+[[ -n "$PUBLIC_IP" ]] || fail "OUTPUT" "missing public_ip" 22
+
+log "EC2 IP: $PUBLIC_IP"
 
 ssh-keygen -R "$PUBLIC_IP" >/dev/null 2>&1 || true
 
 # ============================================================
-# WAIT FOR SSH
+# SSH WAIT
 # ============================================================
-echo "==> Waiting for SSH..."
+log "Waiting for SSH"
+
 for i in {1..40}; do
-  ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" "echo ok" && break
+  ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" "echo ok" >/dev/null 2>&1 && break
   sleep 5
 done
 
 # ============================================================
-# FIRST RUN WAIT
+# CLOUD INIT
 # ============================================================
-if [[ "$MODE" == "first_run" ]]; then
-  echo "==> Waiting for cloud-init..."
-  ssh -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" << 'EOF'
-set -e
-while [ ! -f /var/lib/cloud/instance/boot-finished ]; do
-  sleep 5
-done
-EOF
-fi
+log "Cloud-init wait"
+
+ssh -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" "cloud-init status --wait || true"
 
 # ============================================================
-# SYNC CODE
+# ENSURE REMOTE DIR
 # ============================================================
-echo "==> Syncing project"
-rsync -az --delete \
+ssh -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" \
+"sudo mkdir -p /opt/sys_monitor && sudo chown -R ubuntu:ubuntu /opt/sys_monitor"
+
+# ============================================================
+# RSYNC (LOCAL ONLY — FIXED)
+# ============================================================
+log "Syncing project"
+
+rsync -azvv --delete \
   -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" \
   --exclude ".git" \
   --exclude ".terraform" \
   "$PROJECT_ROOT/" \
-  ubuntu@"$PUBLIC_IP":"$REMOTE_DIR/"
+  ubuntu@"$PUBLIC_IP":"$REMOTE_DIR/" \
+  || fail "RSYNC" "sync failed" 40
 
 # ============================================================
-# REMOTE DEPLOY
+# REMOTE DEPLOY (CLEAN SINGLE LAYER)
 # ============================================================
-ssh -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" << 'EOF'
+log "Remote deploy"
+
+ssh -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" <<EOF
 set -euo pipefail
+
+echo "========================================"
+echo "REMOTE DEPLOY START"
+echo "========================================"
 
 cd /opt/sys_monitor
 
-echo "==> Setting Up .env file for docker compose.."
-ACCOUNT_ID="$ACC_ID" MODE="$ENV" ENABLE_NODE_DEBUG="$ENABLE_NODE_DEBUG" bash create_env.sh
-
-# ============================================================
-# START CONTAINERS
-# ============================================================
-echo "==> Starting Docker stack"
-docker compose down -v || true
-docker compose up -d --build
-
-# ============================================================
-# WAIT FOR SERVICES
-# ============================================================
-echo "==> Waiting for services..."
-
+# ---- WAIT FOR DOCKER ----
 for i in {1..60}; do
-
-  GRAFANA=$(curl -fs http://localhost:3001/api/health >/dev/null && echo ok || echo no)
-  PROM=$(curl -fs http://localhost:9090/-/ready >/dev/null && echo ok || echo no)
-  EXPORTER=$(curl -fs http://localhost:3000/ >/dev/null && echo ok || echo no)
-  SRE=$(curl -fs http://localhost:8000/ >/dev/null && echo ok || echo no)
-  GITOPS=$(curl -fs http://localhost:9105/ >/dev/null && echo ok || echo no)
-
-  echo "grafana=$GRAFANA prom=$PROM exporter=$EXPORTER sre=$SRE gitops=$GITOPS"
-
-  if [[ "$GRAFANA" == "ok" && "$PROM" == "ok" && "$EXPORTER" == "ok" && "$SRE" == "ok" && "$GITOPS" == "ok" ]]; then
-    echo "All services READY"
+  if command -v docker >/dev/null 2>&1 && systemctl is-active --quiet docker; then
+    echo "✅ Docker ready"
     break
   fi
+  echo "waiting for docker..."
+  sleep 5
+done
+
+# ---- FIND ENV SCRIPT ----
+SCRIPT_PATH=\$(find . -name create_env.sh | head -n 1)
+
+if [[ -z "\$SCRIPT_PATH" ]]; then
+  echo "❌ create_env.sh not found"
+  find . -name "*.sh"
+  exit 101
+fi
+
+echo "Using \$SCRIPT_PATH"
+
+# ---- ENV ----
+export ACCOUNT_ID="$ACCOUNT_ID"
+export ENV="$ENV"
+export ENABLE_NODE_DEBUG="$ENABLE_NODE_DEBUG"
+
+bash "\$SCRIPT_PATH" || echo "ENV generation failed (non-fatal)"
+
+# ---- DOCKER CHECK ----
+docker info >/dev/null 2>&1 || { echo "Docker unhealthy"; exit 102; }
+
+# ---- DEPLOY ----
+docker compose down -v || true
+docker compose up -d --build || exit 103
+
+# ---- HEALTH CHECK ----
+for i in {1..60}; do
+  GRAFANA=\$(curl -fs http://localhost:3001/api/health >/dev/null && echo ok || echo no)
+  PROM=\$(curl -fs http://localhost:9090/-/ready >/dev/null && echo ok || echo no)
+  EXPORTER=\$(curl -fs http://localhost:3000/ >/dev/null && echo ok || echo no)
+  SRE=\$(curl -fs http://localhost:8000/ >/dev/null && echo ok || echo no)
+  GITOPS=\$(curl -fs http://localhost:9105/ >/dev/null && echo ok || echo no)
+
+  echo "grafana=\$GRAFANA prom=\$PROM exporter=\$EXPORTER sre=\$SRE gitops=\$GITOPS"
+
+  [[ "\$GRAFANA" == "ok" && "\$PROM" == "ok" && "\$EXPORTER" == "ok" && "\$SRE" == "ok" && "\$GITOPS" == "ok" ]] && break
 
   sleep 5
 done
 
-# ============================================================
-# FINAL CHECKS (SERVICE ONLY)
-# ============================================================
-echo "==> Final checks"
-
-curl -fs http://127.0.0.1:3001/api/health || true
-curl -fs http://127.0.0.1:9090/-/ready || true
-curl -fs http://127.0.0.1:8000/ || true
-curl -fs http://127.0.0.1:9105/ || true
-curl -fs http://127.0.0.1:9105/metrics || true
-
 echo "========================================"
-echo "SERVICE BOOT COMPLETE"
+echo "DEPLOY COMPLETE"
 echo "========================================"
-
-# ============================================================
-# AWS / K8S CONNECTIVITY (DEFERRED TO APP LOGIC)
-# ============================================================
-echo "NOTE: Kubernetes connectivity is now handled inside container via AWS SDK exec-auth."
 EOF
 
 # ============================================================
-# OUTPUT
+# FINAL OUTPUT
 # ============================================================
 echo ""
 echo "========================================"
-echo "DEPLOYMENT COMPLETE"
+echo "DEPLOYMENT FINISHED"
 echo "========================================"
 echo ""
-echo "Grafana:"
-echo "  http://monitor.${DOMAIN}:3001"
-echo ""
-echo "Prometheus:"
-echo "  http://monitor.${DOMAIN}:9090"
-echo ""
-echo "GitHub Exporter:"
-echo "  http://app.${DOMAIN}:3000"
-echo "  http://app.${DOMAIN}:3000/metrics"
-echo ""
-echo "SRE Engine:"
-echo "  http://app.${DOMAIN}:8000"
-echo ""
-echo "GitOps Exporter:"
-echo "  http://app.${DOMAIN}:9105"
-echo "  http://app.${DOMAIN}:9105/metrics"
-echo ""
-echo "========================================"
 echo "EC2 IP: $PUBLIC_IP"
-echo "========================================"
+echo "Grafana: http://monitor.${DOMAIN}:3001"
+echo "Prometheus: http://monitor.${DOMAIN}:9090"
+echo "GitHub Exporter: http://app.${DOMAIN}:3000"
+echo "SRE Engine: http://app.${DOMAIN}:8000"
+echo "GitOps Exporter: http://app.${DOMAIN}:9105"
+echo ""

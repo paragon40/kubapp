@@ -11,8 +11,7 @@ TARGET_CLUSTER_NAME="${TARGET_CLUSTER_NAME:-kubapp-dev}"
 TARGET_REGION="${TARGET_REGION:-us-east-1}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
 
-ENV_FILE=".env"
-
+ENV_FILE="/opt/sys_monitor/.env"
 echo "Generating $ENV_FILE ..."
 
 # -------- LOGIC --------

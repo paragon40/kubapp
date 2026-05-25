@@ -75,7 +75,7 @@ services:
     ports:
       - "9105:9105"
     env_file:
-      - infra/aws/.env
+      - ./.env
     restart: unless-stopped
 
 volumes:

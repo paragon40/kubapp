@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ============================================================
+# MODE
+# ============================================================
+MODE="${1:-first_run}"   # first_run | apply | destroy
+ENV="${ENV:-local}"
+ACC_ID="${ACCOUNT_ID:-}"
+ENABLE_NODE_DEBUG="${ENABLE_NODE_DEBUG:-true}"
+KEY_NAME="${KEY_NAME:-}"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/${KEY_NAME}.pem}"
+
+CHECKS=$("ACC_ID", "KEY_NAME" "SSH_KEY")
+for each in "${CHECKS}"
+  if [[ -z "$each" || "$each" == "null" ]]; then
+    echo "❌ ACCOUNT_ID NOT Set"
+    echo "Dont forget to indicate ENV=local/cross And Key_Name"
+    exit 1
+  fi
+done
+
+# ============================================================
+# CONFIG
+# ============================================================
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+TF_DIR="$PROJECT_ROOT/infra/aws"
+DOMAIN="${DOMAIN:-rundailytest.site}"
+REMOTE_DIR="/opt/sys_monitor"
+
+cd "$TF_DIR"
+
+# ============================================================
+# DESTROY MODE
+# ============================================================
+if [[ "$MODE" == "destroy" ]]; then
+  echo "🔥 DESTROY MODE"
+  terraform destroy -auto-approve
+  cd ./boot
+  echo "Destroying backend too!"
+  MODE=auto bash runner.sh destroy
+  exit 0
+fi
+
+# ============================================================
+# TERRAFORM INIT + APPLY
+# ============================================================
+if terraform init -upgrade; then
+  echo "Terraform Initialized"
+else
+  echo "Terraform init Failed.. Booting Backend First"
+  cd ./boot
+  bash runner.sh
+  cd "$TF_DIR"
+fi
+
+echo "==> Terraform apply"
+terraform apply -auto-approve \
+  -var="cluster_mode=${ENV}" \
+  -var="key_name=${KEY_NAME}" \
+  -var="ssh_cidr=$(curl -s ifconfig.me)/32"
+
+PUBLIC_IP="$(terraform output -raw public_ip)"
+
+echo "EC2 Public IP: $PUBLIC_IP"
+
+ssh-keygen -R "$PUBLIC_IP" >/dev/null 2>&1 || true
+
+# ============================================================
+# WAIT FOR SSH
+# ============================================================
+echo "==> Waiting for SSH..."
+for i in {1..40}; do
+  ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" "echo ok" && break
+  sleep 5
+done
+
+# ============================================================
+# FIRST RUN WAIT
+# ============================================================
+if [[ "$MODE" == "first_run" ]]; then
+  echo "==> Waiting for cloud-init..."
+  ssh -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" << 'EOF'
+set -e
+while [ ! -f /var/lib/cloud/instance/boot-finished ]; do
+  sleep 5
+done
+EOF
+fi
+
+# ============================================================
+# SYNC CODE
+# ============================================================
+echo "==> Syncing project"
+rsync -az --delete \
+  -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" \
+  --exclude ".git" \
+  --exclude ".terraform" \
+  "$PROJECT_ROOT/" \
+  ubuntu@"$PUBLIC_IP":"$REMOTE_DIR/"
+
+# ============================================================
+# REMOTE DEPLOY
+# ============================================================
+ssh -i "$SSH_KEY" ubuntu@"$PUBLIC_IP" << 'EOF'
+set -euo pipefail
+
+cd /opt/sys_monitor
+
+echo "==> Setting Up .env file for docker compose.."
+ACCOUNT_ID="$ACC_ID" MODE="$ENV" ENABLE_NODE_DEBUG="$ENABLE_NODE_DEBUG" bash create_env.sh
+
+# ============================================================
+# START CONTAINERS
+# ============================================================
+echo "==> Starting Docker stack"
+docker compose down -v || true
+docker compose up -d --build
+
+# ============================================================
+# WAIT FOR SERVICES
+# ============================================================
+echo "==> Waiting for services..."
+
+for i in {1..60}; do
+
+  GRAFANA=$(curl -fs http://localhost:3001/api/health >/dev/null && echo ok || echo no)
+  PROM=$(curl -fs http://localhost:9090/-/ready >/dev/null && echo ok || echo no)
+  EXPORTER=$(curl -fs http://localhost:3000/ >/dev/null && echo ok || echo no)
+  SRE=$(curl -fs http://localhost:8000/ >/dev/null && echo ok || echo no)
+  GITOPS=$(curl -fs http://localhost:9105/ >/dev/null && echo ok || echo no)
+
+  echo "grafana=$GRAFANA prom=$PROM exporter=$EXPORTER sre=$SRE gitops=$GITOPS"
+
+  if [[ "$GRAFANA" == "ok" && "$PROM" == "ok" && "$EXPORTER" == "ok" && "$SRE" == "ok" && "$GITOPS" == "ok" ]]; then
+    echo "All services READY"
+    break
+  fi
+
+  sleep 5
+done
+
+# ============================================================
+# FINAL CHECKS (SERVICE ONLY)
+# ============================================================
+echo "==> Final checks"
+
+curl -fs http://127.0.0.1:3001/api/health || true
+curl -fs http://127.0.0.1:9090/-/ready || true
+curl -fs http://127.0.0.1:8000/ || true
+curl -fs http://127.0.0.1:9105/ || true
+curl -fs http://127.0.0.1:9105/metrics || true
+
+echo "========================================"
+echo "SERVICE BOOT COMPLETE"
+echo "========================================"
+
+# ============================================================
+# AWS / K8S CONNECTIVITY (DEFERRED TO APP LOGIC)
+# ============================================================
+echo "NOTE: Kubernetes connectivity is now handled inside container via AWS SDK exec-auth."
+EOF
+
+# ============================================================
+# OUTPUT
+# ============================================================
+echo ""
+echo "========================================"
+echo "DEPLOYMENT COMPLETE"
+echo "========================================"
+echo ""
+echo "Grafana:"
+echo "  http://monitor.${DOMAIN}:3001"
+echo ""
+echo "Prometheus:"
+echo "  http://monitor.${DOMAIN}:9090"
+echo ""
+echo "GitHub Exporter:"
+echo "  http://app.${DOMAIN}:3000"
+echo "  http://app.${DOMAIN}:3000/metrics"
+echo ""
+echo "SRE Engine:"
+echo "  http://app.${DOMAIN}:8000"
+echo ""
+echo "GitOps Exporter:"
+echo "  http://app.${DOMAIN}:9105"
+echo "  http://app.${DOMAIN}:9105/metrics"
+echo ""
+echo "========================================"
+echo "EC2 IP: $PUBLIC_IP"
+echo "========================================"

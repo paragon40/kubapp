@@ -144,7 +144,7 @@ resource "aws_instance" "sys_monitor" {
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.public_subnet.id
   vpc_security_group_ids      = [aws_security_group.sys_monitor.id]
-  key_name                    = var.key_name
+  key_name                    = local.key_name
   associate_public_ip_address = false
   iam_instance_profile = aws_iam_instance_profile.sys_monitor_local_profile.name
 

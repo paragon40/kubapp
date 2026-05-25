@@ -1,5 +1,5 @@
 data "aws_route53_zone" "main" {
-   provider = aws.eks
+  provider = aws.eks
   name = var.domain_name
 }
 
@@ -11,8 +11,8 @@ locals {
 }
 
 resource "aws_route53_record" "subdomains" {
+  provider = aws.eks
   for_each = toset(local.subdomains)
-
   zone_id = data.aws_route53_zone.main.zone_id
   name    = "${each.key}.${var.domain_name}"
   type    = "A"
