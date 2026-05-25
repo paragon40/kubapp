@@ -7,16 +7,11 @@
 # ------------------------------------------------------------
 data "aws_availability_zones" "available" {}
 
-data "terraform_remote_state" "platform" {
-  backend = "s3"
-
-  config = {
-    bucket = var.kubapp_bucket
-    key    = var.kubapp_infra_key
-    region = var.aws_region
-    role_arn = "arn:aws:iam::${var.eks_account_id}:role/sys-monitor-cross-account-role"
-  }
+data "aws_iam_instance_profile" "sys_monitor" {
+  provider = aws.eks
+  name     = "sys-monitor-ec2-profile"
 }
+#role_arn = "arn:aws:iam::${var.eks_account_id}:role/sys-monitor-cross-account-role"
 
 # ------------------------------------------------------------
 # Ubuntu AMI
@@ -157,7 +152,7 @@ resource "aws_instance" "sys_monitor" {
   vpc_security_group_ids      = [aws_security_group.sys_monitor.id]
   key_name                    = var.key_name
   associate_public_ip_address = false
-  iam_instance_profile        = data.terraform_remote_state.platform.outputs.sys_monitor_instance_profile_name
+  iam_instance_profile        = data.aws_iam_instance_profile.sys_monitor.name
 
   root_block_device {
     volume_size           = 20
