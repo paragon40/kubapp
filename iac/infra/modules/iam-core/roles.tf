@@ -200,15 +200,7 @@ resource "aws_iam_role_policy" "cross_account_policy" {
           "arn:aws:s3:::kubapp-tf-state/*"
         ]
       },
-      # Get Profile
-      {
-        Effect = "Allow"
-        Action = [
-          "iam:GetInstanceProfile",
-          "iam:ListInstanceProfiles"
-        ]
-        Resource = "*"
-      },
+
       # Route53
       {
         Effect   = "Allow"

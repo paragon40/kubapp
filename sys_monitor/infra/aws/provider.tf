@@ -16,8 +16,11 @@ provider "aws" {
 provider "aws" {
   alias  = "eks"
   region = var.aws_region
-  assume_role {
-    role_arn = "arn:aws:iam::${var.eks_account_id}:role/sys-monitor-cross-account-role"
+    dynamic "assume_role" {
+    for_each = var.cluster_mode == "cross" ? [1] : []
+    content {
+      role_arn = "arn:aws:iam::${var.eks_account_id}:role/sys-monitor-cross-account-role"
+    }
   }
 }
 

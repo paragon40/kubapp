@@ -1,3 +1,8 @@
+variable "cluster_mode" {
+  type    = string
+  default = "local"
+}
+
 variable "aws_region" {
   description = "AWS region"
   type        = string

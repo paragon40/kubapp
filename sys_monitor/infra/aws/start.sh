@@ -55,6 +55,7 @@ fi
 
 echo "==> Terraform apply"
 terraform apply -auto-approve \
+  -var="cluster_mode=${ENV}" \
   -var="key_name=${KEY_NAME}" \
   -var="ssh_cidr=$(curl -s ifconfig.me)/32"
 

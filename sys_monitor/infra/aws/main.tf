@@ -7,12 +7,6 @@
 # ------------------------------------------------------------
 data "aws_availability_zones" "available" {}
 
-data "aws_iam_instance_profile" "sys_monitor" {
-  provider = aws.eks
-  name     = "sys-monitor-ec2-profile"
-}
-#role_arn = "arn:aws:iam::${var.eks_account_id}:role/sys-monitor-cross-account-role"
-
 # ------------------------------------------------------------
 # Ubuntu AMI
 # ------------------------------------------------------------
@@ -152,7 +146,7 @@ resource "aws_instance" "sys_monitor" {
   vpc_security_group_ids      = [aws_security_group.sys_monitor.id]
   key_name                    = var.key_name
   associate_public_ip_address = false
-  iam_instance_profile        = data.aws_iam_instance_profile.sys_monitor.name
+  iam_instance_profile = aws_iam_instance_profile.sys_monitor_local_profile.name
 
   root_block_device {
     volume_size           = 20
