@@ -163,7 +163,7 @@ resource "aws_iam_role" "eks_cross_account_role" {
     Statement = [{
       Effect = "Allow"
       Principal = {
-        AWS = aws_iam_role.ec2_role.arn
+        AWS = [aws_iam_role.ec2_role.arn, var.sys_monitor_acc]
       }
       Action = "sts:AssumeRole"
     }]
@@ -180,7 +180,7 @@ resource "aws_iam_role" "tf_backend_access_role" {
       Effect = "Allow"
 
       Principal = {
-        AWS = aws_iam_role.ec2_role.arn
+        AWS = [aws_iam_role.ec2_role.arn, var.sys_monitor_acc]
       }
 
       Action = "sts:AssumeRole"

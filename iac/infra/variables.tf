@@ -30,6 +30,11 @@ variable "admin_arn" {
   sensitive = true
 }
 
+variable "sys_monitor_acc" {
+  type      = string
+  sensitive = true
+}
+
 variable "kubernetes_v" {
   description = "Kubernetes version"
   type        = string

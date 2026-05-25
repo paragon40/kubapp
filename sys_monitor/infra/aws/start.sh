@@ -11,6 +11,7 @@ ENABLE_NODE_DEBUG="${ENABLE_NODE_DEBUG:-true}"
 
 if [[ -z "$ACC_ID" || "$ACC_ID" == "null" ]]; then
   echo "❌ ACCOUNT_ID NOT Set"
+  echo "Dont forget to indicate ENV=local/cross"
   exit 1
 fi
 
@@ -34,13 +35,23 @@ cd "$TF_DIR"
 if [[ "$MODE" == "destroy" ]]; then
   echo "🔥 DESTROY MODE"
   terraform destroy -auto-approve
+  cd ./boot
+  echo "Destroying backend too!"
+  MODE=auto bash runner.sh destroy
   exit 0
 fi
 
 # ============================================================
 # TERRAFORM INIT + APPLY
 # ============================================================
-terraform init -upgrade
+if terraform init -upgrade; then
+  echo "Terraform Initialized"
+else
+  echo "Terraform init Failed.. Booting Backend First"
+  cd ./boot
+  bash runner.sh
+  cd "$TF_DIR"
+fi
 
 echo "==> Terraform apply"
 terraform apply -auto-approve \

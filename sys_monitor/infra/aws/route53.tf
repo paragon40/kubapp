@@ -1,4 +1,5 @@
 data "aws_route53_zone" "main" {
+   provider = aws.eks
   name = var.domain_name
 }
 
