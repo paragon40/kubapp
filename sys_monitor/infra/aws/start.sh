@@ -10,7 +10,7 @@ ACC_ID="${ACCOUNT_ID:-}"
 ENABLE_NODE_DEBUG="${ENABLE_NODE_DEBUG:-true}"
 
 if [[ -z "$ACC_ID" || "$ACC_ID" == "null" ]]; then
-  echo "❌ ACC_ID NOT Set"
+  echo "❌ ACCOUNT_ID NOT Set"
   exit 1
 fi
 
