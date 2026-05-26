@@ -1,10 +1,6 @@
 # kubapp
 
-# Kubapp
-
-Kubapp is a simplified but production-oriented Kubernetes platform built on AWS EKS.
 ## Project Goals
-
 Kubapp aims to provide a simplified but production-oriented Kubernetes platform on AWS.
 
 ## The project was built to:
@@ -34,13 +30,15 @@ Kubapp aims to provide a simplified but production-oriented Kubernetes platform 
 
 ## Tools Used
 
+- Kubernetes
 - Terraform
+- Helm
 - AWS EKS
 - Docker
 - GitHub Actions
 - Prometheus
 - Grafana
-- Kubernetes
+- Argocd
 - Route53
 - IAM / STS
 
