@@ -248,6 +248,220 @@
 # - resolves latest stable tag
 # - restores snapshot state
 
+High-level orchestrator workflow for triggering multiple
+pipeline layers from a single entry point.
+Responsibilities:
+- Accepts environment (dev/prod)
+- Accepts mode (full/build/deploy/cleanup)
+- Triggers downstream workflows via GitHub CLI:
+- build.yml
+- setup_argocd.yml
+- verify_runtime.yml
+- clean_argocd.yml
+Purpose:
+Provides a single “control switch” for full lifecycle
+execution of the platform.
+------------------------------------------------------------
+APP ARTIFACTS INSPECTOR (app_artifacts.yml)
+------------------------------------------------------------
+Debugging and observability workflow for build outputs.
+Responsibilities:
+- Finds latest successful build.yml run
+- Lists all generated artifacts
+- Downloads specific service artifact (registry-*)
+- Dumps full file structure and contents
+Purpose:
+Enables inspection of generated registry JSON files and
+build-time metadata for debugging GitOps state.
+------------------------------------------------------------
+DOCKER PUSH TEST WORKFLOW (docker-push.yml)
+------------------------------------------------------------
+Lightweight validation workflow for individual Docker builds.
+Responsibilities:
+- Validates folder exists under docker/
+- Builds image using Docker Buildx
+- Pushes to Docker Hub
+- Tags with latest and commit SHA
+Purpose:
+Quick manual testing of single service image builds
+without running full build pipeline.
+------------------------------------------------------------
+FIXER WORKFLOW (fixer.yml)
+------------------------------------------------------------
+Emergency operational command runner for cluster + Terraform.
+Responsibilities:
+- Accepts arbitrary multi-line commands
+- Executes kubectl / terraform commands safely
+- Initializes Terraform backend
+- Prints final cluster state
+Purpose:
+On-demand debugging and incident response tool for engineers.
+WARNING:
+Extremely powerful — effectively a remote execution console
+for platform recovery and diagnostics.
+------------------------------------------------------------
+STABLE DEPLOY RESOLVER (get_stable_deploy.yml)
+------------------------------------------------------------
+Rollback intelligence workflow for stable system recovery.
+Responsibilities:
+- Finds latest stable-* Git tag per environment
+- Resolves commit hash
+- Retrieves verify_runtime.yml execution run
+- Downloads deployment snapshot artifact
+- Displays cluster state at that commit
+Purpose:
+Enables deterministic rollback to last known good state
+using snapshot-based recovery.
+------------------------------------------------------------
+ORPHAN APPLICATION CLEANER (remove_app.yml)
+------------------------------------------------------------
+Automated reconciliation engine for GitOps cleanup.
+Responsibilities:
+- Compares GitOps registry vs ingress state
+- Detects orphan applications
+- Removes unused app directories
+- Prevents deletion in production unless safe
+- Commits cleanup changes
+Modes:
+- auto → full reconciliation
+- manual → targeted removal
+Purpose:
+Ensures GitOps state remains consistent with ingress reality.
+------------------------------------------------------------
+SERVICE INGRESS REMOVER (remove_svc.yml)
+------------------------------------------------------------
+Targeted ingress mutation workflow.
+Responsibilities:
+- Accepts list of services
+- Removes them from ingress YAML
+- Calls register_new_svc.sh in remove mode
+- Validates YAML integrity
+- Commits updated ingress state
+Purpose:
+Fine-grained control of routing layer without touching apps.
+------------------------------------------------------------
+ARGOCLOUD CLEANUP (clean_argocd.yml)
+------------------------------------------------------------
+Full cluster teardown workflow (dangerous operation).
+Responsibilities:
+- Requires explicit "YES" confirmation
+- Configures AWS + EKS access
+- Executes cluster cleanup scripts
+- Removes ArgoCD + Kubernetes resources
+- Verifies cluster state after deletion
+Purpose:
+Hard reset of GitOps-controlled cluster environment.
+SAFETY:
+Strong confirmation gate prevents accidental execution.
+------------------------------------------------------------
+ROLLBACK ENGINE (rollback.yml)
+------------------------------------------------------------
+GitOps rollback controller (not fully shown in batch,
+but referenced by system architecture).
+Responsibilities:
+- Restores previous GitOps state
+- Re-applies Helm values from stable snapshot
+- Reverts registry and ingress changes
+- Works with stable_deploy workflow
+Purpose:
+Deterministic recovery from failed deployments.
+------------------------------------------------------------
+UPDATE ENGINE (update.yml)
+------------------------------------------------------------
+Runtime image update controller.
+Responsibilities:
+- Reads gitops/state/current.json
+- Updates image tags in Helm values
+- Commits changes without rebuilding images
+- Triggers ArgoCD sync indirectly
+Purpose:
+Fast redeployment mechanism without CI rebuild.
+------------------------------------------------------------
+TERRAFORM PIPELINE (terraform.yml)
+------------------------------------------------------------
+Infrastructure provisioning and lifecycle manager.
+Responsibilities:
+- Provisions EKS, IAM, networking
+- Manages state backend
+- Runs plan/apply/destroy flows
+- Integrates with SOPS for secrets
+- Supports multi-environment infra
+Purpose:
+Foundation layer for entire GitOps platform.
+------------------------------------------------------------
+DRIFT DETECTION ENGINE (tf_drift.yml)
+------------------------------------------------------------
+Infrastructure state validation system.
+Responsibilities:
+- Runs terraform plan with detailed exit codes
+- Detects drift between desired and actual state
+- Reports module-level divergence
+- Fails pipeline on critical drift
+Purpose:
+Ensures infrastructure consistency over time.
+------------------------------------------------------------
+INGRES VALIDATION ENGINE (validate_ingress.yml)
+------------------------------------------------------------
+Routing integrity enforcement system.
+Responsibilities:
+- Compares registry vs ingress definitions
+- Detects missing or invalid routes
+- Can auto-repair ingress state
+- Validates YAML correctness
+Purpose:
+Keeps Kubernetes routing aligned with GitOps registry.
+------------------------------------------------------------
+PIPELINE VALIDATION (test_tf.yml)
+------------------------------------------------------------
+Terraform validation and CI safety gate.
+Responsibilities:
+- Runs terraform validate/plan checks
+- Ensures IaC correctness before apply
+- Prevents broken infrastructure commits
+Purpose:
+Pre-merge infrastructure correctness enforcement.
+------------------------------------------------------------
+PIPELINE VALIDATION (verify_runtime.yml)
+------------------------------------------------------------
+Runtime validation and post-deploy assurance engine.
+Responsibilities:
+- Validates deployed services in cluster
+- Checks ArgoCD sync status
+- Generates deployment snapshot artifacts
+- Supports rollback decisions
+Purpose:
+Confirms system health after deployments.
+------------------------------------------------------------
+PIPELINE CLEANER (unlock.yml)
+------------------------------------------------------------
+Terraform state recovery utility.
+Responsibilities:
+- Unlocks stuck terraform state locks
+- Prevents deadlock in CI pipelines
+Purpose:
+Operational recovery tool for infra pipeline issues.
+------------------------------------------------------------
+SYSTEM COMPLETE VIEW
+------------------------------------------------------------
+With all workflows combined, KubApp includes:
+- Infrastructure provisioning (Terraform)
+- Cluster bootstrap (ArgoCD)
+- Docker build pipeline
+- Registry generation system
+- GitOps application provisioning
+- Ingress reconciliation
+- Runtime validation
+- Drift detection
+- Rollback + snapshot recovery
+- Orphan cleanup system
+- Emergency debugging tools
+- Full cluster teardown capability
+This creates a fully self-operating GitOps platform where:
+- Git defines state
+- Pipelines enforce correctness
+- Kubernetes reflects desired state
+- Drift is continuously corrected
+- Rollback is deterministic
 
 # ------------------------------------------------------------
 # DATA FLOW MODEL
