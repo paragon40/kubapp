@@ -30,6 +30,29 @@
       ↓
 9. Kubernetes updates automatically
 
+#
+1. Developer pushes code
+        ↓
+2. Build workflow
+   - builds images
+   - pushes registry
+   - creates artifacts
+        ↓
+3. Update workflow
+   - reads artifacts
+   - updates GitOps repo
+   - commits changes
+        ↓
+4. ArgoCD
+   - detects Git change
+   - syncs automatically
+   - reports health status
+        ↓
+5. Verify workflow
+   - uses ArgoCD CLI/API ONLY
+   - checks health
+   - triggers rollback via Git tag switch
+
 
 
 # Every stage is deterministic, reversible, and observable.
