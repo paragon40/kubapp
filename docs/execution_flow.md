@@ -11,6 +11,25 @@
 #   Terraform → Build → Registry → GitOps → ArgoCD
 #        ↑        ↑                                ↑
 #   Snapshot ← Verification ← Cluster ← Reconcile ←┘
+#
+1. Laptop push
+      ↓
+2. GitHub repo updated
+      ↓
+3. Build workflow runs
+      ↓
+4. Docker images built + pushed
+      ↓
+5. Artifacts created
+      ↓
+6. update.yml triggered
+      ↓
+7. GitOps repo updated + committed again
+      ↓
+8. ArgoCD detects Git change
+      ↓
+9. Kubernetes updates automatically
+
 
 
 # Every stage is deterministic, reversible, and observable.
