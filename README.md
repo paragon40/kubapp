@@ -21,11 +21,11 @@ Kubapp aims to provide a simplified but production-oriented Kubernetes platform 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
-- [Infrastructure](docs/infrastructure.md)
+- [Operations](docs/execution_flow.md)
+- [Infrastructure](docs/infras.md)
 - [Security](docs/security.md)
 - [Observability](docs/observability.md)
 - [GitOps](docs/gitops.md)
-- [Operations](docs/operations.md)
 
 
 ## Tools Used
