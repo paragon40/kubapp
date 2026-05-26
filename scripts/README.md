@@ -1,335 +1,211 @@
-# Kubapp Scripts Toolkit — Operational Documentation
+# Kubapp Scripts Documentation
 
-## 1. Overview
+## Overview
 
-This document describes the operational shell and Python tooling used inside the Kubapp platform repository. The scripts form a unified automation layer covering GitOps lifecycle, Kubernetes management, secret handling, drift detection, cleanup, and development workflows.
+This directory contains operational scripts for managing the Kubapp platform across Kubernetes, ArgoCD, AWS infrastructure, and GitOps workflows.
 
-The system is designed as a **safe-by-default automation toolkit** with strict validation, idempotency, and environment awareness (dev vs prod safeguards).
+The scripts are designed to support:
 
----
-
-## 2. Design Philosophy
-
-The scripting layer follows these principles:
-
-* **Safety first**: destructive actions are guarded against production contexts
-* **Deterministic execution**: scripts are repeatable and idempotent where possible
-* **GitOps alignment**: changes flow through declarative files
-* **Fail-fast validation**: invalid state is caught early
-* **Separation of concerns**: each script handles a single operational domain
+* GitOps-based deployments (ArgoCD)
+* Kubernetes cluster lifecycle management
+* AWS infrastructure provisioning and cleanup
+* Security and secrets automation
+* CI/CD operational workflows
 
 ---
 
-## 3. Core Utility: `find.sh`
+## 1. Core Activation Pipeline
 
-### Purpose
+### `activate.sh`
 
-The `find.sh` utility provides a lightweight file explorer across the repository based on file extensions and output mode.
+Main orchestration entrypoint for environment activation.
 
-It is primarily used for:
+**Responsibilities:**
 
-* quick inspection of script layers
-* debugging GitOps and Terraform files
-* auditing configuration changes
+* Runs validation (`validate.sh`)
+* Encrypts secrets (`encrypt_secrets.sh`)
+* Validates GitOps state (`validate_gitops.sh`)
+* Commits and pushes changes to Git
 
----
+**Flow:**
 
-### Behavior
-
-The tool accepts:
-
-* one or more file extensions
-* an action mode (`list` or `cat`)
-
-Example execution:
-
-```bash
-./find.sh sh py cat
-```
+1. Validate environment
+2. Encrypt secrets
+3. Validate GitOps manifests
+4. Git add/commit/push
 
 ---
 
-### Execution Modes
+## 2. GitOps & ArgoCD Operations
 
-#### 1. List Mode
+### `bootstrap_gitops.sh`
 
-Displays matching files only:
+Bootstraps ArgoCD resources into the cluster.
 
-```
-./find.sh tf yml list
-```
+**Responsibilities:**
 
-Output:
+* Applies ApplicationSet manifests
+* Applies ArgoCD ingress
+* Displays cluster and application state
+* Performs dry-run preview before apply
 
-* file paths sorted alphabetically
+### `argocd_login.sh`
 
----
+Handles authentication and token generation for ArgoCD.
 
-#### 2. Cat Mode
+**Responsibilities:**
 
-Prints file contents with separators:
-
-```
-==================== ./file.sh ====================
-<file content>
-```
-
----
-
-### Interactive Mode
-
-When no arguments are provided, an interactive prompt is triggered:
-
-* extensions input
-* action selection
-
-This allows ad-hoc exploration without memorizing CLI syntax.
+* Retrieves initial admin password from Kubernetes secret
+* Logs into ArgoCD CLI
+* Updates password for service account
+* Generates access tokens
 
 ---
 
-### Internal Flow
+## 3. Kubernetes Cluster Management
 
-1. Parse CLI arguments
-2. Extract extensions and action
-3. Build `find` expression dynamically
-4. Collect sorted results
-5. Render based on selected mode
+### `clean_cluster.sh`
 
----
+Hard reconciliation cleanup for Kubernetes resources.
 
-### Safety Notes
+**Responsibilities:**
 
-* Only file reads are performed
-* No modification or execution of files occurs
-* Designed for read-only inspection
+* Deletes ArgoCD Applications and ApplicationSets
+* Iterates through namespaces and removes resources
+* Handles stuck finalizers
+* Force deletes stuck resources when timeout is reached
+* Deletes namespaces safely with fallback escalation
 
----
+**Key safety features:**
 
-## 4. GitOps Activation Pipeline (`activate.sh`)
-
-### Purpose
-
-Runs full system activation workflow including validation, secret encryption, GitOps validation, and optional git push.
+* Skips system namespaces
+* Timeout-based escalation
+* Finalizer patching
+* Forced deletion as last resort
 
 ---
 
-### Pipeline Steps
+### `check_cluster.sh`
 
-1. Validation phase (`validate.sh`)
-2. Secret encryption (`encrypt_secrets.sh`)
-3. GitOps validation (`validate_gitops.sh`)
-4. Git commit + push (interactive confirmation)
+Cluster readiness validation script.
 
----
+**Checks:**
 
-### Safety Controls
-
-* Explicit user confirmation before push
-* Automatic rebase on remote divergence
-* Graceful handling of empty commits
+* ConfigMap `cluster-readiness`
+* ArgoCD deployment rollouts
 
 ---
 
-## 5. Secret Management (`encrypt_secrets.sh`)
+## 4. AWS Infrastructure Management
 
-### Purpose
+### `aws_cleanup.sh`
 
-Encrypts Terraform and GitOps secrets using SOPS with AGE keys.
+Granular AWS resource deletion tool.
 
----
+**Supports:**
 
-### Features
-
-* Multi-environment support (dev, prod, all)
-* Terraform `.tfvars` encryption
-* GitOps YAML encryption in-place
-* Backup restoration on failure
-
----
-
-### Safety Design
-
-* Prevents accidental production encryption failures
-* Skips already encrypted files
-* Requires valid AGE key generation
-
----
-
-## 6. Cluster Cleanup (`clean_cluster.sh`)
-
-### Purpose
-
-Safely removes Kubernetes resources while protecting system-critical components.
-
----
-
-### Cleanup Order
-
-1. ArgoCD ApplicationsSets
-2. ArgoCD Applications
-3. Namespace cleanup (non-system)
-4. Ingress validation
-5. Finalizer cleanup (stuck namespaces)
-
----
-
-### Safety Rules
-
-* Blocks execution in production context
-* Preserves system namespaces:
-
-  * kube-system
-  * argocd
-  * default
-* Avoids deleting Terraform-managed namespaces
-
----
-
-## 7. Drift Detection
-
-### GitOps Drift (`drift_gitops.sh`)
-
-Detects mismatch between desired state (YAML) and computed fingerprint.
-
-Checks:
-
-* structural drift (fingerprint mismatch)
-* runtime drift (env mutation detection)
-
----
-
-### Infrastructure Drift (`drift_state.sh`)
-
-Uses Terraform plan to compare:
-
-* local state
-* real AWS infrastructure
-
-Returns:
-
-* OK (0)
-* Drift detected (2)
-* failure (1)
-
----
-
-## 8. Cloud Cleanup (`delete_leftovers.sh`)
-
-### Purpose
-
-Removes orphan AWS resources such as:
-
+* EC2 instances
+* Security Groups
+* IAM roles and policies
+* S3 buckets
+* CloudWatch log groups
+* ACM certificates
+* Route53 hosted zones
+* ECR repositories
+* Load balancers and target groups
+* Launch templates
 * ENIs
-* Load Balancers
+
+**Behavior:**
+
+* Interactive confirmation before deletion
+* Safe checks before operations
+* Graceful handling of missing resources
 
 ---
 
-### Decision Engine
+### `clean_final.sh`
 
-Each ENI is classified by:
+Full AWS environment teardown script.
 
-* NAT Gateway → skip
-* EFS → skip
-* VPC core → skip
-* ELB → validate orphan status
+**Scope:**
 
-Only orphaned resources are deleted.
+* Target groups
+* Load balancers (ALB/NLB/Classic)
+* Auto Scaling Groups
+* EC2 instances
+* NAT gateways
+* ENIs
+* EBS volumes
+* EFS file systems
+* Security groups
+* Subnets
+* Route tables
+* Internet gateways
+* VPC deletion
 
----
+**Note:**
 
-## 9. GitOps Registry Tools
-
-### `create_values.sh`
-
-Generates Helm values.yaml dynamically from artifact JSON.
-
-Features:
-
-* deterministic static fingerprinting
-* safe merge with existing values
-* optional volume injection
-* runtime probe configuration
-
----
-
-### `register_new_svc.sh`
-
-Manages ingress services declaratively:
-
-* add service
-* remove service
-* validate schema integrity
-* enforce HTTPS requirements
+* Uses cluster name + VPC relationship matching
+* Designed for post-cluster destruction cleanup
 
 ---
 
-## 10. Commit System (`commit.sh`)
+## 5. GitOps Validation & Sync
 
-### Purpose
+### `validate_gitops.sh`
 
-Provides a safe Git commit wrapper with CI awareness.
+Validates GitOps manifests before deployment.
 
----
+### `sync_route53.sh`
 
-### Features
-
-* auto-detects CI vs local execution
-* staged path-based commits
-* structured commit messages
-* retry + rebase conflict resolution
-* recovery fallback strategy
+Synchronizes DNS records via Route53.
 
 ---
 
-## 11. Validation Layer
+## 6. Secrets & Security
 
-### Common Validators
+### `encrypt_secrets.sh`
 
-* `validate_vars.sh` → ensures required variables exist
-* `check_data.sh` → JSON manifest integrity checks
-* `prechecks.sh` → cluster readiness validation
+Encrypts sensitive configuration for GitOps.
 
----
+### `create_secrets.sh`
 
-## 12. Logging System (`logger.sh`)
-
-### Purpose
-
-Centralized structured logging system for script actions.
-
-Logs include:
-
-* timestamp
-* action
-* service
-* environment
-* message
-
-Output stored in `/logs` directory.
+Generates Kubernetes secrets dynamically.
 
 ---
 
-## 13. Operational Flow Model
+## 7. Utility Scripts
 
-Typical lifecycle:
+### `find.sh`
 
-1. Prechecks
-2. Activation pipeline
-3. Secret encryption
-4. GitOps sync
-5. Drift validation
-6. Runtime verification
-7. Cleanup (if needed)
+Search and inspection utility for scripts and configs.
+
+### `functions/`
+
+Shared helper functions used across scripts.
 
 ---
 
-## 14. Summary
+## 8. Operational Safety Model
 
-The scripts form a **full platform automation layer** that bridges:
+The system follows a layered destruction order:
 
-* Kubernetes operations
-* GitOps deployment flow
-* Terraform infrastructure control
-* AWS resource lifecycle management
+1. Kubernetes Applications (ArgoCD)
+2. Namespaces and workloads
+3. Cloud resources (AWS)
+4. Terraform state cleanup (last)
 
-The system is designed for controlled automation with strong safety boundaries and reproducible state transitions.
+---
+
+## 9. Design Philosophy
+
+* Fail-fast validation before destructive actions
+* Interactive confirmation for critical AWS deletes
+* Forced cleanup only as last resort
+* GitOps-first infrastructure control
+* Hybrid Kubernetes + AWS lifecycle management
+
+---
+
+

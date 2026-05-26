@@ -66,4 +66,4 @@ else
   echo "[INFO] ✅ Push successful"
 fi
 
-End
+End || true
