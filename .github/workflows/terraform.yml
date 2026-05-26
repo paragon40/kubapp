@@ -191,6 +191,12 @@ jobs:
             --format json \
             --out-file infracost.json
 
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "⚠️ Infracost failed (Acc Issue) but CI will continue"
+          fi
+          exit 0
+
       - name: Show Infracost Report
         continue-on-error: true
         working-directory: ${{ matrix.dir }}
