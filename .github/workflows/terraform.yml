@@ -175,11 +175,13 @@ jobs:
       # =====================================================
 
       - name: Setup Infracost
+        continue-on-error: true
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
       - name: Generate Infracost Breakdown
+        continue-on-error: true
         working-directory: ${{ matrix.dir }}
         run: |
           MODULE=$(basename ${{ matrix.dir }})
@@ -190,6 +192,7 @@ jobs:
             --out-file infracost.json
 
       - name: Show Infracost Report
+        continue-on-error: true
         working-directory: ${{ matrix.dir }}
         run: |
           echo "Checking file..."
