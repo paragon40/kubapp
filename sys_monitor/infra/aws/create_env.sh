@@ -4,23 +4,24 @@ set -euo pipefail
 # -------- INPUTS --------
 MODE="${MODE:-local}"
 ACCOUNT_ID="${ACCOUNT_ID:?ACCOUNT_ID is required}"
-ENABLE_NODE_DEBUG="${ENABLE_NODE_DEBUG:-}"
-
+ENABLE_NODE_DEBUG="${ENABLE_NODE_DEBUG:-false}"
 
 TARGET_CLUSTER_NAME="${TARGET_CLUSTER_NAME:-kubapp-dev}"
 TARGET_REGION="${TARGET_REGION:-us-east-1}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
 
 ENV_FILE="/opt/sys_monitor/.env"
-echo "Generating $ENV_FILE ..."
 
 # -------- LOGIC --------
+TARGET_ROLE_ARN=""
+
 if [[ "$MODE" == "cross" ]]; then
   CLUSTER_MODE="cross"
   TARGET_ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/sys-monitor-cross-account-role"
+  echo "Cross-account mode enabled"
 else
   CLUSTER_MODE="local"
-  TARGET_ROLE_ARN=""
+  echo "Local mode enabled"
 fi
 
 # -------- WRITE .ENV --------
@@ -37,3 +38,9 @@ EOF
 echo ".env generated successfully:"
 cat "$ENV_FILE"
 echo "=============================================="
+echo "ENV GENERATION START"
+echo "Path: $ENV_FILE"
+echo "Mode: $MODE"
+echo "Account: $ACCOUNT_ID"
+echo "=============================================="
+

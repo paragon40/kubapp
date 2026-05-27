@@ -20,7 +20,7 @@ resource "aws_iam_role_policy" "cross_assume" {
     Version = "2012-10-17"
     Statement = [{
       Effect = "Allow"
-      Action = "sts:AssumeRole"
+      Action =  "sts:AssumeRole"
       Resource = "arn:aws:iam::${var.eks_account_id}:role/sys-monitor-cross-account-role"
     }]
   })

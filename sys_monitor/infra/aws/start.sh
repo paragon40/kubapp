@@ -174,7 +174,7 @@ echo "Using \$SCRIPT_PATH"
 
 # ---- ENV ----
 export ACCOUNT_ID="$ACCOUNT_ID"
-export ENV="$ENV"
+export MODE="$ENV"
 export ENABLE_NODE_DEBUG="$ENABLE_NODE_DEBUG"
 
 bash "\$SCRIPT_PATH" || echo "ENV generation failed (non-fatal)"
