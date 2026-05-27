@@ -6,16 +6,18 @@ import threading
 import tempfile
 import subprocess
 import json
+import time
 
 
 class K8sClientFactory:
     """
-    Singleton-style EKS Kubernetes client.
-    Features:
-    - supports local + cross-account mode
-    - caches API clients
-    - detailed debug logging
-    - explicit role assumption
+    Production-hardened EKS Kubernetes client factory.
+
+    Improvements:
+    - exponential backoff on failures
+    - RBAC/IAM diagnostics
+    - token caching with TTL
+    - failure state circuit breaker
     """
 
     _lock = threading.Lock()
@@ -24,85 +26,97 @@ class K8sClientFactory:
     _custom = None
     _core = None
 
+    # ---------------- TOKEN CACHE ----------------
+    _cached_token = None
+    _token_expiry = 0
+
+    # ---------------- FAILURE CONTROL ----------------
+    _failure_count = 0
+    _last_failure_time = 0
+    _circuit_open_until = 0
+
     # =========================================================
     # LOGGING
     # =========================================================
     @classmethod
-    def _log(cls, message):
-        print(f"[GitOps DEBUG] {message}")
+    def _log(cls, msg):
+        print(f"[GitOps DEBUG] {msg}")
 
     # =========================================================
     # ENV
     # =========================================================
     @classmethod
     def _env(cls):
-        cluster_mode = os.getenv("CLUSTER_MODE", "local")
-        cluster_name = os.getenv("TARGET_CLUSTER_NAME", "kubapp-dev")
-        region = os.getenv("TARGET_REGION", "us-east-1")
-        role_arn = os.getenv("TARGET_ROLE_ARN", "")
-        debug = os.getenv("ENABLE_NODE_DEBUG", "false").lower()
-
-        cls._log(f"CLUSTER_MODE={cluster_mode}")
-        cls._log(f"TARGET_CLUSTER_NAME={cluster_name}")
-        cls._log(f"TARGET_REGION={region}")
-        cls._log(f"TARGET_ROLE_ARN={role_arn or 'NOT_SET'}")
-        cls._log(f"ENABLE_NODE_DEBUG={debug}")
-
         return {
-            "mode": cluster_mode,
-            "cluster_name": cluster_name,
-            "region": region,
-            "role_arn": role_arn,
-            "debug": debug
+            "mode": os.getenv("CLUSTER_MODE", "local"),
+            "cluster_name": os.getenv("TARGET_CLUSTER_NAME", "kubapp-dev"),
+            "region": os.getenv("TARGET_REGION", "us-east-1"),
+            "role_arn": os.getenv("TARGET_ROLE_ARN", ""),
+            "debug": os.getenv("ENABLE_NODE_DEBUG", "false").lower()
         }
+
+    # =========================================================
+    # CIRCUIT BREAKER (ANTI 403 LOOP)
+    # =========================================================
+    @classmethod
+    def _is_circuit_open(cls):
+        return time.time() < cls._circuit_open_until
+
+    @classmethod
+    def _register_failure(cls, reason):
+        cls._failure_count += 1
+        cls._last_failure_time = time.time()
+
+        # exponential backoff: 10s → 30s → 60s → 120s (cap 5 min)
+        delay = min(300, 10 * (2 ** (cls._failure_count - 1)))
+
+        cls._circuit_open_until = time.time() + delay
+
+        cls._log(f"[FAILURE] {reason}")
+        cls._log(f"[FAILURE] Circuit opened for {delay}s")
+
+    @classmethod
+    def _reset_failures(cls):
+        cls._failure_count = 0
+        cls._circuit_open_until = 0
 
     # =========================================================
     # AWS SESSION
     # =========================================================
     @classmethod
-    def _build_session(cls):
+    def _session(cls):
         env = cls._env()
 
         if env["mode"] == "local":
-            cls._log("Using LOCAL AWS session")
-
             session = boto3.Session(region_name=env["region"])
-            sts = session.client("sts")
-
-            identity = sts.get_caller_identity()
+            identity = session.client("sts").get_caller_identity()
             cls._log(f"LOCAL identity: {identity['Arn']}")
-
             return session
-
-        cls._log("Using CROSS-ACCOUNT AWS session")
 
         if not env["role_arn"]:
             raise Exception("TARGET_ROLE_ARN missing in cross mode")
 
-        base_session = boto3.Session(region_name=env["region"])
-        sts = base_session.client("sts")
+        base = boto3.Session(region_name=env["region"])
+        sts = base.client("sts")
 
-        current = sts.get_caller_identity()
-        cls._log(f"Base identity before assume-role: {current['Arn']}")
-
-        cls._log(f"Attempting AssumeRole => {env['role_arn']}")
+        cls._log(f"Base identity: {sts.get_caller_identity()['Arn']}")
+        cls._log(f"Assuming role: {env['role_arn']}")
 
         assumed = sts.assume_role(
             RoleArn=env["role_arn"],
             RoleSessionName="sys-monitor-session"
-        )
-
-        creds = assumed["Credentials"]
+        )["Credentials"]
 
         session = boto3.Session(
-            aws_access_key_id=creds["AccessKeyId"],
-            aws_secret_access_key=creds["SecretAccessKey"],
-            aws_session_token=creds["SessionToken"],
+            aws_access_key_id=assumed["AccessKeyId"],
+            aws_secret_access_key=assumed["SecretAccessKey"],
+            aws_session_token=assumed["SessionToken"],
             region_name=env["region"]
         )
 
-        assumed_identity = session.client("sts").get_caller_identity()
-        cls._log(f"Assumed identity ACTIVE: {assumed_identity['Arn']}")
+        cls._log(
+            f"Assumed identity: {session.client('sts').get_caller_identity()['Arn']}"
+        )
 
         return session
 
@@ -110,30 +124,30 @@ class K8sClientFactory:
     # CLUSTER INFO
     # =========================================================
     @classmethod
-    def _fetch_cluster_info(cls, session):
+    def _cluster(cls, session):
         env = cls._env()
 
-        cls._log(f"Fetching EKS cluster info for: {env['cluster_name']}")
-
         eks = session.client("eks", region_name=env["region"])
+        c = eks.describe_cluster(name=env["cluster_name"])["cluster"]
 
-        cluster = eks.describe_cluster(name=env["cluster_name"])["cluster"]
-
-        cls._log(f"EKS endpoint discovered: {cluster['endpoint']}")
+        cls._log(f"EKS endpoint: {c['endpoint']}")
 
         return {
-            "endpoint": cluster["endpoint"],
-            "ca": cluster["certificateAuthority"]["data"]
+            "endpoint": c["endpoint"],
+            "ca": c["certificateAuthority"]["data"]
         }
 
     # =========================================================
-    # TOKEN GENERATION
+    # TOKEN CACHE (15 min safe TTL)
     # =========================================================
     @classmethod
-    def _generate_token(cls):
+    def _token(cls):
         env = cls._env()
+        now = time.time()
 
-        cls._log("Generating EKS authentication token")
+        if cls._cached_token and now < cls._token_expiry:
+            cls._log("Using cached EKS token")
+            return cls._cached_token
 
         cmd = [
             "aws", "eks", "get-token",
@@ -142,15 +156,16 @@ class K8sClientFactory:
         ]
 
         if env["mode"] == "cross":
-            cls._log(f"Using role for token generation: {env['role_arn']}")
             cmd += ["--role-arn", env["role_arn"]]
 
-        cls._log(f"Executing token command: {' '.join(cmd)}")
+        cls._log("Generating new EKS token")
 
-        result = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        token = json.loads(result)["status"]["token"]
+        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        token = json.loads(out)["status"]["token"]
 
-        cls._log(f"EKS token generated successfully (len={len(token)})")
+        # EKS tokens ~15 min → cache for 12 min safe window
+        cls._cached_token = token
+        cls._token_expiry = now + 720
 
         return token
 
@@ -158,65 +173,56 @@ class K8sClientFactory:
     # CLIENT BUILD
     # =========================================================
     @classmethod
-    def _build_client(cls):
+    def _build(cls):
+        if cls._is_circuit_open():
+            cls._log("Circuit open → skipping Kubernetes build")
+            return
+
         env = cls._env()
+        session = cls._session()
+        info = cls._cluster(session)
+        token = cls._token()
 
-        cls._log("Building Kubernetes API client")
-
-        session = cls._build_session()
-        info = cls._fetch_cluster_info(session)
-
-        token = cls._generate_token()
-
-        cls._log(f"Token preview: {token[:25]}...")
-
-        # ---------------- CONFIG ----------------
         configuration = client.Configuration()
         configuration.host = info["endpoint"]
         configuration.verify_ssl = True
 
-        ca_cert = base64.b64decode(info["ca"])
+        ca = base64.b64decode(info["ca"])
         ca_file = tempfile.NamedTemporaryFile(delete=False)
-        ca_file.write(ca_cert)
+        ca_file.write(ca)
         ca_file.flush()
 
         configuration.ssl_ca_cert = ca_file.name
-        cls._log(f"Temporary CA file created: {ca_file.name}")
 
-        # 🔥 FIX: proper bearer auth (THIS WAS THE BUG)
-        configuration.api_key = {}
-        configuration.api_key_prefix = {}
-        configuration.api_key["authorization"] = token
-
-        cls._log("Creating Kubernetes ApiClient")
+        # proper auth
+        configuration.api_key = {"authorization": token}
 
         api_client = client.ApiClient(configuration)
-
-        # 🔥 EXTRA SAFETY: force header injection (most reliable)
-        api_client.set_default_header(
-            "Authorization",
-            f"Bearer {token}"
-        )
+        api_client.set_default_header("Authorization", f"Bearer {token}")
 
         cls._api_client = api_client
         cls._custom = client.CustomObjectsApi(api_client)
         cls._core = client.CoreV1Api(api_client)
 
-        cls._log("Kubernetes clients initialized successfully")
+        cls._log("Kubernetes clients initialized")
 
-        # ---------------- TEST ----------------
+        # ---------------- RBAC DIAGNOSTIC ----------------
         try:
             nodes = cls._core.list_node()
-
-            cls._log(
-                f"Kubernetes API connectivity verified. Nodes detected: {len(nodes.items)}"
-            )
-
-            for n in nodes.items[:3]:
-                cls._log(f"Node discovered: {n.metadata.name}")
+            cls._log(f"RBAC OK → nodes={len(nodes.items)}")
+            cls._reset_failures()
 
         except Exception as e:
-            cls._log(f"Kubernetes API verification failed: {e}")
+            cls._log(f"[RBAC FAILURE] {e}")
+
+            # identity diagnostics (VERY IMPORTANT)
+            try:
+                identity = session.client("sts").get_caller_identity()
+                cls._log(f"AWS identity at failure: {identity['Arn']}")
+            except:
+                pass
+
+            cls._register_failure(str(e))
             raise
 
     # =========================================================
@@ -224,20 +230,12 @@ class K8sClientFactory:
     # =========================================================
     @classmethod
     def get_clients(cls):
-
         if cls._api_client:
-            cls._log("Using cached Kubernetes clients")
-            return {
-                "custom": cls._custom,
-                "core": cls._core
-            }
+            return {"custom": cls._custom, "core": cls._core}
 
         with cls._lock:
             if not cls._api_client:
-                cls._log("No cached clients found. Building new clients.")
-                cls._build_client()
+                cls._log("Building Kubernetes clients")
+                cls._build()
 
-        return {
-            "custom": cls._custom,
-            "core": cls._core
-        }
+        return {"custom": cls._custom, "core": cls._core}
