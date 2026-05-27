@@ -202,7 +202,7 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: |
           echo "Checking file..."
-          ls -la infracost.json
+          ls -la infracost.json || true
           cat infracost.json || true
 
 
