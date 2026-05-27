@@ -14,6 +14,7 @@ SSH_KEY="${SSH_KEY:-$HOME/.ssh/${KEY_NAME}.pem}"
 
 REMOTE_DIR="/opt/sys_monitor"
 DOMAIN="${DOMAIN:-rundailytest.site}"
+ZONE_ID="Z1031443294L16DYR25B4"
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
@@ -48,8 +49,40 @@ for v in ACCOUNT_ID KEY_NAME SSH_KEY; do
 done
 
 # ============================================================
-# TERRAFORM
+# ROUTE53 AUTO-IMPORT GUARD
 # ============================================================
+
+log "Checking Route53 drift (auto-import safeguard)"
+
+for SUB in app monitor; do
+
+  FULL="${SUB}.${DOMAIN}"
+  EXISTS=$(aws route53 list-resource-record-sets \
+    --hosted-zone-id "$ZONE_ID" \
+    --query "ResourceRecordSets[?Name=='${FULL}.'] | length(@)" \
+    --output text)
+
+  if [[ "$EXISTS" != "0" ]]; then
+
+    STATE_EXISTS=$(terraform state list | grep -c "aws_route53_record.subdomains[\"$SUB\"]" || true)
+
+    if [[ "$STATE_EXISTS" == "0" ]]; then
+      log "Importing existing Route53 record: $FULL"
+
+      terraform import \
+        "aws_route53_record.subdomains[\"$SUB\"]" \
+        "${ZONE_ID}_${FULL}_A" \
+        || log "WARN: import failed for $FULL (maybe already managed)"
+    else
+      log "Route53 record already in state: $FULL"
+    fi
+
+  else
+    log "Route53 record does not exist yet: $FULL (Terraform will create it)"
+  fi
+
+done
+
 log "Terraform init"
 terraform init -upgrade || fail "TF_INIT" "failed" 20
 
