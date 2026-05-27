@@ -14,7 +14,7 @@ SSH_KEY="${SSH_KEY:-$HOME/.ssh/${KEY_NAME}.pem}"
 
 REMOTE_DIR="/opt/sys_monitor"
 DOMAIN="${DOMAIN:-rundailytest.site}"
-ZONE_ID="Z1031443294L16DYR25B4"
+ZONE_ID="${ZONE_ID:-}"
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
@@ -67,21 +67,21 @@ done
 
 log "Checking Route53 drift (auto-import safeguard)"
 
-for SUB in app monitor; do
+if [[ -n "$ZONE_ID" && "$ZONE_ID" != "null" ]]; then
+  for SUB in app monitor; do
+    FULL="${SUB}.${DOMAIN}"
+    EXISTS=$(aws route53 list-resource-record-sets \
+      --hosted-zone-id "$ZONE_ID" \
+      --query "ResourceRecordSets[?Name=='${FULL}.'] | length(@)" \
+      --output text)
 
-  FULL="${SUB}.${DOMAIN}"
-  EXISTS=$(aws route53 list-resource-record-sets \
-    --hosted-zone-id "$ZONE_ID" \
-    --query "ResourceRecordSets[?Name=='${FULL}.'] | length(@)" \
-    --output text)
-
-  if [[ "$EXISTS" != "0" ]]; then
-    log "Route53 dns record exists in Target account"
-  else
-    log "Route53 record does not exist yet: $FULL (Terraform will create it)"
-  fi
-
-done
+    if [[ "$EXISTS" != "0" ]]; then
+      log "Route53 dns record exists in Target account"
+    else
+      log "Route53 record does not exist yet: $FULL (Terraform will create it)"
+    fi
+  done
+fi
 
 log "Terraform init"
 terraform init -upgrade || fail "TF_INIT" "failed" 20
