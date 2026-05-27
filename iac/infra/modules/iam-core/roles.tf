@@ -182,6 +182,7 @@ resource "aws_iam_role_policy" "cross_account_policy" {
         Effect = "Allow"
         Action = [
           "eks:DescribeCluster",
+          "eks:ListClusters",
           "eks:AccessKubernetesApi"
         ]
         Resource = "*"
