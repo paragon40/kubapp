@@ -235,11 +235,58 @@ aws route53 change-resource-record-sets \
 # -------------------------------
 # SUBDOMAINS
 # -------------------------------
-echo "Updating subdomains..."
+echo "Updating subdomains (auto-reconcile mode)..."
 
 for svc in "${SERVICES[@]}"; do
   FQDN="$svc.$DOMAIN"
+  FQDN_DOT="${FQDN}."
 
+  echo "------------------------------------"
+  echo "Processing: $FQDN"
+
+  EXISTING=$(aws route53 list-resource-record-sets \
+    --hosted-zone-id "$ZONE_ID" \
+    --query "ResourceRecordSets[?Name=='$FQDN_DOT']" \
+    --output json)
+
+  EXISTING_TYPE=$(echo "$EXISTING" | jq -r '.[0].Type // empty')
+
+  # -------------------------------
+  # CASE 1: No record exists
+  # -------------------------------
+  if [[ -z "$EXISTING_TYPE" ]]; then
+    echo "➕ No existing record, creating CNAME"
+
+  # -------------------------------
+  # CASE 2: Same type exists → safe UPSERT
+  # -------------------------------
+  elif [[ "$EXISTING_TYPE" == "CNAME" ]]; then
+    echo "♻ Existing CNAME found, updating via UPSERT"
+
+  # -------------------------------
+  # CASE 3: Conflict → DELETE then recreate
+  # -------------------------------
+  else
+    echo "⚠ Conflict detected: existing type = $EXISTING_TYPE"
+    echo " Deleting existing record before recreate..."
+
+    DELETE_PAYLOAD=$(echo "$EXISTING" | jq '.[0]')
+
+    aws route53 change-resource-record-sets \
+      --hosted-zone-id "$ZONE_ID" \
+      --change-batch "{
+        \"Changes\": [{
+          \"Action\": \"DELETE\",
+          \"ResourceRecordSet\": $DELETE_PAYLOAD
+        }]
+      }" || true
+
+    echo " Deleted conflicting record"
+  fi
+
+  # -------------------------------
+  # ALWAYS APPLY DESIRED STATE
+  # -------------------------------
   aws route53 change-resource-record-sets \
     --hosted-zone-id "$ZONE_ID" \
     --change-batch "{
@@ -254,7 +301,7 @@ for svc in "${SERVICES[@]}"; do
       }]
     }"
 
-  echo "→ $FQDN updated"
+  echo "→ $FQDN reconciled"
 done
 
 echo "===================================="
