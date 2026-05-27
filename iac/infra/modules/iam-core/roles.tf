@@ -163,7 +163,7 @@ resource "aws_iam_role" "sys_monitor_cross_account_role" {
     Statement = [{
       Effect = "Allow"
       Principal = {
-        AWS = [aws_iam_role.ec2_role.arn, var.sys_monitor_acc_arn]
+        AWS = [aws_iam_role.ec2_role.arn, "arn:aws:iam::532918215760:role/sys-monitor-local-ec2-role"]
       }
       Action = "sts:AssumeRole"
     }]
