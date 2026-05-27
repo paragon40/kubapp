@@ -20,7 +20,20 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 if [[ "$MODE" == "destroy" ]]; then
   echo "Destroying Activated..."
-  terraform destroy --auto-approve
+  terraform destroy -auto-approve \
+    -var="enable_route53=false" \
+    -target=aws_vpc.sys_vpc \
+    -target=aws_subnet.public_subnet \
+    -target=aws_internet_gateway.igw \
+    -target=aws_route_table.public_rt \
+    -target=aws_route_table_association.public_assoc \
+    -target=aws_security_group.sys_monitor \
+    -target=aws_instance.sys_monitor \
+    -target=aws_eip.sys_eip \
+    -target=aws_iam_role.sys_monitor_local_role \
+    -target=aws_iam_role_policy.cross_assume \
+    -target=aws_iam_instance_profile.sys_monitor_local_profile
+
   MODE=auto bash boot/runner.sh destroy
   exit 1
 fi
@@ -63,20 +76,7 @@ for SUB in app monitor; do
     --output text)
 
   if [[ "$EXISTS" != "0" ]]; then
-
-    STATE_EXISTS=$(terraform state list | grep -c "aws_route53_record.subdomains[\"$SUB\"]" || true)
-
-    if [[ "$STATE_EXISTS" == "0" ]]; then
-      log "Importing existing Route53 record: $FULL"
-
-      terraform import \
-        "aws_route53_record.subdomains[\"$SUB\"]" \
-        "${ZONE_ID}_${FULL}_A" \
-        || log "WARN: import failed for $FULL (maybe already managed)"
-    else
-      log "Route53 record already in state: $FULL"
-    fi
-
+    log "Route53 dns record exists in Target account"
   else
     log "Route53 record does not exist yet: $FULL (Terraform will create it)"
   fi
@@ -88,6 +88,7 @@ terraform init -upgrade || fail "TF_INIT" "failed" 20
 
 log "Terraform apply"
 terraform apply -auto-approve \
+  -var="enable_route53=true" \
   -var="cluster_mode=${ENV}" \
   -var="key_name=${KEY_NAME}" \
   -var="ssh_cidr=$(curl -s ifconfig.me)/32" \

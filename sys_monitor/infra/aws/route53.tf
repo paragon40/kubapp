@@ -3,6 +3,11 @@ data "aws_route53_zone" "main" {
   name = var.domain_name
 }
 
+variable "enable_route53" {
+  type    = bool
+  default = true
+}
+
 locals {
   subdomains = [
     "monitor",
@@ -12,7 +17,7 @@ locals {
 
 resource "aws_route53_record" "subdomains" {
   provider = aws.eks
-  for_each = toset(local.subdomains)
+  for_each = var.enable_route53 ? toset(local.subdomains) : []
   zone_id = data.aws_route53_zone.main.zone_id
   name    = "${each.key}.${var.domain_name}"
   type    = "A"
