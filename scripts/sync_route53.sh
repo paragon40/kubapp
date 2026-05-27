@@ -251,43 +251,59 @@ for svc in "${SERVICES[@]}"; do
 
   EXISTING_TYPE=$(echo "$EXISTING" | jq -r '.[0].Type // empty')
 
+  NEEDS_DELETE=false
+
   # -------------------------------
   # CASE 1: No record exists
   # -------------------------------
   if [[ -z "$EXISTING_TYPE" ]]; then
-    echo "➕ No existing record, creating CNAME"
+    echo "STATE: NO_RECORD"
 
   # -------------------------------
-  # CASE 2: Same type exists → safe UPSERT
+  # CASE 2: Same type exists
   # -------------------------------
   elif [[ "$EXISTING_TYPE" == "CNAME" ]]; then
-    echo "♻ Existing CNAME found, updating via UPSERT"
+    echo "STATE: EXISTS_CNAME"
 
   # -------------------------------
-  # CASE 3: Conflict → DELETE then recreate
+  # CASE 3: Conflict detected
   # -------------------------------
   else
-    echo "⚠ Conflict detected: existing type = $EXISTING_TYPE"
-    echo " Deleting existing record before recreate..."
+    echo "STATE: CONFLICT type=$EXISTING_TYPE"
+    echo "ACTION: DELETE_REQUIRED"
+    NEEDS_DELETE=true
+  fi
+
+  # -------------------------------
+  # DELETE PHASE (SAFE + VERIFIED)
+  # -------------------------------
+  if [[ "$NEEDS_DELETE" == true ]]; then
 
     DELETE_PAYLOAD=$(echo "$EXISTING" | jq '.[0]')
 
-    aws route53 change-resource-record-sets \
+    DELETE_CHANGE_ID=$(aws route53 change-resource-record-sets \
       --hosted-zone-id "$ZONE_ID" \
       --change-batch "{
         \"Changes\": [{
           \"Action\": \"DELETE\",
           \"ResourceRecordSet\": $DELETE_PAYLOAD
         }]
-      }" || true
+      }" \
+      --query "ChangeInfo.Id" \
+      --output text)
 
-    echo " Deleted conflicting record"
+    echo "DELETE_SUBMITTED id=$DELETE_CHANGE_ID"
+
+    aws route53 wait resource-record-sets-changed \
+      --id "$DELETE_CHANGE_ID"
+
+    echo "DELETE_CONFIRMED"
   fi
 
   # -------------------------------
-  # ALWAYS APPLY DESIRED STATE
+  # UPSERT PHASE (ALWAYS SAFE NOW)
   # -------------------------------
-  aws route53 change-resource-record-sets \
+  UPSERT_CHANGE_ID=$(aws route53 change-resource-record-sets \
     --hosted-zone-id "$ZONE_ID" \
     --change-batch "{
       \"Changes\": [{
@@ -299,9 +315,13 @@ for svc in "${SERVICES[@]}"; do
           \"ResourceRecords\": [{\"Value\": \"$ALB\"}]
         }
       }]
-    }"
+    }" \
+    --query "ChangeInfo.Id" \
+    --output text)
 
+  echo "UPSERT_SUBMITTED id=$UPSERT_CHANGE_ID"
   echo "→ $FQDN reconciled"
+
 done
 
 echo "===================================="
