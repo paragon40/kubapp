@@ -30,7 +30,7 @@ variable "admin_arn" {
   sensitive = true
 }
 
-variable "sys_monitor_acc" {
+variable "account_id" {
   type      = string
   sensitive = true
 }

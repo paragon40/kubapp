@@ -79,9 +79,9 @@ module "security" {
 # IAM 
 ############################################
 module "iam_core" {
-  source              = "./modules/iam-core"
-  cluster_name        = local.cluster_name
-  sys_monitor_acc_arn = var.sys_monitor_acc
+  source       = "./modules/iam-core"
+  cluster_name = local.cluster_name
+  account_id   = var.account_id
   tags = merge(local.common_tags, {
     resource-type = "iam"
     layer         = "identity"
