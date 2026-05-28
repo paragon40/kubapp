@@ -2,6 +2,8 @@
 # OS / Editor / IDE
 ########################################
 
+sample/*
+
 # Linux
 *~
 .fuse_hidden*
