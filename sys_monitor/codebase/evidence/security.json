@@ -1,0 +1,14 @@
+{
+  "engine": "security",
+  "scope": "static_analysis_v2",
+  "status": "completed",
+  "timestamp": "2026-05-29T12:25:45Z",
+  "summary": {
+    "total_checked": 129,
+    "issues_found": 8,
+    "critical": 0,
+    "warnings": 8,
+    "security_score": 52
+  },
+  "findings": [{"severity":"warning","type":"workflow_secret_hint","file":".github/workflows/add_new_app.yml","message":"possible secret usage in workflow"},{"severity":"warning","type":"workflow_secret_hint","file":".github/workflows/build.yml","message":"possible secret usage in workflow"},{"severity":"warning","type":"workflow_secret_hint","file":".github/workflows/setup_argocd.yml","message":"possible secret usage in workflow"},{"severity":"warning","type":"workflow_secret_hint","file":".github/workflows/terraform.yml","message":"possible secret usage in workflow"},{"severity":"warning","type":"workflow_secret_hint","file":".github/workflows/test_tf.yml","message":"possible secret usage in workflow"},{"severity":"warning","type":"workflow_secret_hint","file":".github/workflows/update.yml","message":"possible secret usage in workflow"},{"severity":"warning","type":"workflow_secret_hint","file":".github/workflows/validate_ingress.yml","message":"possible secret usage in workflow"},{"severity":"warning","type":"workflow_secret_hint","file":".github/workflows/verify_runtime.yml","message":"possible secret usage in workflow"}]
+}

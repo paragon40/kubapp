@@ -1,0 +1,14 @@
+{
+  "engine": "architecture",
+  "scope": "system_design_health_v4",
+  "status": "completed",
+  "timestamp": "2026-05-29T12:19:16Z",
+  "summary": {
+    "total_checked": 354,
+    "issues_found": 23,
+    "critical": 0,
+    "warnings": 23,
+    "architecture_score": 31
+  },
+  "findings": [{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"boundary","area":"sys_monitor","message":"cloud logic inside monitoring layer"},{"severity":"warning","type":"boundary","area":"sys_monitor","message":"cloud logic inside monitoring layer"},{"severity":"warning","type":"boundary","area":"sys_monitor","message":"cloud logic inside monitoring layer"},{"severity":"warning","type":"boundary","area":"sys_monitor","message":"cloud logic inside monitoring layer"},{"severity":"warning","type":"boundary","area":"sys_monitor","message":"cloud logic inside monitoring layer"},{"severity":"warning","type":"duplication","area":"scripts","message":"multiple find tools detected"},{"severity":"warning","type":"duplication","area":"scripts","message":"multiple validate tools detected"},{"severity":"warning","type":"coupling","area":"scripts","message":"script tied to iac layer"},{"severity":"warning","type":"coupling","area":"scripts","message":"script tied to iac layer"},{"severity":"warning","type":"coupling","area":"scripts","message":"script tied to iac layer"},{"severity":"warning","type":"coupling","area":"scripts","message":"script tied to iac layer"}]
+}
