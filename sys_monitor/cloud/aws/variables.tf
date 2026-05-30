@@ -37,7 +37,7 @@ variable "instance_type" {
 variable "key_name" {
   description = "Existing AWS key pair name"
   type        = string
-  default  = "sys-monitor-key"
+  default     = "sys-monitor-key"
 }
 
 variable "zone_id" {
@@ -51,6 +51,6 @@ variable "ssh_cidr" {
 }
 
 variable "eks_account_id" {
-  type = string
+  type    = string
   default = ""
 }

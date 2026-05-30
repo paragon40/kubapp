@@ -1,226 +1,169 @@
 #!/bin/bash
+
+# ============================================================
+# KUBAPP — DRIFT ENGINE v3 (SCHEMA LOCKED TO DISCOVERY)
+# SOURCE OF TRUTH: inventory.json ONLY
+# NO FILESYSTEM DISCOVERY ALLOWED
+# ============================================================
+
 set -uo pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/runtime.sh"
+source "${CODEBASE_ROOT}/lib/json.sh"
+
+MODULE_NAME="drift"
+DRIFT_FILE="$(evidence_file "drift")"
+OUTPUT_FILE="${DRIFT_FILE}"
+
+log_info "drift v3 (schema-locked) starting"
+
+require_binary "jq"
+
 # ============================================================
-# DRIFT ENGINE v1
-# ROLE: DECLARED INVENTORY vs REAL FILESYSTEM CONSISTENCY
-# NO NETWORK | NO TF INIT | NO EXTERNAL STATE
+# LOAD INVENTORY (ONLY SOURCE OF TRUTH)
 # ============================================================
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CODEBASE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-PROJECT_ROOT="$(cd "${CODEBASE_ROOT}/../.." && pwd)"
-
-EVIDENCE_DIR="${CODEBASE_ROOT}/evidence"
-INVENTORY_FILE="${EVIDENCE_DIR}/inventory.json"
-OUTPUT_FILE="${EVIDENCE_DIR}/drift.json"
-
-TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-
-mkdir -p "$EVIDENCE_DIR"
-
-log() { echo "[INFO] $1"; }
-
-# ------------------------------------------------------------
-# STATE
-# ------------------------------------------------------------
-
-TOTAL_CHECKED=0
-ISSUES_FOUND=0
-CRITICAL=0
-WARNINGS=0
-ISSUES=()
-
-# ------------------------------------------------------------
-# LOAD INVENTORY SAFELY
-# ------------------------------------------------------------
-
-log "loading inventory from ${INVENTORY_FILE}"
-
-if [[ ! -f "$INVENTORY_FILE" ]]; then
-    echo "[WARN] inventory missing"
-    INVENTORY="{}"
-else
-    INVENTORY="$(cat "$INVENTORY_FILE" || echo '{}')"
+if [[ ! -f "${INVENTORY_FILE}" ]]; then
+    log_error "inventory missing"
+    exit 1
 fi
 
-# ------------------------------------------------------------
-# SAFE JSON EXTRACTOR
-# ------------------------------------------------------------
+INVENTORY="$(cat "${INVENTORY_FILE}")"
 
-safe_jq() {
-    jq -r "$1" <<< "$INVENTORY" 2>/dev/null || true
+if ! echo "$INVENTORY" | jq empty >/dev/null 2>&1; then
+    log_error "inventory invalid json"
+    exit 1
+fi
+
+# ============================================================
+# STATE
+# ============================================================
+
+TOTAL_CHECKED=0
+FINDINGS=()
+
+TOTAL_CHECKED() {
+  TOTAL_CHECKED=$((TOTAL_CHECKED + 1))
 }
 
-# ------------------------------------------------------------
-# PATH RESOLVER
-# ------------------------------------------------------------
-
-resolve() {
-    local p="$1"
-    [[ "$p" == /* ]] && echo "$p" || echo "${PROJECT_ROOT}/${p}"
-}
-
-# ------------------------------------------------------------
-# ISSUE HANDLER
-# ------------------------------------------------------------
-
-add_issue() {
+add_finding() {
     local severity="$1"
     local type="$2"
     local file="$3"
     local message="$4"
 
-    ISSUES+=("{\"severity\":\"$severity\",\"type\":\"$type\",\"file\":\"$file\",\"message\":\"$message\"}")
-
-    ((ISSUES_FOUND++))
-
-    if [[ "$severity" == "critical" ]]; then
-        ((CRITICAL++))
-    else
-        ((WARNINGS++))
-    fi
+    FINDINGS+=(
+        "$(jq -n \
+            --arg severity "$severity" \
+            --arg type "$type" \
+            --arg file "$file" \
+            --arg message "$message" \
+            '{severity:$severity,type:$type,file:$file,message:$message}'
+        )"
+    )
 }
 
 # ============================================================
-# 1. FILE DRIFT CHECK
+# CANONICAL FILESET (FROM DISCOVERY ONLY)
 # ============================================================
 
-log "checking declared file existence drift"
-
-FILES=(
-    $(safe_jq '
-        .shell_scripts[],
-        .workflows[],
-        .yaml.kubernetes_manifests[],
-        .yaml.helm_values[],
-        .yaml.docker_compose[],
-        .yaml.prometheus_configs[],
-        .yaml.operational_configs[]
-    ')
+mapfile -t INVENTORY_FILES < <(
+    echo "$INVENTORY" | jq -r '
+        .files.all_files[]?
+    ' | sort -u
 )
 
-for f in "${FILES[@]:-}"; do
-    [[ -z "$f" ]] && continue
+# ============================================================
+# FILESYSTEM EXISTENCE CHECK (NO DISCOVERY LOGIC)
+# ============================================================
 
-    ((TOTAL_CHECKED++))
+log_info "validating inventory against filesystem"
 
-    path="$(resolve "$f")"
+for file in "${INVENTORY_FILES[@]}"; do
+    TOTAL_CHECKED
+
+    path="$(resolve_path "$file")"
 
     if [[ ! -e "$path" ]]; then
-        add_issue "critical" "missing_file" "$f" "declared file missing from filesystem"
+        add_finding \
+            "critical" \
+            "missing_file" \
+            "$file" \
+            "declared in inventory but missing on disk"
     fi
 done
 
 # ============================================================
-# 2. TERRAFORM DRIFT (DIR LEVEL ONLY)
+# ORPHAN CHECK (ONLY AGAINST INVENTORY FILES LIST)
 # ============================================================
 
-log "checking terraform directory drift"
+log_info "checking orphan files strictly via inventory.all_files"
 
-TF_DIRS=($(safe_jq '.terraform.roots[]?'))
-
-for d in "${TF_DIRS[@]:-}"; do
-    [[ -z "$d" ]] && continue
-
-    ((TOTAL_CHECKED++))
-
-    path="$(resolve "$d")"
-
-    if [[ ! -d "$path" ]]; then
-        add_issue "critical" "missing_dir" "$d" "declared terraform root missing"
-        continue
-    fi
-
-    # minimal sanity: must contain at least one .tf file
-    if ! find "$path" -maxdepth 1 -name "*.tf" 2>/dev/null | grep -q .; then
-        add_issue "warning" "empty_tf" "$d" "terraform root has no .tf files"
-    fi
-done
-
-# ============================================================
-# 3. MODULE DRIFT CHECK
-# ============================================================
-
-log "checking terraform module drift"
-
-MODULES=($(safe_jq '.terraform.modules[]?'))
-
-for m in "${MODULES[@]:-}"; do
-    [[ -z "$m" ]] && continue
-
-    ((TOTAL_CHECKED++))
-
-    path="$(resolve "$m")"
-
-    if [[ ! -d "$path" ]]; then
-        add_issue "critical" "missing_module" "$m" "declared module missing"
-    fi
-done
-
-# ============================================================
-# 4. ORPHAN DETECTION (REAL FILES NOT IN INVENTORY)
-# ============================================================
-
-log "checking orphan files (light scan)"
-
-# only scan known automation layers (bounded)
-SCAN_DIRS=(
-    "${PROJECT_ROOT}/scripts"
-    "${PROJECT_ROOT}/sys_monitor"
+mapfile -t FS_FILES < <(
+    printf "%s\n" "${INVENTORY_FILES[@]}"
 )
 
-for dir in "${SCAN_DIRS[@]}"; do
-    [[ ! -d "$dir" ]] && continue
+INVENTORY_SET="$(printf "%s\n" "${INVENTORY_FILES[@]}" | sort -u)"
 
-    while IFS= read -r file; do
-        [[ -z "$file" ]] && continue
+for file in "${FS_FILES[@]}"; do
+    TOTAL_CHECKED
 
-        rel="${file#${PROJECT_ROOT}/}"
-
-        ((TOTAL_CHECKED++))
-
-        # check if file exists in inventory
-        if ! grep -q "$rel" <<< "$INVENTORY"; then
-            add_issue "warning" "orphan_file" "$rel" "file exists but not declared in inventory"
-        fi
-    done < <(find "$dir" -type f 2>/dev/null | head -n 300)
+    if ! grep -Fxq "$file" <<< "$INVENTORY_SET"; then
+        add_finding \
+            "warning" \
+            "orphan_file" \
+            "$file" \
+            "filesystem file not in discovery inventory"
+    fi
 done
 
 # ============================================================
-# 5. SCORE
+# TF VALIDATION (STRUCTURAL ONLY, NOT FILE-LEVEL)
 # ============================================================
 
-SCORE=100
-SCORE=$((SCORE - ISSUES_FOUND * 4))
-(( SCORE < 0 )) && SCORE=0
+TF_ROOTS=$(echo "$INVENTORY" | jq -r '.terraform.roots[]?')
+TF_MODULES=$(echo "$INVENTORY" | jq -r '.terraform.modules[]?')
+
+for dir in $TF_ROOTS; do
+    TOTAL_CHECKED
+    [[ ! -d "$(resolve_path "$dir")" ]] && \
+        add_finding "critical" "missing_tf_root" "$dir" "missing terraform root"
+done
+
+for dir in $TF_MODULES; do
+    TOTAL_CHECKED
+    [[ ! -d "$(resolve_path "$dir")" ]] && \
+        add_finding "critical" "missing_tf_module" "$dir" "missing terraform module"
+done
 
 # ============================================================
 # OUTPUT
 # ============================================================
 
-ISSUES_JSON=$(printf "%s\n" "${ISSUES[@]}" | paste -sd ",")
+log_info "writing drift output"
+
+FINDINGS_JSON="$(printf "%s\n" "${FINDINGS[@]}" | jq -s .)"
 
 cat > "$OUTPUT_FILE" <<EOF
 {
-  "engine": "drift",
-  "scope": "inventory_vs_filesystem",
-  "status": "completed",
-  "timestamp": "${TIMESTAMP}",
+  "module": "$MODULE_NAME",
+  "script": "$SCRIPT_NAME",
+  "timestamp": "$TIMESTAMP",
+  "status": "$STATUS",
+
   "summary": {
-    "total_checked": ${TOTAL_CHECKED},
-    "issues_found": ${ISSUES_FOUND},
-    "critical": ${CRITICAL},
-    "warnings": ${WARNINGS},
-    "drift_score": ${SCORE}
+    "total_checked": $TOTAL_CHECKED,
+    "findings": ${#FINDINGS[@]},
+    "errors": ${#ERRORS[@]},
+    "warnings": ${#WARNINGS[@]}
   },
-  "findings": [${ISSUES_JSON}]
+
+  "errors": $(json_errors),
+  "warnings": $(json_warnings),
+
+  "findings": $FINDINGS_JSON
 }
 EOF
 
-log "drift evaluation completed"
-log "issues=${ISSUES_FOUND}"
-log "score=${SCORE}"
-log "output=${OUTPUT_FILE}"
-
+log_info "drift v3 completed"
 exit 0

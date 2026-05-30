@@ -146,7 +146,7 @@ resource "aws_instance" "sys_monitor" {
   vpc_security_group_ids      = [aws_security_group.sys_monitor.id]
   key_name                    = local.key_name
   associate_public_ip_address = false
-  iam_instance_profile = aws_iam_instance_profile.sys_monitor_local_profile.name
+  iam_instance_profile        = aws_iam_instance_profile.sys_monitor_local_profile.name
 
   root_block_device {
     volume_size           = 20

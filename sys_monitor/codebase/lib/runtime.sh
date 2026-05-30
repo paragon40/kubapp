@@ -146,11 +146,13 @@ GLOBAL_EXCLUDES=(
     "*/.terraform/*"
     "*/.backup/*"
     "*/__pycache__/*"
-
+    "sample/*"
     "*.bak"
     "*.tmp"
     "*.swp"
 
+    "*.terraform.*"
+    "*.terraform.lock.hcl*"
     "*/terraform.tfstate"
     "*/terraform.tfstate.*"
 )
