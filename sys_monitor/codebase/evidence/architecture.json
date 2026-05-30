@@ -1,14 +1,83 @@
 {
-  "engine": "architecture",
-  "scope": "system_design_health_v4",
+  "module": "architecture",
+  "script": "architecture.sh",
   "status": "completed",
-  "timestamp": "2026-05-29T12:19:16Z",
+  "timestamp": "2026-05-30T13:59:38Z",
+
   "summary": {
-    "total_checked": 354,
-    "issues_found": 23,
+    "total_checked": 252,
+    "issues_found": 11,
     "critical": 0,
-    "warnings": 23,
-    "architecture_score": 31
+    "warnings": 11,
+    "architecture_score": 67
   },
-  "findings": [{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"isolation","area":"sample","message":"sample script leakage into automation layer"},{"severity":"warning","type":"boundary","area":"sys_monitor","message":"cloud logic inside monitoring layer"},{"severity":"warning","type":"boundary","area":"sys_monitor","message":"cloud logic inside monitoring layer"},{"severity":"warning","type":"boundary","area":"sys_monitor","message":"cloud logic inside monitoring layer"},{"severity":"warning","type":"boundary","area":"sys_monitor","message":"cloud logic inside monitoring layer"},{"severity":"warning","type":"boundary","area":"sys_monitor","message":"cloud logic inside monitoring layer"},{"severity":"warning","type":"duplication","area":"scripts","message":"multiple find tools detected"},{"severity":"warning","type":"duplication","area":"scripts","message":"multiple validate tools detected"},{"severity":"warning","type":"coupling","area":"scripts","message":"script tied to iac layer"},{"severity":"warning","type":"coupling","area":"scripts","message":"script tied to iac layer"},{"severity":"warning","type":"coupling","area":"scripts","message":"script tied to iac layer"},{"severity":"warning","type":"coupling","area":"scripts","message":"script tied to iac layer"}]
+
+  "findings": [
+  {
+    "severity": "warning",
+    "type": "boundary",
+    "area": "sys_monitor",
+    "message": "cloud logic inside monitoring layer"
+  },
+  {
+    "severity": "warning",
+    "type": "boundary",
+    "area": "sys_monitor",
+    "message": "cloud logic inside monitoring layer"
+  },
+  {
+    "severity": "warning",
+    "type": "boundary",
+    "area": "sys_monitor",
+    "message": "cloud logic inside monitoring layer"
+  },
+  {
+    "severity": "warning",
+    "type": "boundary",
+    "area": "sys_monitor",
+    "message": "cloud logic inside monitoring layer"
+  },
+  {
+    "severity": "warning",
+    "type": "boundary",
+    "area": "sys_monitor",
+    "message": "cloud logic inside monitoring layer"
+  },
+  {
+    "severity": "warning",
+    "type": "duplication",
+    "area": "scripts",
+    "message": "multiple find tools detected"
+  },
+  {
+    "severity": "warning",
+    "type": "duplication",
+    "area": "scripts",
+    "message": "multiple validate tools detected"
+  },
+  {
+    "severity": "warning",
+    "type": "coupling",
+    "area": "scripts",
+    "message": "iac coupling detected"
+  },
+  {
+    "severity": "warning",
+    "type": "coupling",
+    "area": "scripts",
+    "message": "iac coupling detected"
+  },
+  {
+    "severity": "warning",
+    "type": "coupling",
+    "area": "scripts",
+    "message": "iac coupling detected"
+  },
+  {
+    "severity": "warning",
+    "type": "coupling",
+    "area": "scripts",
+    "message": "iac coupling detected"
+  }
+]
 }
