@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-# KUBAPP — POLICY ENFORCEMENT ENGINE v2
+# KUBAPP — POLICY ENFORCEMENT ENGINE
 # ROLE: BOUNDARY + COUPLING RULES ONLY
 # NO SYNTAX | NO STRUCTURE | NO PARSING VALIDATION
 # ============================================================

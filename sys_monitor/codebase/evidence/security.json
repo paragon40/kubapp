@@ -1,11 +1,11 @@
 {
   "module": "security",
   "script": "security.sh",
-  "timestamp": "2026-05-29T21:35:59Z",
+  "timestamp": "2026-05-31T08:30:37Z",
   "status": "fail",
 
   "summary": {
-    "total_checked": 571,
+    "total_checked": 477,
     "findings": 10,
     "errors": 8,
     "warnings": 2

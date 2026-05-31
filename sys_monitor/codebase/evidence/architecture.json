@@ -2,10 +2,10 @@
   "module": "architecture",
   "script": "architecture.sh",
   "status": "completed",
-  "timestamp": "2026-05-30T13:59:38Z",
+  "timestamp": "2026-05-31T08:30:52Z",
 
   "summary": {
-    "total_checked": 252,
+    "total_checked": 248,
     "issues_found": 11,
     "critical": 0,
     "warnings": 11,
