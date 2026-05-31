@@ -12,10 +12,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/ ./src/
 
-# Environment
 ENV PYTHONUNBUFFERED=1
-ENV METRICS_FILE=./evidence/metrics.prom
+ENV METRICS_FILE=/evidence/metrics.prom
 
 EXPOSE 8080
 
-CMD ["python", "src/app.py"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "src.app:app"]

@@ -1,7 +1,7 @@
 {
   "module": "Discovery",
   "script": "discovery.sh",
-  "timestamp": "2026-05-31T08:30:05Z",
+  "timestamp": "2026-05-31T20:47:58Z",
   "status": "pass",
 
   "errors": [],
@@ -328,14 +328,17 @@
   "sys_monitor/codebase/README.md",
   "sys_monitor/codebase/runners/architecture.sh",
   "sys_monitor/codebase/runners/discovery.sh",
+  "sys_monitor/codebase/runners/Dockerfile",
   "sys_monitor/codebase/runners/drift.sh",
   "sys_monitor/codebase/runners/metrics.sh",
-  "sys_monitor/codebase/runners/policy.sh",
+  "sys_monitor/codebase/runners/requirements.txt",
+  "sys_monitor/codebase/runners/runner.sh",
   "sys_monitor/codebase/runners/security.sh",
   "sys_monitor/codebase/runners/src/app.py",
   "sys_monitor/codebase/runners/validation.sh",
   "sys_monitor/docker-compose.yml",
   "sys_monitor/docs/structure",
+  "sys_monitor/.env",
   "sys_monitor/exporters/github/Dockerfile",
   "sys_monitor/exporters/github/requirements.txt",
   "sys_monitor/exporters/github/src/app.py",
@@ -359,10 +362,12 @@
   "sys_monitor/exporters/gitops/src/k8s_client.py1",
   "sys_monitor/exporters/gitops/src/metrics.py",
   "sys_monitor/find.sh",
+  "sys_monitor/observability/grafana/dashboards/codebase-overview.json",
   "sys_monitor/observability/grafana/dashboards/github-overview.json",
   "sys_monitor/observability/grafana/dashboards/gitops-overview.json",
   "sys_monitor/observability/grafana/provisioning/dashboards/dashboards.yml",
   "sys_monitor/observability/grafana/provisioning/datasources/datasource.yml",
+  "sys_monitor/observability/prometheus/alerts.yml",
   "sys_monitor/observability/prometheus/prometheus.yml",
   "sys_monitor/README.md",
   ".trivyignore"
@@ -451,7 +456,7 @@
   "sys_monitor/codebase/runners/discovery.sh",
   "sys_monitor/codebase/runners/drift.sh",
   "sys_monitor/codebase/runners/metrics.sh",
-  "sys_monitor/codebase/runners/policy.sh",
+  "sys_monitor/codebase/runners/runner.sh",
   "sys_monitor/codebase/runners/security.sh",
   "sys_monitor/codebase/runners/validation.sh",
   "sys_monitor/find.sh"
@@ -533,6 +538,7 @@
   "docker/metrics_app/Dockerfile",
   "docker/url_shortener/Dockerfile",
   "docker/weather_app/Dockerfile",
+  "sys_monitor/codebase/runners/Dockerfile",
   "sys_monitor/exporters/github/Dockerfile",
   "sys_monitor/exporters/github/src/sre_engine/Dockerfile",
   "sys_monitor/exporters/gitops/Dockerfile"
@@ -542,6 +548,7 @@
   "sys_monitor/docker-compose.yml"
 ],
     "prometheus_configs": [
+  "sys_monitor/observability/prometheus/alerts.yml",
   "sys_monitor/observability/prometheus/prometheus.yml"
 ],
     "operational_configs": [
@@ -571,12 +578,12 @@
 ],
 
   "statistics": {
-    "all_files_count": 355,
+    "all_files_count": 360,
     "terraform_root_count": 7,
     "terraform_module_count": 9,
     "shell_script_count": 62,
     "workflow_count": 19,
-    "dockerfile_count": 7,
+    "dockerfile_count": 8,
     "k8s_manifest_count": 14,
     "argocd_config_count": 2,
     "chart_file_count": 3

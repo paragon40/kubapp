@@ -1,16 +1,21 @@
 from flask import Flask, Response, jsonify
 import os
 
-METRICS_FILE = os.getenv("METRICS_FILE", "../evidence/metrics.prom")
+METRICS_FILE = os.getenv("METRICS_FILE", "/evidence/metrics.prom")
 
 app = Flask(__name__)
+if METRICS_FILE:
+  print(f"Metrics file: {METRICS_FILE}")
+  print(f"Exists: {os.path.exists(METRICS_FILE)}")
+else:
+  print("❌ Metrics File Not Found!")
 
 @app.route("/")
 def dashboard():
     return """
     <html>
         <head>
-            <title>KubApp SysMonitor</title>
+            <title>KubApp SysMonitor[Codebase]</title>
             <style>
                 body {
                     font-family: Arial;
@@ -70,3 +75,9 @@ def metrics():
             mimetype="text/plain",
             status=500
         )
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=8080
+    )
