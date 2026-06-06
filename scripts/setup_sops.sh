@@ -24,16 +24,16 @@ install_age() {
 }
 
 ensure_age_key() {
-  mkdir -p "$HOME/.age"
+  mkdir -p "$HOME/.config/sops/age"
 
-  if [ ! -f "$HOME/.age/age.key" ]; then
+  if [ ! -f "$HOME/.config/sops/age/keys.txt" ]; then
     echo "Creating AGE key..."
-    age-keygen -o "$HOME/.age/age.key"
+    age-keygen -o "$HOME/.config/sops/age/keys.txt"
   else
     echo "AGE key exists"
   fi
 }
 
 get_age_public_key() {
-  grep -oE 'age1[a-z0-9]+' "$HOME/.age/age.key"
+  grep -oE 'age1[a-z0-9]+' "$HOME/.config/sops/age/keys.txt"
 }
