@@ -5,5 +5,5 @@
   "backendService": "kube-prometheus-stack-alertmanager",
   "env": "dev",
   "port": 9093,
-  "timestamp": "2026-06-06_14-57-10"
+  "timestamp": "2026-06-06_15-43-45"
 }
