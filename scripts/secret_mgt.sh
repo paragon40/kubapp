@@ -67,7 +67,7 @@ backup_mode() {
 }
 
 ############################################
-# DELETE MODE (SAFE)
+# DELETE MODE
 ############################################
 delete_mode() {
   echo "[INFO] DELETE MODE"
@@ -96,7 +96,7 @@ recover_mode() {
   S3_FILE="s3://$S3_BUCKET/$S3_PREFIX/latest.tar.gz"
 
   ########################################
-  # helper: try S3 download once (lazy)
+  # helper: try S3 download once
   ########################################
   fetch_s3() {
     if [[ ! -f "$TMP/latest.tar.gz" ]]; then
