@@ -5,7 +5,7 @@
   "context": "docker/url_shortener",
   "image": "paragon40/url_shortener",
   "image2": "paragon40/url_shortener:latest",
-  "tag": "47abccc11cf7d237a977cc9beddb81027154696a-1780760771",
+  "tag": "bbf7883ba408305cf8ce5e7b5aaa994961fadfa9-1780923208",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -22,5 +22,5 @@
   "mount_path": "/data",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-06-06_15-46-11"
+  "CREATED_AT": "2026-06-08_12-53-28"
 }
