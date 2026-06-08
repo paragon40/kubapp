@@ -48,6 +48,13 @@ jobs:
             exit 1
           }
 
+          echo "============================================"
+          echo "Running DEBUG: "
+          which sops
+          file $(which sops)
+          head -5 $(which sops)
+          echo "============================================"
+
       # --------------------------------
       #  Setup kubeconfig (EKS access)
       # --------------------------------
