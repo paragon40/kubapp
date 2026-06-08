@@ -43,7 +43,7 @@ declare -p SERVICES
 # ============================================================
 if [[ "$SYNC_MODE" == "destroy" ]]; then
   echo "===================================="
-  echo "DESTROY MODE (FAST PATH)"
+  echo "DESTROY MODE..."
   echo "===================================="
 
   ZONE_ID=$(aws route53 list-hosted-zones-by-name \
