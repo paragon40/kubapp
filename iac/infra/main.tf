@@ -9,7 +9,7 @@ data "aws_eks_cluster_auth" "this" {
 data "aws_caller_identity" "current" {}
 
 data "aws_route53_zone" "main" {
-  name         = var.initial_domain
+  name         = var.main_domain
   private_zone = false
 }
 
