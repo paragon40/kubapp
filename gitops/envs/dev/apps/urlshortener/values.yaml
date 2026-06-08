@@ -3,7 +3,7 @@ namespace: dev
 serviceAccount:
   create: true
   name: urlshortener-sa
-  roleArn: arn:aws:iam::198200019771:role/kubapp-dev-app-pods-role
+  roleArn: arn:aws:iam::532918215760:role/kubapp-dev-app-pods-role
 serviceMonitor:
   enabled: false
   path: /metrics
@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/url_shortener
-  tag: 0acdef5f43654075a87509cae340a1c54dd628bb-1779781277
+  tag: 47abccc11cf7d237a977cc9beddb81027154696a-1780760771
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -59,7 +59,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: d882d65204ed4afd42b1d002d2189eff2847433e8ecf57ebe372615ceae7d8b1
-  generatedAt: 2026-05-27T11:22:12Z
+  generatedAt: 2026-06-08T12:45:23Z
   source: build-pipeline
 storage:
   volumes:
