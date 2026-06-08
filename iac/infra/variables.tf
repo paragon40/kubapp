@@ -51,10 +51,6 @@ variable "main_domain" {
   type        = string
 }
 
-variable "initial_domain" {
-  type = string
-}
-
 variable "cluster_name" {
   description = "Base cluster name (no env suffix here)"
   type        = string
