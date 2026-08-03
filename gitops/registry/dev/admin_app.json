@@ -5,7 +5,7 @@
   "context": "docker/admin_app",
   "image": "paragon40/admin_app",
   "image2": "paragon40/admin_app:latest",
-  "tag": "e06b0b423e492dd02bef941bd24153c55f2c59d5-1785756600",
+  "tag": "0937f0e6f5ddd77df3908deeff65095aa0ef2bf3-1785757303",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -22,5 +22,5 @@
   "mount_path": "/data",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-08-03_11-30-00"
+  "CREATED_AT": "2026-08-03_11-41-43"
 }
