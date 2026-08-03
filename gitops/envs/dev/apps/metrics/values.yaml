@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/metrics_app
-  tag: bbf7883ba408305cf8ce5e7b5aaa994961fadfa9-1780923208
+  tag: 0937f0e6f5ddd77df3908deeff65095aa0ef2bf3-1785757305
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -59,7 +59,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 6eb65282886a0603f8c86255c84251d376fa95d72df49a6392d9bc346965da9f
-  generatedAt: 2026-06-11T11:44:22Z
+  generatedAt: 2026-08-03T12:07:04Z
   source: build-pipeline
 storage:
   volumes:
