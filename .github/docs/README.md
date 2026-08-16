@@ -1,40 +1,46 @@
 # Architecture
 
-```
-Developer
-   │
-   ▼
-Git Push / PR
-   │
-   ▼
-build.yml
-   │
-   ├── Discover services
-   ├── Build images
-   ├── Push images
-   ├── Generate registry metadata
-   └── Commit GitOps state
-            │
-            ▼
-      GitOps Registry
-            │
-            ▼
-      add_new_app.yml
-            │
-            ├── Validate state
-            ├── Read registry
-            ├── Generate values
-            ├── Generate secrets
-            └── Register ingress
-                     │
-                     ▼
-                GitOps Repo
-                     │
-                     ▼
-                  ArgoCD
-                     │
-                     ▼
-                Kubernetes
-                     │
-                     ▼
-              Runtime Verification
+![KubApp CI/CD Architecture](./architecture.png)
+
+The high-level lifecycle is:
+
+```text
+Application Source
+       │
+       ▼
+ GitHub Repository
+       │
+       ▼
+ GitHub Actions
+       │
+       ├──────────────► Build Docker Images
+       │                      │
+       │                      ▼
+       │                 Docker Registry
+       │
+       ▼
+ GitOps Registry
+       │
+       ▼
+ GitOps Provisioning
+       │
+       ├──────────────► Values / Secrets / Ingress
+       │
+       ▼
+    Argo CD
+       │
+       ▼
+   Kubernetes / EKS
+       │
+       ▼
+ Runtime Verification
+       │
+       ├──────────────► Stable Deployment
+       │
+       └──────────────► Rollback
+       
+Cleanup / Reconciliation
+       │
+       ▼
+ Remove Orphaned Resources
+

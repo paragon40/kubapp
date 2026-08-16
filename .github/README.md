@@ -7,11 +7,9 @@ rollback, and cleanup.
 
 ## CI/CD Architecture
 
-![KubApp CI/CD Architecture](./docs/architecture.png)
-
 The architecture and end-to-end workflow are documented in:
 
-- [CI/CD Architecture](./docs/architecture.md)
+- [CI/CD Architecture](./docs/README.md)
 - [Execution Flow](./docs/flow.md)
 
 ## Pipeline Stages
