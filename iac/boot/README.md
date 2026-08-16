@@ -72,3 +72,10 @@ The bootstrap layer is normally created once and changed less frequently than th
 
 Keep the bootstrap layer **small, stable, and independent**.
 Its only responsibility is to provide the Terraform backend foundation that allows the rest of KUBAPP's infrastructure to be managed safely.
+
+
+## For Users
+If you intend to provision infra using this layer, then you must first create a terraform.tfvars here and supply
+- profile           = "aws-accout-profile"
+- state_bucket_name = "s3-bukcet-name"
+- lock_table_name   = "and-lock-name"
