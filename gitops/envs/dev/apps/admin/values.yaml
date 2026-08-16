@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/admin_app
-  tag: 0937f0e6f5ddd77df3908deeff65095aa0ef2bf3-1785757303
+  tag: bbf7883ba408305cf8ce5e7b5aaa994961fadfa9-1780923205
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -52,14 +52,14 @@ probes:
     initialDelaySeconds: 10
     periodSeconds: 15
 hpa:
-  enabled: true
+  enabled: false
   minReplicas: 2
   maxReplicas: 4
   cpu: 70
   memory: 70
 meta:
   staticFingerprint: be9cdf8b48982e22e4b67e6b6345e115a9ffde654c29143eaf57dff2b5007ecb
-  generatedAt: 2026-08-03T12:07:03Z
+  generatedAt: 2026-06-11T11:44:21Z
   source: build-pipeline
 storage:
   volumes:
