@@ -740,7 +740,7 @@ The goal is to avoid creating separate Terraform codebases for development and p
 
 ## 25. Secrets
 
-Sensitive values such as alerting credentials should not be stored as plaintext Terraform variables in the repository.
+Sensitive values such as alerting credentials are not stored as plaintext Terraform variables in the repository.
 
 The intended workflow is:
 
@@ -757,9 +757,7 @@ Terraform
 Kubernetes / AWS
 ```
 
-SOPS/age is used elsewhere in the KUBAPP configuration to protect sensitive environment configuration.
-
-The repository should contain encrypted values rather than plaintext credentials.
+SOPS/age is used in the KUBAPP configuration in root to protect sensitive environment configuration.
 
 ## 26. Dependency Order
 
@@ -793,7 +791,6 @@ The explicit dependencies and readiness checks reduce failures caused by attempt
 ## 27. Why Terraform Manages These Components
 
 KUBAPP uses Terraform for this bootstrap layer because the platform itself should be reproducible.
-
 Instead of manually installing:
 
 ```text
@@ -813,7 +810,6 @@ This provides:
 * Easier recovery
 
 Terraform is primarily responsible for **platform bootstrap** here.
-
 Argo CD then becomes responsible for **ongoing application GitOps deployment**.
 
 ## 28. Platform vs Application Responsibility
