@@ -9,7 +9,7 @@ rollback, and cleanup.
 
 The architecture and end-to-end workflow are documented in:
 
-- [CI/CD Architecture](./docs/README.md)
+- [CI/CD Architecture](./docs/architecture.md)
 - [Execution Flow](./docs/flow.md)
 
 ## Pipeline Stages
@@ -43,7 +43,7 @@ under [`docs/`](./docs/).
 
 ### Architecture & Flow
 
-- [CI/CD Architecture](./docs/README.md) — Overall CI/CD architecture, workflow relationships, and major components.
+- [CI/CD Architecture](./docs/architecture.md) — Overall CI/CD architecture, workflow relationships, and major components.
 - [Execution Flow](./docs/flow.md) — End-to-end flow from source change through build, GitOps provisioning, deployment, verification, and cleanup.
 
 ### Build & Registry
@@ -77,7 +77,6 @@ under [`docs/`](./docs/).
 
 - [Operational Workflows](./docs/operations.md) — Manual operational actions and the KubApp fixer workflow.
 - [Artifact Inspection](./docs/artifacts.md) — Inspecting build artifacts and deployment snapshots.
-- [Docker Build Utility](./docs/docker_push.md) — Manual Docker build and push workflow.
 
 ## Workflow Reference
 
