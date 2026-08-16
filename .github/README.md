@@ -43,7 +43,7 @@ under [`docs/`](./docs/).
 
 ### Architecture & Flow
 
-- [CI/CD Architecture](./docs/architecture.md) — Overall CI/CD architecture, workflow relationships, and major components.
+- [CI/CD Architecture](./docs/README.md) — Overall CI/CD architecture, workflow relationships, and major components.
 - [Execution Flow](./docs/flow.md) — End-to-end flow from source change through build, GitOps provisioning, deployment, verification, and cleanup.
 
 ### Build & Registry
