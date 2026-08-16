@@ -345,11 +345,44 @@ manifests/
 ## Outputs
 
 The manifests layer primarily applies Kubernetes operational policies rather than creating infrastructure resources.
-
 Any outputs exposed by the root module can be used by higher-level automation or deployment workflows.
 
 ## KUBAPP Role
 
 This layer forms part of KUBAPP's **Kubernetes operational policy and observability layer**.
-
 It defines how the platform should be monitored after the EKS platform has been provisioned, while keeping alerting and operational policies separate from the underlying AWS infrastructure and Kubernetes platform bootstrap.
+
+
+## Why `manifests/` Is Separate From `k8s/`
+KUBAPP separates `manifests/` from `k8s/` because they have different dependency requirements.
+
+The `k8s/` layer is responsible for **bootstrapping the Kubernetes platform itself**. It creates and configures foundational components such as:
+
+- Kubernetes namespaces
+- storage classes and CSI drivers
+- service accounts
+- AWS Load Balancer Controller
+- ExternalDNS
+- ArgoCD
+- Fluent Bit
+- Prometheus/Grafana
+- cluster readiness dependencies
+
+These components have ordering and dependency relationships that must be satisfied before higher-level Kubernetes resources can be safely applied.
+
+The `manifests/` layer runs **after the Kubernetes platform is ready** and adds resources that depend on those services being available.
+
+For example, the Prometheus alert rules in this layer depend on the monitoring stack already being installed and its `PrometheusRule` CRD being available.
+
+Keeping these resources separate avoids dependency and initialization problems during cluster bootstrap.
+
+```text
+k8s/
+  Platform bootstrap
+       ↓
+  EKS dependencies become ready
+       ↓
+manifests/
+  Higher-level Kubernetes resources
+  such as Prometheus alerting rules
+
