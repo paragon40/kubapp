@@ -53,7 +53,7 @@ under [`docs/`](./docs/).
 
 ### GitOps & Application Provisioning
 
-- [GitOps Provisioning](./docs/gitops.md) — Application metadata, values generation, secret injection, ingress registration, validation, and GitOps commits.
+- [GitOps Provisioning](./../gitops/README.md) — Application metadata, values generation, secret injection, ingress registration, validation, and GitOps commits.
 - [Application Provisioning](./docs/add_new_app.md) — Detailed behavior of the application provisioning workflow.
 - [Ingress Management](./docs/ingress.md) — Shared ingress registration and service removal.
 
