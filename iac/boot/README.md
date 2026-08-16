@@ -79,3 +79,5 @@ If you intend to provision infra using this layer, then you must first create a 
 - profile           = "aws-accout-profile"
 - state_bucket_name = "s3-bukcet-name"
 - lock_table_name   = "and-lock-name"
+
+- Then **bash runner.sh** takes over
