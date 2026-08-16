@@ -1,15 +1,12 @@
-what is wrong, why cant you put this all in one readme so i can just copy everything once like we use to??                         KUBAPP — MANIFESTS
+# KUBAPP — MANIFESTS
 
-The `iac/manifests/` layer contains **Kubernetes resources that are deployed after the EKS platform has been created**.
-
-Unlike `iac/infra/`, which creates AWS infrastructure, and `iac/k8s/`, which bootstraps the Kubernetes platform itself, this layer defines **KUBAPP-specific Kubernetes configuration and operational policies**.
-
-Its current responsibility is primarily **Prometheus alerting rules**.
+The iac/manifests/ layer contains Kubernetes resources that are deployed after the EKS platform has been created.
+Unlike iac/infra/, which creates AWS infrastructure, and iac/k8s/, which bootstraps the Kubernetes platform itself, this layer defines KUBAPP-specific Kubernetes configuration and operational policies.
+Its current responsibility is primarily Prometheus alerting rules.
 
 ## Purpose
 
 The manifests layer provides Kubernetes resources that depend on the already-running KUBAPP cluster.
-
 The flow is:
 
 ```
