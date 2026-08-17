@@ -1,3 +1,4 @@
+
 validate_and_echo_manifest() {
   local FILE="$1"
 
