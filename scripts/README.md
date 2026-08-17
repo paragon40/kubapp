@@ -29,6 +29,8 @@ understand when and why each script should be used.
 | Secrets | Create or update Kubernetes secrets from encrypted files |
 | Git Operations | Commit and push generated or selected changes |
 
+- Clean Up Scripts are mainly for testing and cost control
+
 ## Important
 ```
     Some scripts are intended to be executed by GitHub Actions workflows
