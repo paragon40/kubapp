@@ -1,35 +1,80 @@
+# Full Structure
+
+```
 sys_monitor/
+├── README.md
+├── docker-compose.yml
+├── find.sh
+│
+├── cloud/
+│   └── aws/
+│       ├── backend.tf
+│       ├── boot/
+│       │   ├── outputs.tf
+│       │   ├── provider.tf
+│       │   ├── runner.sh
+│       │   ├── s3.tf
+│       │   ├── variables.tf
+│       │   └── version.tf
+│       │
+│       ├── create_env.sh
+│       ├── local.tf
+│       ├── local_roles.tf
+│       ├── main.tf
+│       ├── outputs.tf
+│       ├── providers.tf
+│       ├── route53.tf
+│       ├── start.sh
+│       ├── start_letsencrypt.sh
+│       ├── user_data.sh
+│       └── variables.tf
+│
+├── codebase/
+│   ├── README.md
+│   ├── docs/
+│   ├── evidence/
+│   ├── lib/
+│   │   ├── json.sh
+│   │   └── runtime.sh
+│   │
+│   └── runners/
+│       ├── architecture.sh
+│       ├── discovery.sh
+│       ├── drift.sh
+│       ├── metrics.sh
+│       ├── runner.sh
+│       ├── security.sh
+│       ├── validation.sh
+│       │
+│       └── src/
+│           └── app.py
+│
+├── docs/
+│   └── structure
 │
 ├── exporters/
-│   └── github/
-│   
-│
-├── observability/
-│   ├── prometheus/
-│   └── grafana/
-│       ├── provisioning/
-│       └── dashboards/
-│
-├── alerts/   
-│
-├── ai/
-│   ├── analyzer/
-│   │   ├── event_analyzer.py
-│   │   ├── anomaly_detector.py
-│   │   └── insight_engine.py
+│   ├── github/
+│   │   └── src/
+│   │       ├── app.py
+│   │       ├── metrics/
+│   │       │   ├── health.py
+│   │       │   └── registry.py
+│   │       ├── routes/
+│   │       │   └── github.py
+│   │       └── sre_engine/
+│   │           ├── __init__.py
+│   │           ├── slo_engine.py
+│   │           ├── slo_evaluator.py
+│   │           └── slo_policy.py
 │   │
-│   ├── api/
-│   │   └── ai_service.py
-│   │
-│   └── models/
-│       └── (future: embeddings / ML models)
+│   └── gitops/
+│       └── ...
 │
-├── docker-compose.yml
-│
-├── scripts/
-│   ├── start.sh
-│   ├── stop.sh
-│   └── reset.sh
-│
-└── README.md
-
+└── observability/
+    ├── grafana/
+    │   ├── dashboards/
+    │   └── provisioning/
+    │
+    └── prometheus/
+        ├── prometheus.yml
+        └── alerts.yml
