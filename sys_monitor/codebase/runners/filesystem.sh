@@ -42,14 +42,16 @@ function extract() {
 }
 
 start() {
-  local file=$1
+  local key=$1
+  local file=$2
   res=$(check "$file")
   if [[ "$res" == 1 ]]; then
     exit 1
   fi
-  extract ".module" "$inv_file"
+  first_ten=$(extract "$key" "$file" | head )
+  echo "$first_ten"
 }
 
 echo "Starting..."
-start
+start ".files.all_files[]" "$inv_file"
 echo "Done!"
