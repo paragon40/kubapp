@@ -4,7 +4,6 @@
 sys_monitor/
 ├── README.md
 ├── docker-compose.yml
-├── find.sh
 │
 ├── cloud/
 │   └── aws/
@@ -50,7 +49,7 @@ sys_monitor/
 │           └── app.py
 │
 ├── docs/
-│   └── structure
+│   └── structure.md
 │
 ├── exporters/
 │   ├── github/
