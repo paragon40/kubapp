@@ -28,6 +28,18 @@ log "Running architecture checks"
 bash "$BASE_DIR/architecture.sh" || log "architecture failed (non-blocking)"
 
 # ============================================================
+# STEP 4: Filesystem
+# ============================================================
+log "Running filesystem collection"
+bash "$BASE_DIR/filesystem.sh" || log "filesystem failed (non-blocking)"
+
+# ============================================================
+# STEP 2: Fs Drift
+# ============================================================
+log "Running filesystem drift analysis"
+bash "$BASE_DIR/filesystem_drift.sh" || log "fs drift failed (non-blocking)"
+
+# ============================================================
 # STEP 4: Security
 # ============================================================
 log "Running security checks"
@@ -40,7 +52,7 @@ log "Running validation checks"
 bash "$BASE_DIR/validation.sh" || log "validation failed (non-blocking)"
 
 # ============================================================
-# STEP 6: METRICS (MUST BE LAST)
+# STEP 6: METRICS
 # ============================================================
 log "Generating Prometheus metrics"
 bash "$BASE_DIR/metrics.sh"
