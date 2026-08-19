@@ -126,7 +126,7 @@ extract() {
           }' > "$fs_file"
 
     if [[ -f "$fs_file" && -s "$fs_file" ]]; then
-        cat "$fs_file"
+        log_info "Filesystem file created: $fs_file"
     fi
 }
 
@@ -136,7 +136,6 @@ start() {
     extract "$file"
 }
 
-echo "Starting..."
-
+log_info "Starting Filesystem Check..."
 start "$inv_file"
-echo "Done!"
+log_info  "Done!"

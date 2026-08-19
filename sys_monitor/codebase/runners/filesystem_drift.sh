@@ -17,14 +17,16 @@ drift_file="$(evidence_file "filesystem_drift")"
 
 all_files=("$current" "$previous")
 
+log_info "Starting Filesystem drift check......"
+
 for each in "${all_files[@]}"; do
     if [[ ! -f "$each" || ! -s "$each" ]]; then
         STATUS="fail"
         ERRORS+=("filesystem evidence file missing or empty: $each")
 
-        echo "Unable to check filesystem drift."
-        echo "Invalid or empty file: $each"
-        exit 1
+        log_info "Unable to check filesystem drift."
+        log_info "Invalid or empty file: $each"
+        return 1
     fi
 done
 
@@ -139,5 +141,5 @@ jq -n \
 # ============================================================
 
 if [[ -s "$drift_file" ]]; then
-    cat "$drift_file"
+    log_info "Successfully Created Filesystem drift report: $drift_file"
 fi

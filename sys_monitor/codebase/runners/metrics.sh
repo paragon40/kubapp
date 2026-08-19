@@ -41,6 +41,11 @@ platform_health_count=0
 for file in "${EVIDENCE_DIR}"/*.json; do
     [[ ! -f "$file" ]] && continue
 
+    filename="$(basename "$file")"
+    # Historical filesystem snapshot.
+    # Used only by filesystem_drift.sh.
+    [[ "$filename" == *older* ]] && continue
+
     module=$(jq -r '.module // "unknown"' "$file" | tr '[:upper:]' '[:lower:]')
 
     status=$(jq -r '.status // "unknown"' "$file")
@@ -90,30 +95,35 @@ for file in "${EVIDENCE_DIR}"/*.json; do
     # ========================================================
     # FILESYSTEM EVIDENCE
     # ========================================================
-    filesystem_total=$(jq 'length' "$file")
 
-    emit \
-        "kubapp_filesystem_total ${filesystem_total}"
+    if [[ "$filename" == "filesystem.json" || "$module" == "filesystem" ]]; then
+        filesystem_total=$(
+            jq '.files // {} | length' "$file"
+        )
+
+        emit \
+            "kubapp_filesystem_total ${filesystem_total}"
+    fi
 
     # ========================================================
     # FILESYSTEM DRIFT EVIDENCE
     # ========================================================
-
-    filesystem_modified=$(
+    if [[ "$filename" == "filesystem_drift.json" ]]; then
+        filesystem_modified=$(
             jq '.modified // {} | length' "$file"
-    )
+        )
 
-    filesystem_removed=$(
+        filesystem_removed=$(
             jq '.removed // {} | length' "$file"
-    )
+        )
 
-    emit \
+        emit \
             "kubapp_filesystem_drift_modified ${filesystem_modified}"
 
-    emit \
+        emit \
             "kubapp_filesystem_drift_removed ${filesystem_removed}"
 
-    filesystem_size_changed=$(
+        filesystem_size_changed=$(
             jq '
                 [
                     .modified[]?
@@ -123,9 +133,9 @@ for file in "${EVIDENCE_DIR}"/*.json; do
                 ]
                 | length
             ' "$file"
-        )
+            )
 
-    filesystem_permissions_changed=$(
+        filesystem_permissions_changed=$(
             jq '
                 [
                     .modified[]?
@@ -137,7 +147,7 @@ for file in "${EVIDENCE_DIR}"/*.json; do
             ' "$file"
         )
 
-    filesystem_uid_changed=$(
+        filesystem_uid_changed=$(
             jq '
                 [
                     .modified[]?
@@ -149,7 +159,7 @@ for file in "${EVIDENCE_DIR}"/*.json; do
             ' "$file"
         )
 
-    filesystem_gid_changed=$(
+        filesystem_gid_changed=$(
             jq '
                 [
                     .modified[]?
@@ -161,7 +171,7 @@ for file in "${EVIDENCE_DIR}"/*.json; do
             ' "$file"
         )
 
-    filesystem_access_changed=$(
+        filesystem_access_changed=$(
             jq '
                 [
                     .modified[]?
@@ -173,7 +183,7 @@ for file in "${EVIDENCE_DIR}"/*.json; do
             ' "$file"
         )
 
-    filesystem_modified_changed=$(
+        filesystem_modified_changed=$(
             jq '
                 [
                     .modified[]?
@@ -185,7 +195,7 @@ for file in "${EVIDENCE_DIR}"/*.json; do
             ' "$file"
         )
 
-    filesystem_changed_changed=$(
+        filesystem_changed_changed=$(
             jq '
                 [
                     .modified[]?
@@ -197,26 +207,27 @@ for file in "${EVIDENCE_DIR}"/*.json; do
             ' "$file"
         )
 
-    emit \
+        emit \
             "kubapp_filesystem_size_changed ${filesystem_size_changed}"
 
-    emit \
+        emit \
             "kubapp_filesystem_permissions_changed ${filesystem_permissions_changed}"
 
-    emit \
+        emit \
             "kubapp_filesystem_uid_changed ${filesystem_uid_changed}"
 
-    emit \
+        emit \
             "kubapp_filesystem_gid_changed ${filesystem_gid_changed}"
 
-    emit \
+        emit \
             "kubapp_filesystem_access_changed ${filesystem_access_changed}"
 
-    emit \
+        emit \
             "kubapp_filesystem_mtime_changed ${filesystem_modified_changed}"
 
-    emit \
+        emit \
             "kubapp_filesystem_ctime_changed ${filesystem_changed_changed}"
+    fi
 
     # ========================================================
     # MODULE HEALTH SCORE

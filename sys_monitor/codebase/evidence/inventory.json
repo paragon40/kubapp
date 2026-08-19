@@ -1,7 +1,7 @@
 {
   "module": "Discovery",
   "script": "discovery.sh",
-  "timestamp": "2026-08-18T15:29:41Z",
+  "timestamp": "2026-08-19T09:42:47Z",
   "status": "pass",
 
   "errors": [],
@@ -363,7 +363,6 @@
   "sys_monitor/codebase/evidence/drift.json",
   "sys_monitor/codebase/evidence/filesystem_drift.json",
   "sys_monitor/codebase/evidence/filesystem.json",
-  "sys_monitor/codebase/evidence/filesystem.json_old",
   "sys_monitor/codebase/evidence/filesystem_older.json",
   "sys_monitor/codebase/evidence/inventory.json",
   "sys_monitor/codebase/evidence/metrics.prom",
@@ -376,14 +375,14 @@
   "sys_monitor/codebase/runners/discovery.sh",
   "sys_monitor/codebase/runners/Dockerfile",
   "sys_monitor/codebase/runners/drift.sh",
+  "sys_monitor/codebase/runners/filesystem_drift.sh",
   "sys_monitor/codebase/runners/filesystem.sh",
-  "sys_monitor/codebase/runners/fs_drift.py",
-  "sys_monitor/codebase/runners/fs_drift.sh",
   "sys_monitor/codebase/runners/metrics.sh",
   "sys_monitor/codebase/runners/requirements.txt",
   "sys_monitor/codebase/runners/runner.sh",
   "sys_monitor/codebase/runners/security.sh",
   "sys_monitor/codebase/runners/src/app.py",
+  "sys_monitor/codebase/runners/start.sh",
   "sys_monitor/codebase/runners/validation.sh",
   "sys_monitor/docker-compose.yml",
   "sys_monitor/docs/structure.md",
@@ -423,8 +422,7 @@
   "sys_monitor/observability/prometheus/README.md",
   "sys_monitor/observability/README.md",
   "sys_monitor/README.md",
-  ".trivyignore",
-  "t.sh"
+  ".trivyignore"
 ]
   },
 
@@ -500,13 +498,13 @@
   "sys_monitor/codebase/runners/architecture.sh",
   "sys_monitor/codebase/runners/discovery.sh",
   "sys_monitor/codebase/runners/drift.sh",
+  "sys_monitor/codebase/runners/filesystem_drift.sh",
   "sys_monitor/codebase/runners/filesystem.sh",
-  "sys_monitor/codebase/runners/fs_drift.sh",
   "sys_monitor/codebase/runners/metrics.sh",
   "sys_monitor/codebase/runners/runner.sh",
   "sys_monitor/codebase/runners/security.sh",
-  "sys_monitor/codebase/runners/validation.sh",
-  "t.sh"
+  "sys_monitor/codebase/runners/start.sh",
+  "sys_monitor/codebase/runners/validation.sh"
 ],
   "workflows": [
   ".github/workflows/activate_pipeline.yml",
@@ -624,7 +622,7 @@
 ],
 
   "statistics": {
-    "all_files_count": 414,
+    "all_files_count": 412,
     "terraform_root_count": 6,
     "terraform_module_count": 9,
     "shell_script_count": 56,
