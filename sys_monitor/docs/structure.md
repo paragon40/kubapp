@@ -39,6 +39,8 @@ sys_monitor/
 │   └── runners/
 │       ├── architecture.sh
 │       ├── discovery.sh
+│       ├── filesystem.sh
+│       ├── filesystem_drift.sh
 │       ├── drift.sh
 │       ├── metrics.sh
 │       ├── runner.sh
