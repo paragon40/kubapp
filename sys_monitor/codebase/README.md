@@ -47,6 +47,7 @@ codebase/
     ├── Dockerfile
     ├── discovery.sh
     ├── drift.sh
+    ├── fs.sh
     ├── metrics.sh
     ├── requirements.txt
     ├── runner.sh
