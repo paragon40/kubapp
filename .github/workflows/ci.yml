@@ -1,13 +1,8 @@
-name: Start Continuous Intergration
+name: Start Continuous Integration
 
 on:
   push: {}
-    #path:
-    #  - "docker/**"
 
-  pull_request:
-    paths:
-      - "docker/**"
   workflow_dispatch:
     inputs:
       env:
@@ -19,29 +14,29 @@ on:
           - dev
           - prod
 
-      service:
-        description: "Optional for single service"
-        required: false
-        default: ""
-
-
 jobs:
-    start_ci:
-      runs_on: ubuntu-latest
-      steps:
-        name: source code checkout
+  start_ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Source code checkout
         uses: actions/checkout@v4
 
-        name: Install python module
+      - name: Check Python
         run: |
-             set -euo pipefail
-             if command python; then
-               echo "python command available"
-             else
-               echo "No python command, installing"
-             fi
-        name: Call Dependency Abstrator
-        run:  python script/ci/dependency_abstractor.py
+          set -euo pipefail
+          if command -v python >/dev/null 2>&1; then
+            echo "Python command available"
+            python --version
+          else
+            echo "Python command not available, instaling..."
+            sudo apt update
+            sudo apt install python3 python3-pip
+          fi
 
-        name: Completion
-        run: echo "Successfuly workflow!"
+      - name: Call Dependency Abstractor
+        run: python script/ci/dependency_abstractor.py
+
+      - name: Completion
+        run: echo "Successfully completed CI workflow!"
+
