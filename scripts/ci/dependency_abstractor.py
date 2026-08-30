@@ -5,76 +5,111 @@ import reuse
 from pathlib import Path
 
 print("Abstractor script Found")
+
 r = Path(reuse.get_root())
 docker_dir = r / "docker"
 scripts_dir = r / "scripts"
-valid_name = "_app"
-runtime_list = ["python", "node", "java", "rust"]
 
-def line(x=None):
-    if x == "tiny":
-      return "-" * 60
-    else:
-      return "=" * 60
+valid_name = "_app"
+
+runtime_list = ["python", "node", "java", "golang"]
+
+manifest_list = {
+    "requirements.txt": "python",
+    "pyproject.toml": "python",
+    "pom.xml": "java",
+    "build.gradle": "java",
+    "build.gradle.kts": "java",
+    "package.json": "node",
+    "go.mod": "golang",
+}
+
+
+def line():
+    return "=" * 60
+
 
 def detect_valid_apps():
     if not docker_dir.exists():
         print("[dependency_abstractor.py] Docker directory NOT Found")
-        return
-    dirs = docker_dir.iterdir()
+        return []
+
     valid_apps = []
-    for each in dirs:
-      name = each.name
-      if name.endswith(valid_name) and each.is_dir():
-        valid_apps.append(each)
+
+    for each in docker_dir.iterdir():
+        if each.name.endswith(valid_name) and each.is_dir():
+            valid_apps.append(each)
+
     return valid_apps
 
-def detect_app_runtime(x):
-    contents = list(x.rglob("*"))
-    for c in contents:
-        if not c.is_file():
+
+def detect_app_runtime(app_dir):
+    app_data = {}
+
+    for file in app_dir.rglob("*"):
+        if not file.is_file():
             continue
 
-        name = c.name
-        if name in {"requirements.txt", "pyproject.toml"}:
-            if any(component.name.endswith(".py") for component in contents):
-                return "python"
+        runtime = manifest_list.get(file.name)
 
-        elif name in {"pom.xml", "build.gradle", "build.gradle.kts"}:
-            if any(component.name.endswith(".java") for component in contents):
-                return "java"
+        if runtime:
+            app_data[file] = runtime
 
-        elif name == "package.json":
-            if any(component.name.endswith((".js", ".mjs", ".cjs")) for component in contents):
-                return "node"
+    return app_data
 
-        elif name == "Cargo.toml":
-            if any(component.name.endswith(".rs") for component in contents):
-                return "rust"
-    return False
 
 def classify_apps():
     apps = detect_valid_apps()
+
     if not apps:
-      return
+        return {}
+
     apps_dict = {}
-    for each in apps:
-      app = detect_app_runtime(each)
-      apps_dict[each] = app
+
+    for app_dir in apps:
+        manifests = detect_app_runtime(app_dir)
+
+        if not manifests:
+            apps_dict[app_dir] = None
+            continue
+        a = app_dir.name
+        m = next(iter(manifests))
+        r = manifests[m]
+        manifests = {"app": a, "manifest": m.name, "runtime": r}
+        apps_dict[app_dir] = manifests
     return apps_dict
+
 
 def start_app_build():
     apps = classify_apps()
-    n = len(apps)
+
     print(line())
-    for dir, app in apps.items():
-      if app in runtime_list:
-        print(f"{dir}: {app}")
-        #call_its_app_build()
-      elif not app:
-        print(f"{dir} app runtime couldnt be detected. Provide its manifest")
-      print(line("tiny"))
+    if not apps:
+        print("No valid applications found")
+        print(line())
+        return
+
+    for app_dir, manifests in apps.items():
+        print(f"{app_dir} --> {manifests}")
+        continue
+        if not manifests:
+            print(
+                f"❌ {app_dir}: runtime could not be detected. "
+                "Provide a valid manifest."
+            )
+            continue
+
+        print(f"Application: {app_dir}")
+
+        for manifest, runtime in manifests.items():
+            if runtime not in runtime_list:
+                print(
+                    f"  {manifest.name}: unsupported runtime '{runtime}'"
+                )
+                continue
+
+            print(f"  {manifest.name}: {runtime}")
+            # call_its_app_build()
     print(line())
 
 start_app_build()
-
