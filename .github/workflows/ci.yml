@@ -22,6 +22,9 @@ jobs:
       - name: Source code checkout
         uses: actions/checkout@v4
 
+      - name: Show this commit
+        run: echo "Commit ID: ${{ github.sha }}"
+
       - name: Check Python
         run: |
           set -euo pipefail
