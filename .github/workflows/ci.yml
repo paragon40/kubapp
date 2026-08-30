@@ -34,8 +34,8 @@ jobs:
             python --version
           else
             echo "Python command not available, instaling...."
-            sudo apt update
-            sudo apt install python3 python3-pip
+            #sudo apt update
+            #sudo apt install python3 python3-pip
           fi
 
       - name: Call Dependency Abstractor
