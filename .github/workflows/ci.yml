@@ -35,7 +35,7 @@ jobs:
           fi
 
       - name: Call Dependency Abstractor
-        run: python script/ci/dependency_abstractor.py
+        run: python scripts/ci/dependency_abstractor.py
 
       - name: Completion
         run: echo "Successfully completed CI workflow!"
