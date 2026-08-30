@@ -11,6 +11,12 @@ scripts_dir = r / "scripts"
 valid_name = "_app"
 runtime_list = ["python", "node", "java", "rust"]
 
+def line(x=None):
+    if x == "tiny":
+      return "-" * 60
+    else:
+      return "=" * 60
+
 def detect_valid_apps():
     if not docker_dir.exists():
         print("[dependency_abstractor.py] Docker directory NOT Found")
@@ -60,10 +66,15 @@ def classify_apps():
 def start_app_build():
     apps = classify_apps()
     n = len(apps)
-    for key, app in apps.items():
+    print(line())
+    for dir, app in apps.items():
       if app in runtime_list:
-        print(f"{key}: {app}")
+        print(f"{dir}: {app}")
         #call_its_app_build()
+      elif not app:
+        print(f"{dir} app runtime couldnt be detected. Provide its manifest")
+      print(line("tiny"))
+    print(line())
 
 start_app_build()
 
