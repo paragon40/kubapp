@@ -1,4 +1,4 @@
-name: Activate Pipeline
+name: Activate Pipeline Workflows
 
 on:
   workflow_dispatch:
