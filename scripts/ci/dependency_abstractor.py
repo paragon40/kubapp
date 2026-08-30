@@ -11,9 +11,6 @@ docker_dir = r / "docker"
 scripts_dir = r / "scripts"
 
 valid_name = "_app"
-
-runtime_list = ["python", "node", "java", "golang"]
-
 manifest_list = {
     "requirements.txt": "python",
     "pyproject.toml": "python",
@@ -90,8 +87,6 @@ def start_app_build():
         return
 
     for app_dir, manifests in apps.items():
-        print(f"{app_dir} --> {manifests}")
-        continue
         if not manifests:
             print(
                 f"❌ {app_dir}: runtime could not be detected. "
@@ -99,16 +94,7 @@ def start_app_build():
             )
             continue
 
-        print(f"Application: {app_dir}")
-
-        for manifest, runtime in manifests.items():
-            if runtime not in runtime_list:
-                print(
-                    f"  {manifest.name}: unsupported runtime '{runtime}'"
-                )
-                continue
-
-            print(f"  {manifest.name}: {runtime}")
+        print(f"Application: {app_dir} --> {manifests}")
             # call_its_app_build()
     print(line())
 
