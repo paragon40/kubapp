@@ -10,10 +10,11 @@ The purpose of this directory is to provide a predictable structure for building
 
 ## Application Structure
 
-Each application follows a standardized structure:
+Each application directory name must end with **_app** to be detected
+Then it follows a standardized structure:
 
 ```text
-service/
+service_app/
 ├── Dockerfile
 ├── kubapp.yml
 ├── application source code
