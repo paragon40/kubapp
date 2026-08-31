@@ -89,7 +89,18 @@ class PythonHandler:
         )
 
     def build(self):
-        pass
+        print(f"[{self.app_name}] Started Build......")
+        subprocess.run(
+            [
+                sys.executable,
+                "-m", "compileall", ".",
+            ],
+            cwd=self.app_dir,
+            check=True,
+        )
+        print(
+            f"[{self.app_name}] Build completed successfully"
+        )
 
     def build_from_dockerfile(self):
         pass
