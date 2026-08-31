@@ -44,11 +44,10 @@ class PythonHandler:
             [
               sys.executable,
               "-m", "ruff",  "check", ".",
-        ],
-        cwd=self.app_dir,
-        check=True,
-    )
-    print(f"[{self.app_name}] Lint passed successfully")
+            ],
+          cwd=self.app_dir, check=True,
+        )
+        print(f"[{self.app_name}] Lint passed successfully")
 
 
     def security_analysis(self):
