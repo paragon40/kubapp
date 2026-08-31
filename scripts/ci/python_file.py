@@ -33,9 +33,13 @@ class PythonHandler:
             sys.executable,
             "-m", "pip", "install", "ruff",
         ]
-
+        bandit_command = [
+            sys.executable,
+            "-m", "pip", "install", "bandit",
+        ]
         subprocess.run(command, cwd=self.app_dir, check=True)
         subprocess.run(ruff_command, cwd=self.app_dir, check=True)
+        subprocess.run(bandit_command, cwd=self.app_dir, check=True)
         print(f"[{self.app_name}] Dependencies installed successfully")
 
     def lint(self):
@@ -51,7 +55,19 @@ class PythonHandler:
 
 
     def security_analysis(self):
-        pass
+    def security_analysis(self):
+        print(f"[{self.app_name}] Started Security Analysis......")
+        subprocess.run(
+            [
+                sys.executable,
+                "-m", "bandit", "-r", ".",
+            ],
+            cwd=self.app_dir,
+            check=True,
+        )
+    print(
+        f"[{self.app_name}] Security Analysis passed successfully"
+    )
 
     def unit_tests(self):
         pass
