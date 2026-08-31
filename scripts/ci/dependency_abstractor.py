@@ -1,9 +1,9 @@
 # Identify docker/*_app, detect all valid application components,
 # identify their runtime, and dispatch application work independently.
-
 import reuse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+# import PythonHandler, JavaHandler, GoHandler, NodeHandler
 
 print("Abstractor script Found")
 root = Path(reuse.get_root())
@@ -19,14 +19,16 @@ manifest_list = {
     "package.json": "node",
     "go.mod": "golang",
 }
+
 runtime_list = set(manifest_list.values())
 MAX_WORKERS = 4
+
 
 def line():
     return "=" * 60
 
+
 def detect_valid_apps():
-    """Find valid application directories under /docker."""
     if not docker_dir.exists():
         print("[dependency_abstractor.py] Docker directory NOT Found")
         return []
@@ -48,9 +50,11 @@ def detect_app_runtime(app_dir):
         runtime = manifest_list.get(file.name)
         if runtime:
             app_data[file] = runtime
-
     return app_data
 
+
+def is_file_okay(path):
+    return path.is_file() and bool(path.read_text().strip())
 
 def classify_apps():
     apps = detect_valid_apps()
@@ -60,33 +64,69 @@ def classify_apps():
     apps_dict = {}
     for app_dir in apps:
         manifests = detect_app_runtime(app_dir)
-
         if not manifests:
-            apps_dict[app_dir] = None
             print(line())
             print("ATTENTION NEEDED!")
             print(
-                    f'❌ UNKNOWN app runtime could not be detected. '
-                    f"Provide a valid manifest at {app_dir}."
+                f"❌ UNKNOWN app runtime could not be detected. "
+                f"Provide a valid manifest at {app_dir}."
+            )
+            print(line())
+            continue
+
+        components = []
+        for manifest, runtime in manifests.items():
+            print(manifest)
+            component_dir = manifest.parent
+            dockerfile = component_dir / "Dockerfile"
+            manifest_okay = is_file_okay(manifest)
+            dockerfile_okay = is_file_okay(dockerfile)
+            if not manifest_okay:
+                continue
+            if not dockerfile_okay:
+                dockerfile = False
+
+            components.append(
+                {
+                    "manifest": manifest,
+                    "runtime": runtime,
+                    "Dockerfile": dockerfile,
+                }
+            )
+        if not components:
+            print(line())
+            print(
+                f"❌ {app_dir.name}: no valid components found"
             )
             print(line())
             continue
 
         apps_dict[app_dir] = {
             "app": app_dir.name,
-            "components": [
-                {
-                    "manifest": manifest,
-                    "runtime": runtime,
-                }
-                for manifest, runtime in manifests.items()
-            ],
+            "components": components,
         }
+
+        #print(f"MANI: {manifests}")
+        #for component in components:
+        #    print(f"Component: {component['manifest']}")
+        #    print(f"Runtime: {component['runtime']}")
+        #    print(f"Dockerfile: {component['Dockerfile']}")
     return apps_dict
 
 
 def get_runtime_handler(runtime):
-    pass
+    if not runtime or runtime not in runtime_list:
+      return
+    if runtime == "python":
+        return PythonHandler
+    elif runtime == "node":
+       return NodeHandler
+    elif runtime == "java":
+        return JavaHandler
+    elif runtime == "golang":
+       return GoHandler
+    else:
+       return
 
 def build_app(app_dir, app_data):
     """
@@ -96,36 +136,43 @@ def build_app(app_dir, app_data):
         2. Install dependencies.
         3. Run the language-specific build process.
     """
+
     for component in app_data["components"]:
         manifest = component["manifest"]
         runtime = component["runtime"]
-        app = manifest.parent
-        app = app.name
-        print(f"app {app} | manifest: {manifest} | runtime: {runtime}")
+        dockerfile = component["Dockerfile"]
+
+        app = manifest.parent.name
         if runtime not in runtime_list:
             print(
                 f"Unsupported runtime '{runtime}' "
                 f"for {app} with {manifest}"
             )
             continue
+
         print(line())
-        length = len(app_data['components'])
+        length = len(app_data["components"])
         print(
             f"[STARTING] {app_data['app']} "
             f"({length} component(s))"
         )
         print(
-           f"{app} → {manifest.name}: {runtime}"
+            f"{app} → {manifest.name} || {runtime} || "
+            f"[Dockerfile={dockerfile}]"
         )
 
         # Later:
         # handler = get_runtime_handler(runtime)
-        # handler.install_dependencies(...)
-        # handler.build(...)
+        # if not handler:
+        # continue
+        # app = handler.install_dependencies(app_dir, manifest, runtime, dockerfile)
+        # handler.build(app)
     return app_dir, True
+
 
 def start_app_build():
     apps = classify_apps()
+
     print(line())
     if not apps:
         print("No valid applications found")
@@ -143,26 +190,24 @@ def start_app_build():
                 app_dir,
                 app_data,
             )
-
             futures[future] = app_dir
 
         success = True
-
         for future in as_completed(futures):
             app_dir = futures[future]
-
             try:
                 _, result = future.result()
-
                 if result:
-                    print(f"✅ {app_dir.name}: completed")
-
+                    print(
+                        f"✅ {app_dir.name}: completed"
+                    )
             except Exception as exc:
                 success = False
                 print(
                     f"❌ {app_dir.name}: failed - {exc}"
                 )
 
+    print(line())
     if success:
         print("All applications completed successfully")
     else:
@@ -174,3 +219,4 @@ def start_app_build():
 if __name__ == "__main__":
     success = start_app_build()
     raise SystemExit(0 if success else 1)
+

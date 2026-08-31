@@ -16,4 +16,4 @@ def get_root():
     return False
   return b.stdout.strip()
 
-print(get_root())
+#print(get_root())
