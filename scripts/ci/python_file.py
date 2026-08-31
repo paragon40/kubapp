@@ -27,7 +27,7 @@ class PythonHandler:
                 f"{self.manifest.name}"
             )
 
-        subprocess.run([command, cwd=self.app_dir, check=True])
+        subprocess.run(command, cwd=self.app_dir, check=True)
         print(f"[{self.app_name}] Dependencies installed successfully")
 
     def lint(self):
