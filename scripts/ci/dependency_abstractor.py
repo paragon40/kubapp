@@ -149,7 +149,7 @@ def build_app(app_dir, app_data):
         if runtime not in runtime_list:
             print(
                 f"Unsupported runtime '{runtime}' "
-                f"for {app} with {manifest}"
+                f"for {app_name} with {manifest}"
             )
             continue
 
@@ -160,7 +160,8 @@ def build_app(app_dir, app_data):
             f"({length} component(s))"
         )
         #print(
-        #    f"{app} → {manifest.name} || {runtime} || "
+        #    f"{app_name} → {manifest.name} || {runtime} || "
+        #    f"component_name: {component_name} "
         #    f"[Dockerfile={dockerfile}]"
         #    f"[platform_file={platform_file}]"
         #)
@@ -179,7 +180,9 @@ def build_app(app_dir, app_data):
             handler.unit_tests()
             handler.build()
         duration = reuse.start_timer() - start
-        print(F"[{app_name}/{component_name}] Build Duration: {duration:.2f}s")
+        if app_name != component_name:
+           app_name = component_name
+        print(F"[{app_name}] Build Duration: {duration:.2f}s")
     return app_dir, True
 
 
