@@ -9,7 +9,9 @@ class PythonHandler:
       self.app_name = manifest.parent.name
 
     def install_dependencies(self):
-        print(f"{self.app_name} manifest {self.manifest.name} Installing......")
+        print(
+           f"[PYTHON_HANDLER] app={self.app_name} "
+           f"manifest={self.manifest} Installing.....")
         if self.manifest.name ==  "requirements.txt":
             command = [
               sys.executable,
