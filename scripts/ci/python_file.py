@@ -55,7 +55,6 @@ class PythonHandler:
 
 
     def security_analysis(self):
-    def security_analysis(self):
         print(f"[{self.app_name}] Started Security Analysis......")
         subprocess.run(
             [
@@ -65,9 +64,9 @@ class PythonHandler:
             cwd=self.app_dir,
             check=True,
         )
-    print(
-        f"[{self.app_name}] Security Analysis passed successfully"
-    )
+        print(
+            f"[{self.app_name}] Security Analysis passed successfully"
+        )
 
     def unit_tests(self):
         pass
