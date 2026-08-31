@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import subprocess
+import time
 
 def get_comit_id():
   a = subprocess.run(["git", "rev-parse", "HEAD"],
@@ -15,5 +16,8 @@ def get_root():
   if b.returncode != 0:
     return False
   return b.stdout.strip()
+
+def start_timer():
+    return time.perf_counter()
 
 #print(get_root())

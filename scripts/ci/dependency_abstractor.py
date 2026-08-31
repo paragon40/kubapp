@@ -3,6 +3,7 @@
 import reuse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from python_file import PythonHandler
 # import PythonHandler, JavaHandler, GoHandler, NodeHandler
 
 print("Abstractor script Found")
@@ -10,6 +11,8 @@ root = Path(reuse.get_root())
 docker_dir = root / "docker"
 
 valid_name = "_app"
+platform_filename = "kubapp.yml"
+platform_secrets_filename = "secrets.yml"
 manifest_list = {
     "requirements.txt": "python",
     "pyproject.toml": "python",
@@ -20,13 +23,19 @@ manifest_list = {
     "go.mod": "golang",
 }
 
+HANDLERS = {
+    "python": PythonHandler, }
+#    "node": NodeHandler,
+#    "java": JavaHandler,
+#    "golang": GoHandler,
+#}
+
 runtime_list = set(manifest_list.values())
 MAX_WORKERS = 4
 
 
 def line():
     return "=" * 60
-
 
 def detect_valid_apps():
     if not docker_dir.exists():
@@ -39,7 +48,6 @@ def detect_valid_apps():
             valid_apps.append(app_dir)
 
     return valid_apps
-
 
 def detect_app_runtime(app_dir):
     app_data = {}
@@ -76,27 +84,39 @@ def classify_apps():
 
         components = []
         for manifest, runtime in manifests.items():
-            print(manifest)
+            #print(manifest)
             component_dir = manifest.parent
             dockerfile = component_dir / "Dockerfile"
+            platform_file = component_dir / platform_filename
+            secret_file = component_dir / platform_secrets_filename
             manifest_okay = is_file_okay(manifest)
             dockerfile_okay = is_file_okay(dockerfile)
+            platform_file_okay = is_file_okay(platform_file)
+            platform_secrets_okay = is_file_okay(secret_file)
+
             if not manifest_okay:
                 continue
             if not dockerfile_okay:
                 dockerfile = False
+            if not platform_file_okay:
+                platform_file = False
+            if not platform_secrets_okay:
+                secret_file = False
 
             components.append(
                 {
                     "manifest": manifest,
                     "runtime": runtime,
                     "Dockerfile": dockerfile,
+                    "platform_file": platform_file,
+                    "app_secrets": secret_file,
                 }
             )
         if not components:
             print(line())
             print(
-                f"❌ {app_dir.name}: no valid components found"
+                f"❌ {app_dir.name}: no valid components found "
+                f"App manifest MUST be Provided"
             )
             print(line())
             continue
@@ -115,32 +135,15 @@ def classify_apps():
 
 
 def get_runtime_handler(runtime):
-    if not runtime or runtime not in runtime_list:
-      return
-    if runtime == "python":
-        return PythonHandler
-    elif runtime == "node":
-       return NodeHandler
-    elif runtime == "java":
-        return JavaHandler
-    elif runtime == "golang":
-       return GoHandler
-    else:
-       return
+    runtime = "python"
+    return HANDLERS.get(runtime)
 
 def build_app(app_dir, app_data):
-    """
-    Placeholder for the actual application build/dispatch.
-    Later this function will:
-        1. Select the appropriate runtime handler.
-        2. Install dependencies.
-        3. Run the language-specific build process.
-    """
-
     for component in app_data["components"]:
         manifest = component["manifest"]
         runtime = component["runtime"]
         dockerfile = component["Dockerfile"]
+        platform_file = component["platform_file"]
 
         app = manifest.parent.name
         if runtime not in runtime_list:
@@ -159,14 +162,24 @@ def build_app(app_dir, app_data):
         print(
             f"{app} → {manifest.name} || {runtime} || "
             f"[Dockerfile={dockerfile}]"
+            f"[platform_file={platform_file}]"
         )
 
-        # Later:
-        # handler = get_runtime_handler(runtime)
-        # if not handler:
-        # continue
-        # app = handler.install_dependencies(app_dir, manifest, runtime, dockerfile)
-        # handler.build(app)
+        handler_class = get_runtime_handler(runtime)
+        if not handler_class:
+            continue
+        handler = handler_class(manifest=manifest, dockerfile=dockerfile)
+        start = reuse.start_timer()
+        if dockerfile:
+            handler.build_from_dockerfile()
+        else:
+            handler.install_dependencies()
+            handler.lint()
+            handler.security_analysis()
+            handler.unit_tests()
+            handler.build()
+        duration = reuse.start_timer() - start
+        print(F"[{app}] Build Duration: {duration:.2f}s")
     return app_dir, True
 
 
