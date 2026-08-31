@@ -27,11 +27,27 @@ class PythonHandler:
                 f"{self.manifest.name}"
             )
 
+        ruff_command = [
+            sys.executable,
+            "-m", "pip", "install", "ruff",
+        ]
+
         subprocess.run(command, cwd=self.app_dir, check=True)
+        subprocess.run(ruff_command, cwd=self.app_dir, check=True)
         print(f"[{self.app_name}] Dependencies installed successfully")
 
     def lint(self):
-        pass
+        print(f"[{self.app_name}] Started Linting......")
+        subprocess.run(
+            [
+              sys.executable,
+              "-m", "ruff",  "check", ".",
+        ],
+        cwd=self.app_dir,
+        check=True,
+    )
+    print(f"[{self.app_name}] Lint passed successfully")
+
 
     def security_analysis(self):
         pass

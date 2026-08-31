@@ -144,7 +144,7 @@ def build_app(app_dir, app_data):
         dockerfile = component["Dockerfile"]
         platform_file = component["platform_file"]
 
-        app = manifest.parent.name
+        app = app_data['app']
         if runtime not in runtime_list:
             print(
                 f"Unsupported runtime '{runtime}' "
