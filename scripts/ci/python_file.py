@@ -69,7 +69,18 @@ class PythonHandler:
         )
 
     def unit_tests(self):
-        pass
+        print(f"[{self.app_name}] Started Unit Tests......")
+        subprocess.run(
+            [
+                sys.executable,
+                "-m", "pytest",
+            ],
+            cwd=self.app_dir,
+            check=True,
+        )
+        print(
+            f"[{self.app_name}] Unit Tests passed successfully"
+        )
 
     def build(self):
         pass
