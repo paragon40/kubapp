@@ -96,23 +96,26 @@ def build_app(app_dir, app_data):
         2. Install dependencies.
         3. Run the language-specific build process.
     """
-
-    print(
-        f"[START] {app_data['app']} "
-        f"({len(app_data['components'])} component(s))"
-    )
     for component in app_data["components"]:
         manifest = component["manifest"]
         runtime = component["runtime"]
-
+        app = manifest.parent
+        app = app.name
+        print(f"app {app} | manifest: {manifest} | runtime: {runtime}")
         if runtime not in runtime_list:
-            raise RuntimeError(
+            print(
                 f"Unsupported runtime '{runtime}' "
-                f"for {manifest}"
+                f"for {app} with {manifest}"
             )
-
+            continue
+        print(line())
+        length = len(app_data['components'])
         print(
-            f"  → {manifest.name}: {runtime}"
+            f"[STARTING] {app_data['app']} "
+            f"({length} component(s))"
+        )
+        print(
+           f"{app} → {manifest.name}: {runtime}"
         )
 
         # Later:
@@ -120,7 +123,6 @@ def build_app(app_dir, app_data):
         # handler.install_dependencies(...)
         # handler.build(...)
     return app_dir, True
-
 
 def start_app_build():
     apps = classify_apps()
@@ -161,13 +163,10 @@ def start_app_build():
                     f"❌ {app_dir.name}: failed - {exc}"
                 )
 
-    print(line())
-
     if success:
         print("All applications completed successfully")
     else:
         print("One or more applications failed")
-
     print(line())
     return success
 
