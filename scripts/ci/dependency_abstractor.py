@@ -5,14 +5,11 @@ import reuse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-
 print("Abstractor script Found")
-
 root = Path(reuse.get_root())
 docker_dir = root / "docker"
 
 valid_name = "_app"
-
 manifest_list = {
     "requirements.txt": "python",
     "pyproject.toml": "python",
@@ -22,15 +19,11 @@ manifest_list = {
     "package.json": "node",
     "go.mod": "golang",
 }
-
 runtime_list = set(manifest_list.values())
-
 MAX_WORKERS = 4
-
 
 def line():
     return "=" * 60
-
 
 def detect_valid_apps():
     """Find valid application directories under /docker."""
@@ -39,7 +32,6 @@ def detect_valid_apps():
         return []
 
     valid_apps = []
-
     for app_dir in docker_dir.iterdir():
         if app_dir.is_dir() and app_dir.name.endswith(valid_name):
             valid_apps.append(app_dir)
@@ -48,15 +40,12 @@ def detect_valid_apps():
 
 
 def detect_app_runtime(app_dir):
-    """Find all recognized manifests and their runtimes."""
     app_data = {}
-
     for file in app_dir.rglob("*"):
         if not file.is_file():
             continue
 
         runtime = manifest_list.get(file.name)
-
         if runtime:
             app_data[file] = runtime
 
@@ -64,19 +53,23 @@ def detect_app_runtime(app_dir):
 
 
 def classify_apps():
-    """Build application -> component/runtime information."""
     apps = detect_valid_apps()
-
     if not apps:
         return {}
 
     apps_dict = {}
-
     for app_dir in apps:
         manifests = detect_app_runtime(app_dir)
 
         if not manifests:
             apps_dict[app_dir] = None
+            print(line())
+            print("ATTENTION NEEDED!")
+            print(
+                    f'❌ UNKNOWN app runtime could not be detected. '
+                    f"Provide a valid manifest at {app_dir}."
+            )
+            print(line())
             continue
 
         apps_dict[app_dir] = {
@@ -89,14 +82,15 @@ def classify_apps():
                 for manifest, runtime in manifests.items()
             ],
         }
-
     return apps_dict
 
+
+def get_runtime_handler(runtime):
+    pass
 
 def build_app(app_dir, app_data):
     """
     Placeholder for the actual application build/dispatch.
-
     Later this function will:
         1. Select the appropriate runtime handler.
         2. Install dependencies.
@@ -107,7 +101,6 @@ def build_app(app_dir, app_data):
         f"[START] {app_data['app']} "
         f"({len(app_data['components'])} component(s))"
     )
-
     for component in app_data["components"]:
         manifest = component["manifest"]
         runtime = component["runtime"]
@@ -126,31 +119,21 @@ def build_app(app_dir, app_data):
         # handler = get_runtime_handler(runtime)
         # handler.install_dependencies(...)
         # handler.build(...)
-
     return app_dir, True
 
 
 def start_app_build():
     apps = classify_apps()
-
     print(line())
-
     if not apps:
         print("No valid applications found")
         print(line())
         return False
 
     futures = {}
-
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-
         for app_dir, app_data in apps.items():
-
             if not app_data:
-                print(
-                    f"❌ {app_dir}: runtime could not be detected. "
-                    "Provide a valid manifest."
-                )
                 continue
 
             future = executor.submit(
