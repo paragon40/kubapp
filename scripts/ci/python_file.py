@@ -12,7 +12,7 @@ class PythonHandler:
         print(f"{self.app_name} manifest {self.manifest.name} Installing......")
         if self.manifest.name ==  "requirements.txt":
             command = [
-              "sys.executable",
+              sys.executable,
               "-m", "pip", "install", "-r",
               str(self.manifest),
             ]

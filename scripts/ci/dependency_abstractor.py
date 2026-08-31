@@ -135,7 +135,6 @@ def classify_apps():
 
 
 def get_runtime_handler(runtime):
-    runtime = "python"
     return HANDLERS.get(runtime)
 
 def build_app(app_dir, app_data):
@@ -159,11 +158,11 @@ def build_app(app_dir, app_data):
             f"[STARTING] {app_data['app']} "
             f"({length} component(s))"
         )
-        print(
-            f"{app} → {manifest.name} || {runtime} || "
-            f"[Dockerfile={dockerfile}]"
-            f"[platform_file={platform_file}]"
-        )
+        #print(
+        #    f"{app} → {manifest.name} || {runtime} || "
+        #    f"[Dockerfile={dockerfile}]"
+        #    f"[platform_file={platform_file}]"
+        #)
 
         handler_class = get_runtime_handler(runtime)
         if not handler_class:
@@ -197,7 +196,8 @@ def start_app_build():
         for app_dir, app_data in apps.items():
             if not app_data:
                 continue
-
+            if app_data["components"]["runtime"] != "python":
+                continue
             future = executor.submit(
                 build_app,
                 app_dir,
