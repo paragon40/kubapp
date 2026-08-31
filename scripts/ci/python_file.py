@@ -103,4 +103,17 @@ class PythonHandler:
         )
 
     def build_from_dockerfile(self):
-        pass
+        print(f"[{self.app_name}] Building Docker image Via Dockerfile......")
+        image_name = f"{self.app_name}:ci"
+        subprocess.run(
+            [
+                "docker", "build", "-t", image_name, "-f",
+                str(self.dockerfile), ".",
+            ],
+            cwd=self.app_dir,
+            check=True,
+        )
+        print(
+            f"[{self.app_name}] Docker image built successfully: "
+            f"{image_name}"
+        )
