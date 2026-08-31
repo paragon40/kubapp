@@ -171,10 +171,9 @@ def build_app(app_dir, app_data):
             continue
         handler = handler_class(manifest=manifest, dockerfile=dockerfile)
         start = reuse.start_timer()
-        #if dockerfile:
-        #    handler.build_from_dockerfile()
-        #else:
-        if app_name != "":
+        if dockerfile:
+            handler.build_from_dockerfile()
+        else:
             handler.install_dependencies()
             handler.lint()
             handler.security_analysis()
