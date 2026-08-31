@@ -1,16 +1,12 @@
 [project]
 name = "python-quality-app"
 version = "1.0.0"
-description = "Sample FastAPI application for Ruff and Bandit CI checks"
+description = "Sample FastAPI application for CI/CD quality checks"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi",
     "uvicorn",
     "pydantic",
-]
-
-[project.optional-dependencies]
-dev = [
     "pytest",
     "httpx",
     "ruff",
@@ -37,6 +33,6 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.bandit]
-exclude_dirs = [
-    "tests",
+skips = [
+    "B101",
 ]
