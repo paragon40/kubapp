@@ -107,10 +107,16 @@ class PythonHandler:
         image_name = f"{self.app_name}:ci"
         subprocess.run(
             [
-                "docker", "build", "-t", image_name, "-f",
-                str(self.dockerfile), ".",
+                "docker", "build", "-t",
+                image_name, "-f", str(self.dockerfile), ".",
             ],
             cwd=self.app_dir,
+            check=True,
+        )
+        subprocess.run(
+            [
+                "docker", "image",  "inspect", image_name,
+            ],
             check=True,
         )
         print(
