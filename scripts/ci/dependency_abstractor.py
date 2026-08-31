@@ -196,7 +196,7 @@ def start_app_build():
         for app_dir, app_data in apps.items():
             if not app_data:
                 continue
-            if app_data["components"]["runtime"] != "python":
+            if app_data["components"][0]["runtime"] != "python":
                 continue
             future = executor.submit(
                 build_app,
