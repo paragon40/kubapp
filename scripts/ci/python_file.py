@@ -37,9 +37,15 @@ class PythonHandler:
             sys.executable,
             "-m", "pip", "install", "bandit",
         ]
+        pytest_command = [
+            sys.executable,
+            "-m", "pip", "install", "pytest",
+        ]
+
         subprocess.run(command, cwd=self.app_dir, check=True)
         subprocess.run(ruff_command, cwd=self.app_dir, check=True)
         subprocess.run(bandit_command, cwd=self.app_dir, check=True)
+        subprocess.run(pytest_command, cwd=self.app_dir, check=True)
         print(f"[{self.app_name}] Dependencies installed successfully")
 
     def lint(self):
