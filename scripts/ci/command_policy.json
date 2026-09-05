@@ -1,0 +1,75 @@
+{
+  "executables": [
+    "sh",
+    "bash",
+    "zsh",
+    "fish",
+    "cmd",
+    "powershell",
+    "pwsh",
+
+    "curl",
+    "wget",
+    "nc",
+    "netcat",
+    "socat",
+
+    "ssh",
+    "scp",
+    "ftp",
+    "telnet",
+
+    "sudo",
+    "su",
+
+    "chmod",
+    "chown",
+
+    "mount",
+    "umount",
+
+    "dd",
+    "mkfs",
+    "fdisk",
+
+    "iptables",
+    "systemctl",
+
+    "kill",
+    "pkill"
+  ],
+
+  "operators": [
+    "&&",
+    "||",
+    ";",
+    "|",
+    ">",
+    ">>",
+    "<",
+    "$(",
+    "`"
+  ],
+
+  "runtime_rules": {
+    "python": {
+      "blocked_arguments": [
+        "-c",
+        "--command"
+      ]
+    },
+
+    "node": {
+      "blocked_arguments": [
+        "-e",
+        "--eval",
+        "-p",
+        "--print"
+      ]
+    },
+
+    "java": {
+      "blocked_arguments": []
+    }
+  }
+}

@@ -1,0 +1,14 @@
+def ensure_command_is_safe(command, runtime):
+    policy = load_policy()
+
+    executable = command[0]
+
+    if executable in policy["executables"]:
+        raise RuntimeError(...)
+
+    for argument in command:
+        for operator in policy["operators"]:
+            if operator in argument:
+                raise RuntimeError(...)
+
+    return command

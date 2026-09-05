@@ -1,6 +1,7 @@
 import subprocess
 import sys
 from reuse import get_latest_commit_id
+from command_policy import ensure_command_is_safe
 
 class PythonHandler:
     def __init__(
@@ -77,7 +78,7 @@ class PythonHandler:
             "lint",
             "lint",
         )
-
+        command = ensure_command_is_safe(command, "python")
         subprocess.run(
             command,
             cwd=self.app_dir,
@@ -97,7 +98,7 @@ class PythonHandler:
             "security_analysis",
             "security",
         )
-
+        command = ensure_command_is_safe(command, "python")
         subprocess.run(
             command,
             cwd=self.app_dir,
@@ -115,7 +116,7 @@ class PythonHandler:
             "unit_tests",
             "test",
         )
-
+        command = ensure_command_is_safe(command, "python")
         subprocess.run(
             command,
             cwd=self.app_dir,
