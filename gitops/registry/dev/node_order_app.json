@@ -3,9 +3,9 @@
   "type": "App",
   "runtime": "node",
   "computeType": "fargate",
-  "context": "/home/runner/work/paragon/paragon/docker/node_order_app",
+  "context": "docker/node_order_app",
   "image": "paragon40/node_order_app",
-  "tag": "1f30fe9793-2026-09-03-21-30-40",
+  "tag": "0c1e0dfacc-2026-09-05-16-21-38",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -22,5 +22,5 @@
   "mount_path": "/tmp",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-09-05_13-17-35"
+  "CREATED_AT": "2026-09-05_16-22-44"
 }
