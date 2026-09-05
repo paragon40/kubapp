@@ -1,0 +1,19 @@
+name: Prepare Java CI
+description: Sets up Java, Maven cache, and OWASP Dependency-Check cache
+
+runs:
+  using: composite
+
+  steps:
+    - name: Set up Java
+      uses: actions/setup-java@v5
+      with:
+        java-version: "17"
+        distribution: "temurin"
+        cache: maven
+
+    - name: Cache OWASP Dependency-Check
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2/repository/org/owasp/dependency-check-data
+        key: ${{ runner.os }}-dependency-check

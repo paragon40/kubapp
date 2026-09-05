@@ -1,0 +1,40 @@
+{
+  "env": "dev",
+  "apps": {
+    "node_order_app": {
+      "image": "paragon40/node_order_app:1f30fe9793-2026-09-03-21-30-40",
+      "path": "/home/runner/work/paragon/paragon/docker/node_order_app",
+      "runtime": "node",
+      "extra_ci_data": {
+        "healthcheck": {
+          "app_port": 3000,
+          "host_port": 3000,
+          "endpoints": [
+            "/health"
+          ],
+          "expected_status": 200
+        }
+      },
+      "platform_file": null,
+      "secret_file": null
+    },
+    "py_cicd_app": {
+      "image": "paragon40/py_cicd_app:1f30fe9793-2026-09-03-21-30-56",
+      "path": "/home/runner/work/paragon/paragon/docker/py_cicd_app",
+      "runtime": "python",
+      "extra_ci_data": {
+        "healthcheck": {
+          "app_port": 8000,
+          "host_port": 8000,
+          "endpoints": [
+            "/health"
+          ],
+          "expected_status": 200
+        }
+      },
+      "platform_file": null,
+      "secret_file": null
+    }
+  },
+  "timestamp": "2026-09-03-21-31-07"
+}

@@ -2,8 +2,6 @@
 # OS / Editor / IDE
 ########################################
 
-sample/*
-
 # Linux
 *~
 .fuse_hidden*
@@ -47,6 +45,8 @@ $RECYCLE.BIN/
 *.pfx
 *.p12
 
+secrets.yml
+secrets.yaml
 vault.yml
 vault.yaml
 
@@ -68,15 +68,11 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-.pytest_cache/
-.ruff_cache/
 
 # Virtual environments
 venv/
 .venv/
 env/
-.env
-*.env
 ENV/
 
 # Python build artifacts
@@ -129,7 +125,6 @@ terraform.tfvars.json
 # Plan files
 *.tfplan
 *.out
-*.tfvars
 
 # Crash logs
 crash.log
@@ -182,7 +177,6 @@ temp/
 *.swp
 *.swo
 *.bak
-*.bak.*
 *.old
 
 ########################################
@@ -191,5 +185,3 @@ temp/
 
 site/
 docs/_build/
-artifacts/
-.backup/

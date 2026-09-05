@@ -1,8 +1,7 @@
 name: Activate Continuous Integration
 
 on:
-  push: {}
-
+  #push: {}
   workflow_dispatch:
     inputs:
       env:
@@ -14,9 +13,14 @@ on:
           - dev
           - prod
 
+permissions:
+  contents: write
+
 jobs:
   start_ci:
     runs-on: ubuntu-latest
+    env:
+        ENV: ${{ inputs.env || 'dev' }}
 
     steps:
       - name: Source code checkout
@@ -27,20 +31,25 @@ jobs:
           echo "Commit ID: ${{ github.sha }}"
 
       - name: Check Python
-        run: |
-          set -euo pipefail
-
-          if command -v python >/dev/null 2>&1; then
-            echo "Python command available"
-            python --version
-          else
-            echo "Python command not available, instaling...."
-            sudo apt update
-            sudo apt install python3 python3-pip
-          fi
+        run: bash scripts/ci/check_python.sh
 
       - name: Call Dependency Abstractor
         run: python scripts/ci/dependency_abstractor.py
+        env:
+            NVD_API_KEY: "${{ secrets.NVD_API_KEY }}"
+            DOCKER_USER: "${{ secrets.DOCKER_USER }}"
+            DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+            ENV: "${{ env.ENV }}"
+
+      - name: Commit App Build + Push
+        run: |
+          set -euo pipefail
+          ENV="${{ env.ENV }}"
+          echo "Current ENV: $ENV"
+          DIR1="docker"
+          DIR2="gitops"
+          MSG="[APP-BUILD-PUSH] Updated App Build + Push Registry from CI"
+          bash scripts/extra/commit.sh "$DIR1" "$DIR2" "$MSG"
 
       - name: Completion
         run: echo "Successfully completed CI workflow!"

@@ -1,7 +1,7 @@
 # kubapp
 
 ## Project Goals
-Kubapp aims to provide a simplified but production-oriented Kubernetes platform on AWS.
+Kubapp provides a production-oriented Kubernetes platform on AWS.
 
 ## The project was built to:
 - Automate Kubernetes infrastructure provisioning and management

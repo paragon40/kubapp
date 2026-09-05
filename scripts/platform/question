@@ -1,0 +1,3 @@
+
+1. Define the default app registry values for when kubapp.yml is absent
+2. we also need to use ThreadPoolEx bcause we need to handle multiple apps at once, not just one... each creates its file and saves. then finally, build.yml commits and them done

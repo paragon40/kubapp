@@ -21,9 +21,9 @@ def get_root():
       capture_output=True, text=True)
   if b.returncode != 0:
     return False
-  return b.stdout.strip()
+  return Path(b.stdout.strip())
 
 def start_timer():
     return time.perf_counter()
 
-#print(get_root())
+print(get_root())
