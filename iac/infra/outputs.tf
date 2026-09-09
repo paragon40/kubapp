@@ -83,7 +83,7 @@ output "full_domain" {
   value = local.full_domain
 }
 
-output "main_domain" {
+output "domain" {
   value = local.main_domain
 }
 
@@ -98,4 +98,9 @@ output "sys_monitor_ec2_role_arn" {
 output "sys_monitor_instance_profile_name" {
   value = module.iam_core.sys_monitor_instance_profile_name
 }
+
+output "dns_zone_id" {
+  value = local.dns_zone_id
+}
+
 

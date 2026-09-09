@@ -6,10 +6,8 @@ from pathlib import Path
 
 POLICY_FILE = Path(__file__).with_name("command_policy.json")
 
-
 class UnsafeCommandError(RuntimeError):
     pass
-
 
 def load_policy():
     if not POLICY_FILE.exists():
@@ -96,6 +94,48 @@ def check_operators(command, policy):
                     f"found in argument: {argument}"
                 )
 
+def check_blocked_file_extensions(
+    command,
+    runtime,
+    policy,
+):
+    rules = policy.get(
+        "runtime_rules",
+        {},
+    )
+
+    runtime_rule = rules.get(
+        runtime.lower(),
+    )
+
+    if not runtime_rule:
+        return
+
+    blocked_extensions = (
+        runtime_rule.get(
+            "blocked_file_extensions",
+            [],
+        )
+    )
+
+    executable = normalize_executable(
+        command[0],
+    )
+
+    if executable != runtime.lower():
+        return
+
+    for argument in command[1:]:
+        argument_lower = argument.lower()
+
+        for extension in blocked_extensions:
+            if argument_lower.endswith(
+                extension.lower()
+            ):
+                raise UnsafeCommandError(
+                    f"Blocked direct execution of "
+                    f"{extension} file: {argument}"
+                )
 
 def check_runtime_rules(command, runtime, policy):
     if not runtime:
@@ -120,14 +160,15 @@ def check_runtime_rules(command, runtime, policy):
 
 
 def ensure_command_is_safe(command, runtime=None):
-    if not runtime:
+    if not runtime or not isinstance(runtime, str):
         raise UnsafeCommandError(
-                f"Runtime cannot Be empty"
-            )
+          "Runtime must be a non-empty string"
+        )
+    runtime = runtime.strip().lower()
     policy = load_policy()
     validate_command(command)
     check_executable(command, policy)
     check_operators(command, policy)
     check_runtime_rules(command, runtime, policy)
-
+    check_blocked_file_extensions(command, runtime, policy,)
     return command

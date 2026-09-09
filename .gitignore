@@ -2,6 +2,8 @@
 # OS / Editor / IDE
 ########################################
 
+setup.env
+
 # Linux
 *~
 .fuse_hidden*
@@ -121,6 +123,7 @@ data/
 *.tfstate.*
 terraform.tfvars
 terraform.tfvars.json
+*.tfvars
 
 # Plan files
 *.tfplan

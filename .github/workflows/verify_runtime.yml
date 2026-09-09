@@ -108,7 +108,7 @@ jobs:
       ####################################################
       - name: Run prechecks
         run: |
-          bash scripts/prechecks.sh "${{ env.ENV }}"
+          bash scripts/gitops/prechecks.sh "${{ env.ENV }}"
 
       ####################################################
       # VERIFY RUNTIME
@@ -126,7 +126,7 @@ jobs:
           #DOM="${{ secrets.DOMAIN }}"
           DOM="rundailytest.online"
           export ARGOCD_OPTS="--server $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN"
-          bash scripts/postchecks.sh "$ENV" "$DOM"
+          bash scripts/gitops/postchecks.sh "$ENV" "$DOM"
 
       # FAILURE HANDLER
       - name: Suggest rollback

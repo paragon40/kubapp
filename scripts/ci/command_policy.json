@@ -56,6 +56,9 @@
       "blocked_arguments": [
         "-c",
         "--command"
+      ],
+      "blocked_file_extensions": [
+        ".py"
       ]
     },
 
@@ -65,11 +68,19 @@
         "--eval",
         "-p",
         "--print"
+      ],
+      "blocked_file_extensions": [
+        ".js",
+        ".mjs",
+        ".cjs"
       ]
     },
 
     "java": {
-      "blocked_arguments": []
+      "blocked_arguments": [],
+      "blocked_file_extensions": [
+        ".java"
+      ]
     }
   }
 }

@@ -1,6 +1,6 @@
 import subprocess
 from reuse import get_latest_commit_id
-
+from command_policy import ensure_command_is_safe
 
 class NodeHandler:
     def __init__(
@@ -76,6 +76,7 @@ class NodeHandler:
             "lint",
         )
 
+        command = ensure_command_is_safe(command, "node")
         subprocess.run(
             command,
             cwd=self.app_dir,
@@ -95,7 +96,7 @@ class NodeHandler:
             "security_analysis",
             "security",
         )
-
+        command = ensure_command_is_safe(command, "node")
         subprocess.run(
             command,
             cwd=self.app_dir,
@@ -115,7 +116,7 @@ class NodeHandler:
             "unit_tests",
             "test",
         )
-
+        command = ensure_command_is_safe(command, "node")
         subprocess.run(
             command,
             cwd=self.app_dir,

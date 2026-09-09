@@ -41,7 +41,6 @@ jobs:
           echo "Rolling back to $TAG"
           mode="${{github.event.inputs.mode}}"
           if [[ "$mode" == "target" ]]; then
-            # restore gitops state only
             git restore --source="$TAG" -- gitops/envs
             git add gitops/envs
 

@@ -1,6 +1,7 @@
 import subprocess
 import os
 from reuse import get_latest_commit_id
+from command_policy import ensure_command_is_safe
 
 class JavaHandler:
     def __init__(
@@ -71,6 +72,7 @@ class JavaHandler:
         )
 
         command = self.ensure_var_exist("lint", "lint")
+        command = ensure_command_is_safe(command, "java")
         subprocess.run(
             command,
             cwd=self.app_dir,
@@ -86,6 +88,7 @@ class JavaHandler:
         )
 
         command = self.ensure_var_exist("security_analysis", "security")
+        command = ensure_command_is_safe(command, "java")
         sec_var = self.extra_args.get("security_env", [])
         if sec_var:
           for a in sec_var:
@@ -111,6 +114,7 @@ class JavaHandler:
         )
 
         command = self.ensure_var_exist["unit_tests", "test"]
+        command = ensure_command_is_safe(command, "java")
         subprocess.run(
             command,
             cwd=self.app_dir,

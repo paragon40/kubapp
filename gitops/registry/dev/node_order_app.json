@@ -5,7 +5,7 @@
   "computeType": "fargate",
   "context": "docker/node_order_app",
   "image": "paragon40/node_order_app",
-  "tag": "0c1e0dfacc-2026-09-05-16-21-38",
+  "tag": "04203fe0c1-2026-09-07-13-51-04",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -22,5 +22,5 @@
   "mount_path": "/tmp",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-09-05_16-22-44"
+  "CREATED_AT": "2026-09-08_13-31-34"
 }

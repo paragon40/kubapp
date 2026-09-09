@@ -1,6 +1,6 @@
-
-main_domain          = "rundailytest.online"
+account_id           = "259183055744"
 region               = "us-east-1"
 env                  = "dev"
 alert_email          = "paragoninfonet@gmail.com"
 alert_email_password = "ijiegyoumcquwzpw"
+secret_file          = "../../gitops/secrets/grafana/grafana-secret.yaml"

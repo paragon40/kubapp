@@ -569,6 +569,7 @@ resource "helm_release" "kube_prometheus_stack" {
     aws_eks_addon.efs_csi,
     helm_release.fluentbit,
     helm_release.argocd,
-    kubernetes_namespace_v1.this["monitoring"]
+    kubernetes_namespace_v1.this["monitoring"],
+    null_resource.grafana_admin_secret
   ]
 }

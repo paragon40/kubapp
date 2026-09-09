@@ -13,7 +13,6 @@ MANIFEST = os.getenv("MANIFEST")
 ENV = os.getenv("ENV")
 MAX_WORKERS = 4
 
-
 def line():
     return "=" * 60
 
@@ -33,7 +32,7 @@ def get_paths():
     if not root:
         raise RuntimeError("Unable to determine repository root")
 
-    manifest = root / MANIFEST
+    manifest = root / MANIFEST / "final_ci_data.json"
     registry = root / REGISTRY / ENV
 
     return root, manifest, registry

@@ -4,7 +4,7 @@ ingress:
   className: alb
   baseDomain: rundailytest.online
   enableSubdomainRouting: true
-  certificateArn: arn:aws:acm:us-east-1:532918215760:certificate/88753851-e3e6-4911-94ce-7802a721aa41
+  certificateArn: arn:aws:acm:us-east-1:259183055744:certificate/fe004942-ae52-4529-9fcb-db58154589c7
   annotations:
     scheme: internet-facing
     targetType: ip
@@ -14,15 +14,9 @@ ingress:
       - HTTPS: 443
     group: kubapp-shared
 services:
-  - name: weather
+  - name: node-order-app
     enabled: true
     port: 80
-  - name: metrics
-    enabled: true
-    port: 80
-  - name: admin
-    port: 80
-    enabled: true
-  - name: urlshortener
+  - name: py-cicd-app
     enabled: true
     port: 80
