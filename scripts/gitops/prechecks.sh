@@ -1,28 +1,34 @@
 #!/bin/bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ -z "$ROOT" ]]; then
+    ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+fi
+
+echo "ROOT: $ROOT"
 echo "Running Prechecks..."
 
 kubectl cluster-info >/dev/null || {
-  echo "❌ Cluster unreachable"
-  exit 1
+    echo "❌ Cluster unreachable"
+    exit 1
 }
 
 kubectl get ns argocd >/dev/null || {
-  echo "❌ ArgoCD not installed"
-  exit 1
+    echo "❌ ArgoCD not installed"
+    exit 1
 }
 
 test -f "$ROOT/gitops/argocd/appset.yaml" || {
-  echo "❌ appset.yml missing"
-  exit 1
+    echo "❌ AppSet missing: $ROOT/gitops/argocd/appset.yaml"
+    exit 1
 }
 
 test -f "$ROOT/gitops/argocd/ingress.yaml" || {
-  echo "❌ ingress.yml missing"
-  exit 1
+    echo "❌ Ingress missing: $ROOT/gitops/argocd/ingress.yaml"
+    exit 1
 }
 
 echo "✅ Prechecks passed"

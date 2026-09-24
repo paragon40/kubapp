@@ -2,6 +2,17 @@ name: Activate Continuous Integration
 
 on:
   #push: {}
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
+    secrets:
+      DOCKER_USER:
+        required: true
+      DOCKER_PASS:
+        required: true
+
   workflow_dispatch:
     inputs:
       env:

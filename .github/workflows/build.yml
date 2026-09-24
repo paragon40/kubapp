@@ -33,12 +33,14 @@ on:
 
       manifest:
         description: CI manifest file
-        required: true
+        required: false
+        default: gitops/state
         type: string
 
       registry:
         description: Platform registry root directory
-        required: true
+        required: false
+        default: gitops/registry
         type: string
 
 permissions:

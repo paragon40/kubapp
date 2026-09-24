@@ -3,8 +3,9 @@ name: Validate & Reconcile Ingress
 on:
   workflow_run:
     workflows:
-      - "Add New App"
+      - "Add New Apps"
       - "Remove Orphan Apps"
+      - "Remove Service From Ingress"
     types: [completed]
 
   push:

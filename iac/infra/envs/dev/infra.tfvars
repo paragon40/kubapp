@@ -1,4 +1,3 @@
-CERT_ARN       = "arn:aws:acm:us-east-1:259183055744:certificate/a98757d4-69b3-4a6b-a01e-407622169dcc"
 main_domain    = "rundailytest.online"
 region         = "us-east-1"
 cluster_name   = "kubapp"

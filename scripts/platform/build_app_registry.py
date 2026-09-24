@@ -73,6 +73,13 @@ def load_ci_data(manifest):
 
     return apps
 
+def normalize_service_name(name):
+    name = name.strip().lower()
+    if "_" in name:
+        name = name.replace("_", "-")
+    if "." in name:
+        name = name.replace(".", "-")
+    return name
 
 def validate_ci_app(app_name, app):
     if not isinstance(app, dict):
@@ -229,6 +236,7 @@ def get_volume_data(app_name, platform):
     if not volume_name:
         volume_name = f"{app_name}-vol"
 
+    volume_name = normalize_service_name(volume_name)
     mounts = storage.get("volumeMounts", [])
 
     if mounts:
@@ -238,7 +246,7 @@ def get_volume_data(app_name, platform):
             "name",
             volume_name,
         )
-
+        mount_volume = normalize_service_name(mount_volume)
         mount_path = mount.get(
             "mountPath",
             "/tmp",
@@ -299,15 +307,18 @@ def construct_registry(app_name, app, platform):
         )
 
     app_env = deploy.get("env", ENV)
-
     if app_env != ENV:
         raise ValueError(
             f"{app_name}: platform env={app_env} "
             f"does not match ENV={ENV}"
         )
 
+    canonical_service = normalize_service_name(
+      service.get("name", app_name)
+    )
+
     volume_name, mount_volume, mount_path = (
-        get_volume_data(app_name, platform)
+        get_volume_data(canonical_service, platform)
     )
 
     service_monitor = features.get(
@@ -326,10 +337,7 @@ def construct_registry(app_name, app, platform):
     )
 
     registry = {
-        "service": service.get(
-            "name",
-            app_name,
-        ),
+        "service": canonical_service,
         "type": "App",
         "runtime": app["runtime"],
         "computeType": service.get(
@@ -387,7 +395,6 @@ def construct_registry(app_name, app, platform):
             "%Y-%m-%d_%H-%M-%S"
         ),
     }
-
     return registry
 
 
@@ -455,7 +462,7 @@ def validate_registry(app_name, registry):
 
 
 def write_registry(registry_dir, app_name, registry):
-    file_path = registry_dir / f"{app_name}.json"
+    file_path = registry_dir / f"{registry['service']}.json"
 
     with file_path.open("w") as file:
         json.dump(

@@ -1,13 +1,21 @@
-resource "null_resource" "grafana_admin_secret" {
+locals {
+  secret_path = "${path.root}/../../gitops/secrets"
+}
+
+resource "null_resource" "apply_secrets" {
   triggers = {
-    secret_file = filesha256(var.secret_file)
+    secrets_dir = sha256(join("", [
+      for file in fileset(local.secret_path, "**/*.yaml") :
+      filesha256("${local.secret_path}/${file}")
+    ]))
   }
 
   provisioner "local-exec" {
-    command = "${path.module}/secrets.sh ${var.secret_file}"
+    command = "python3 ${path.root}/../../scripts/gitops/apply_secrets.py"
   }
 
   depends_on = [
+    kubernetes_namespace_v1.this["argocd"],
     kubernetes_namespace_v1.this["monitoring"]
   ]
 }

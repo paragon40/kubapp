@@ -1,5 +1,5 @@
 {
-  "service": "py_cicd_app",
+  "service": "py-cicd-app",
   "type": "App",
   "runtime": "python",
   "computeType": "fargate",
@@ -17,10 +17,10 @@
   "svc_monitor_enabled": false,
   "volumes_enabled": false,
   "tmp_enabled": false,
-  "tmp_volume": "py_cicd_app-vol",
-  "mount_vol": "py_cicd_app-vol",
+  "tmp_volume": "py-cicd-app-vol",
+  "mount_vol": "py-cicd-app-vol",
   "mount_path": "/tmp",
   "NO_VARS": true,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-09-08_13-31-34"
+  "CREATED_AT": "2026-09-11_12-31-07"
 }

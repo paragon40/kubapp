@@ -55,10 +55,6 @@ output "external_dns_role_arn" {
   value = module.iam_irsa.external_dns_role_arn
 }
 
-output "cert_arn" {
-  value = var.CERT_ARN
-}
-
 output "env" {
   value = var.env
 }
@@ -87,7 +83,7 @@ output "domain" {
   value = local.main_domain
 }
 
-output "main_cert_arn" {
+output "cert_arn" {
   value = module.acm.acm_cert_arn
 }
 

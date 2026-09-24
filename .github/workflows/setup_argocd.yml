@@ -1,6 +1,12 @@
 name: Argocd And Gitops Bootstrap
 
 on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
+
   workflow_dispatch:
     inputs:
       env:
@@ -53,9 +59,7 @@ jobs:
             --name kubapp-dev
 
           export KUBECONFIG=~/.kube/config
-
           echo "✅ kubeconfig created"
-
           kubectl cluster-info
 
       - name: Check
@@ -74,7 +78,6 @@ jobs:
            PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY_GITHUB }}
            APP_ID: ${{ secrets.APP_ID_GITHUB }}
            REPO_URL: ${{ vars.REPO_URL }}
-           BASE_FILE: "$BASE_FILE"
 
       - name: Verify ArgoCD namespace access
         run: kubectl get ns argocd
@@ -126,7 +129,7 @@ jobs:
           set -euo pipefail
           terraform init -reconfigure -backend-config="envs/${ENV}/backend.hcl"
           DOMAIN=$(terraform output -raw domain 2>/dev/null || true)
-          CERT_ARN=$(terraform output -raw main_cert_arn 2>/dev/null || true)
+          CERT_ARN=$(terraform output -raw cert_arn 2>/dev/null || true)
           ZONE_ID=$(terraform output -raw dns_zone_id 2>/dev/null || true)
 
           if [[ -z "$DOMAIN" ]]; then

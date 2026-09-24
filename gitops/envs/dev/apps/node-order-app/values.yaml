@@ -1,8 +1,8 @@
-appName: node_order_app
+appName: node-order-app
 namespace: dev
 serviceAccount:
   create: true
-  name: node_order_app-sa
+  name: node-order-app-sa
   roleArn: arn:aws:iam::259183055744:role/kubapp-dev-app-pods-role
 serviceMonitor:
   enabled: false
@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/node_order_app
-  tag: 04203fe0c1-2026-09-07-13-51-04
+  tag: 79ecd1d6d6-2026-09-16-10-38-28
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -58,8 +58,8 @@ hpa:
   cpu: 70
   memory: 70
 meta:
-  staticFingerprint: 29021d15e74c3ca0a0a4b78958f91839134f2bd8bf311e765710321b655e3383
-  generatedAt: 2026-09-09T12:02:00Z
+  staticFingerprint: e242e5b5f0c9c672fd2175e1b951e276bdede1ea61b6512db5568d9ce5840954
+  generatedAt: 2026-09-16T11:48:45Z
   source: build-pipeline
 labels:
   compute: fargate

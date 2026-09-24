@@ -740,6 +740,11 @@ jobs:
             echo "❌ LEFTOVERS Variable Not Discovered"
           fi
 
+      - name: Remove Orphan Domains
+        env:
+          ZONE_ID: ${{ env.ZONE_ID }}
+        run: bash scripts/gitops/remove_orphan_domains.sh
+
       - name: Remove Route53 DNS App Config
         env:
           ZONE_ID: ${{ env.ZONE_ID }}

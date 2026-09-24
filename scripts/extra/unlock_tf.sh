@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-STACK="${1:-infra}"     # infra | k8s
+STACK="${1:-infra}"
 ENV="${2:-dev}"
 LOCK_ID="${3:-}"
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [[ -z "$ROOT_DIR" ]]; then
+    echo "[ERROR] Unable to determine project root."
+    echo "Using manula method"
+    ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+fi
 BASE_DIR="$ROOT_DIR/iac/$STACK"
 ENV_DIR="$BASE_DIR/envs/$ENV"
 

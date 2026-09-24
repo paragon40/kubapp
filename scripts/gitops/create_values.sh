@@ -33,6 +33,15 @@ banner() {
   line
 }
 
+normalize_name() {
+  local name="$1"
+  if [[ "$name" == *_* || "$name" == *.* ]]; then
+    name="${name//_/-}"
+    name="${name//./-}"
+  fi
+  echo "$name"
+}
+
 [[ -n "$ARTIFACT_FILE" ]] || fail "Usage: create_values.sh <artifact-json>"
 [[ -f "$ARTIFACT_FILE" ]] || fail "Artifact not found: $ARTIFACT_FILE"
 
@@ -63,7 +72,8 @@ NO_SECRETS=$(jq -r '.NO_SECRETS // false' "$ARTIFACT_FILE")
 SECRET_NAME="${SERVICE}-secrets"
 COMPUTE_TYPE=$(jq -r '.computeType // "fargate"' "$ARTIFACT_FILE")
 
-TARGET_DIR="gitops/envs/$ENV/apps/$SERVICE"
+TARGET_SERVICE=$(normalize_name "$SERVICE")
+TARGET_DIR="gitops/envs/$ENV/apps/$TARGET_SERVICE"
 TARGET_FILE="$TARGET_DIR/values.yaml"
 
 mkdir -p "$TARGET_DIR"

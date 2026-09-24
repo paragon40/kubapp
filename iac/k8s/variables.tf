@@ -30,7 +30,4 @@ variable "alert_email_password" {
   sensitive = true
 }
 
-variable "secret_file" {
-  description = "Path to grafana secret sops encyptrf"
-  type        = string
-}
+

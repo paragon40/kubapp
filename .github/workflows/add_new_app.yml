@@ -1,10 +1,11 @@
 name: Add New Apps
 
 on:
-  workflow_run:
-    workflows: ["Activate Pipeline Workflows"]
-    types:
-      - completed
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
 
   workflow_dispatch:
     inputs:
@@ -16,6 +17,7 @@ on:
         options: [dev, prod]
 env:
   STATE_FILE: ${{ github.workspace }}/gitops/state/current.json
+  ENV: ${{ inputs.env || 'dev' }}
 
 permissions:
   id-token: write
@@ -28,6 +30,9 @@ concurrency:
 jobs:
   provision:
     runs-on: ubuntu-latest
+    env:
+        ENV: ${{ inputs.env || 'dev' }}
+
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Check GitHub App secrets
@@ -202,7 +207,7 @@ jobs:
           ENV="${{ env.ENV }}"
           terraform init -reconfigure -backend-config="envs/$ENV/backend.hcl"
           DOMAIN=$(terraform output -raw domain 2>/dev/null || true)
-          CERT_ARN=$(terraform output -raw main_cert_arn 2>/dev/null || true)
+          CERT_ARN=$(terraform output -raw cert_arn 2>/dev/null || true)
           IRSA_ARN=$(terraform output -raw app_pods_role_arn 2>/dev/null || true)
 
           if [[ -z "$DOMAIN" ]]; then

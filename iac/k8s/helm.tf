@@ -187,7 +187,8 @@ resource "helm_release" "fluentbit" {
       }
 
       # ------------------------------------------------------------
-      # Schedule on all Linux nodes, including tainted app nodes but exclude fargte
+      # Schedule on all Linux nodes, including tainted app nodes but
+      # exclude fargte
       # ------------------------------------------------------------
       nodeSelector = {
         "kubernetes.io/os" = "linux"
@@ -217,9 +218,6 @@ resource "helm_release" "fluentbit" {
         }
       ]
 
-      # ------------------------------------------------------------
-      # Host log directories
-      # ------------------------------------------------------------
       daemonSetVolumes = [
         {
           name = "varlog"
@@ -570,6 +568,6 @@ resource "helm_release" "kube_prometheus_stack" {
     helm_release.fluentbit,
     helm_release.argocd,
     kubernetes_namespace_v1.this["monitoring"],
-    null_resource.grafana_admin_secret
+    null_resource.apply_secrets
   ]
 }

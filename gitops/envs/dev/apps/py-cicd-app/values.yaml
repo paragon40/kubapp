@@ -1,8 +1,8 @@
-appName: py_cicd_app
+appName: py-cicd-app
 namespace: dev
 serviceAccount:
   create: true
-  name: py_cicd_app-sa
+  name: py-cicd-app-sa
   roleArn: arn:aws:iam::259183055744:role/kubapp-dev-app-pods-role
 serviceMonitor:
   enabled: false
@@ -58,8 +58,8 @@ hpa:
   cpu: 70
   memory: 70
 meta:
-  staticFingerprint: d33fa1097510d031f1db6edbe8d6e45b6688a1d473c07328b096fd1465b1e74c
-  generatedAt: 2026-09-09T12:02:01Z
+  staticFingerprint: ded78601a2dcd3f2a816f299cdf1fbb3b8e304e702bc17465d9c39d3900aeac5
+  generatedAt: 2026-09-16T11:48:46Z
   source: build-pipeline
 labels:
   compute: fargate
