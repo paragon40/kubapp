@@ -7,8 +7,8 @@ if [[ -z "$ROOT" ]]; then
     echo "[ERROR] Unable to determine project root."
     exit 1
 fi
-source "$ROOT/reuse.sh"
 
+source "$ROOT/reuse.sh"
 STACKS=("infra" "k8s" "manifests")
 ENV="${1:-dev}"
 
@@ -20,9 +20,6 @@ echo "[INFO] ROOT: $ROOT"
 echo "=================================================="
 echo
 
-# =========================
-# LOAD SETUP FUNCTIONS
-# =========================
 echo "--------------------------------------------------"
 echo "[INFO] LOADING SOPS SETUP"
 echo "--------------------------------------------------"
@@ -43,9 +40,6 @@ fi
 
 echo
 
-# =========================
-# PREREQUISITES
-# =========================
 echo "--------------------------------------------------"
 echo "[INFO] CHECKING PREREQUISITES"
 echo "--------------------------------------------------"

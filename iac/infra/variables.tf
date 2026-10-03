@@ -19,20 +19,21 @@ variable "region" {
   type        = string
 }
 
-variable "access_iam_arn" {
-  type      = string
-  sensitive = true
+variable "admin_github" {
+  type = string
 }
 
-
-variable "admin_arn" {
-  type      = string
-  sensitive = true
+variable "admin_kubapp" {
+  type = string
 }
 
-variable "account_id" {
-  type      = string
-  sensitive = true
+variable "admin_sys_monitor" {
+  type = string
+}
+
+variable "cross_account_id" {
+  type    = string
+  default = null
 }
 
 variable "kubernetes_v" {
@@ -57,4 +58,10 @@ variable "log_groups" {
     retention = number
   }))
 }
+
+variable "sys_monitor_enabled" {
+  type    = bool
+  default = false
+}
+
 

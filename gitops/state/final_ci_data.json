@@ -2,7 +2,7 @@
   "env": "dev",
   "apps": {
     "node_order_app": {
-      "image": "paragon40/node_order_app:d0dedd76d7-2026-09-16-11-47-09",
+      "image": "paragon40/node_order_app:d4df75179e-2026-09-26-09-02-45",
       "path": "docker/node_order_app",
       "runtime": "node",
       "extra_ci_data": {
@@ -19,7 +19,7 @@
       "secret_file": null
     },
     "py_cicd_app": {
-      "image": "paragon40/py_cicd_app:d0dedd76d7-2026-09-16-11-47-22",
+      "image": "paragon40/py_cicd_app:d4df75179e-2026-09-26-09-02-59",
       "path": "docker/py_cicd_app",
       "runtime": "python",
       "extra_ci_data": {
@@ -36,5 +36,5 @@
       "secret_file": null
     }
   },
-  "timestamp": "2026-09-16-11-47-34"
+  "timestamp": "2026-09-26-09-03-10"
 }

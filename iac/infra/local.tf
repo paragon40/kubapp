@@ -1,7 +1,11 @@
+locals {
+  account_id = data.aws_caller_identity.current.account_id
+}
+
 data "terraform_remote_state" "dns" {
   backend = "s3"
   config = {
-    bucket = "kubapp-dns-tf-state-${var.account_id}"
+    bucket = "kubapp-dns-tf-state-${local.account_id}"
     key    = "dns/terraform.tfstate"
     region = "us-east-1"
   }
@@ -10,7 +14,7 @@ data "terraform_remote_state" "dns" {
 locals {
   name_prefix     = "${var.project}-${var.env}"
   cluster_name    = "${var.cluster_name}-${var.env}"
-  tf_state_bucket = "kubapp-tf-state-${var.account_id}"
+  tf_state_bucket = "kubapp-tf-state-${local.account_id}"
   main_domain     = data.terraform_remote_state.dns.outputs.domains[var.main_domain]["domain"]
   dns_zone_id     = data.terraform_remote_state.dns.outputs.domains[var.main_domain]["zone_id"]
 
@@ -24,7 +28,7 @@ locals {
 
     trace-id   = local.trace_id
     plane      = "infra"
-    owner      = "platform"
+    owner      = "kubapp-platform"
     managed-by = "terraform"
   }
 
@@ -48,6 +52,13 @@ locals {
       scope     = "system"
     }
 
+    fargate_logs = {
+      name      = "/aws/eks/${local.cluster_name}/fargate"
+      retention = var.log_groups.app_logs.retention
+      log_type  = "fargate"
+      scope     = "workload"
+    }
+
     # ----------------------------
     # EKS system log group
     # ----------------------------
@@ -66,38 +77,58 @@ locals {
     }
   }
 
-  fargate_workloads = {
-    dev = {
-      role = "applications"
-      labels = {
-        compute = "fargate"
-      }
+  all_workloads = {
+    labels_fargate = {
+      compute = "fargate"
     }
 
-    prod = {
-      role = "applications"
-      labels = {
-        compute = "fargate"
-      }
+    labels_ec2 = {
+      compute = "ec2"
     }
+  }
+
+  workloads = {
+    for name, workload in local.all_workloads :
+    name => merge(workload, {
+      env = var.env
+    })
   }
 
   base_node_config = {
     node_instance_type    = "t3.large"
-    node_desired_capacity = 2
+    node_desired_capacity = 1 #2
     node_min_capacity     = 1
-    node_max_capacity     = 3
+    node_max_capacity     = 2 #3
   }
 
   app_nodes = local.base_node_config
 
   sys_nodes = merge(local.base_node_config, {
-    node_desired_capacity = 2
-    node_max_capacity     = 2
+    node_desired_capacity = 1 #2
+    node_max_capacity     = 1 #2
   })
 
-  # Just for tag
-  full_domain = "${var.env}.${var.main_domain}"
+  full_domain                 = "${var.env}.${var.main_domain}"
+  sys_monitor_active          = var.sys_monitor_enabled
+  sys_monitor_rbac_group_name = "sys-monitor-gitops"
+  sys_monitor_ec2_role_arn    = "arn:aws:iam::${local.account_id}:role/sys-monitor-ec2-role"
+  cross_account_role          = "arn:aws:iam::${var.cross_account_id}:role/sys-monitor-ec2-role"
+  cross_account_role_arn = (
+    var.cross_account_id == "" ||
+    var.cross_account_id == null
+    ? null
+    : local.cross_account_role
+  )
+  enable_cross_account = (
+    local.sys_monitor_active &&
+    var.cross_account_id != "" &&
+    var.cross_account_id != null
+  )
 
+  admin_kubapp_arn         = "arn:aws:iam::${local.account_id}:user/${var.admin_kubapp}"
+  admin_sys_monitor_arn    = "arn:aws:iam::${var.cross_account_id}:user/${var.admin_sys_monitor}"
+  admin_github_arn         = "arn:aws:iam::${local.account_id}:role/${var.admin_github}"
+  kubapp_account_user      = split("/", local.admin_kubapp_arn)[1]
+  sys_monitor_account_user = split("/", local.admin_sys_monitor_arn)[1]
 }
 

@@ -33,8 +33,8 @@ locals {
       }
 
       ec2_app = {
-        description = "EC2 transaction app"
-        workload    = "backend"
+        description = "For EKS EC2 Node apps"
+        workload    = "ec2 nodes"
 
         ingress = [
           {
@@ -56,8 +56,8 @@ locals {
       }
 
       fargate_app = {
-        description = "Serverless user-facing workload app"
-        workload    = "frontend/user"
+        description = "For EKS Fargate workload apps"
+        workload    = "Fargaet"
 
         ingress = [
           {

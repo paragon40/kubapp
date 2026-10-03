@@ -74,10 +74,19 @@ module "security" {
 # IAM 
 ############################################
 module "iam_core" {
-  source          = "./modules/iam-core"
-  cluster_name    = local.cluster_name
-  account_id      = var.account_id
-  tf_state_bucket = local.tf_state_bucket
+  source                       = "./modules/iam-core"
+  cluster_name                 = local.cluster_name
+  account_id                   = local.account_id
+  tf_state_bucket              = local.tf_state_bucket
+  fargate_log_group_arn        = module.logging.log_group_arns["fargate_logs"]
+  enable_cross_account         = local.enable_cross_account
+  cross_account_role_arn       = local.cross_account_role_arn
+  kubapp_account_user          = local.kubapp_account_user
+  kubapp_account_user_arn      = local.admin_kubapp_arn
+  sys_monitor_account_user     = local.sys_monitor_account_user
+  sys_monitor_account_user_arn = local.admin_sys_monitor_arn
+  zone_id                      = local.dns_zone_id
+
   tags = merge(local.common_tags, {
     resource-type = "iam"
     layer         = "identity"
@@ -94,7 +103,7 @@ module "iam_irsa" {
   oidc_provider_arn = module.eks.oidc_provider_arn
   oidc_provider_url = module.eks.oidc_provider_url
   hosted_zone_id    = local.dns_zone_id
-  account_id        = data.aws_caller_identity.current.account_id
+  account_id        = local.account_id
 
   tags = merge(local.common_tags, {
     resource-type = "iam"
@@ -114,17 +123,18 @@ module "eks" {
   kubernetes_version = var.kubernetes_v
   vpc_id             = module.network.vpc_id
   private_subnet_ids = module.network.private_subnet_ids
-  sg_ids             = module.security.sg_ids
 
-  cluster_role_arn  = module.iam_core.eks_cluster_role_arn
-  node_role_arn     = module.iam_core.node_group_role_arn
-  fargate_role_arn  = module.iam_core.fargate_role_arn
-  fargate_workloads = local.fargate_workloads
-  #sys_monitor_ec2_role_arn                   = module.iam_core.sys_monitor_ec2_role_arn
+  cluster_role_arn                       = module.iam_core.eks_cluster_role_arn
+  node_role_arn                          = module.iam_core.node_group_role_arn
+  fargate_role_arn                       = module.iam_core.fargate_role_arn
+  fargate_workloads                      = local.workloads.labels_fargate
   sys_monitor_eks_cross_account_role_arn = module.iam_core.sys_monitor_eks_cross_account_role
+  enable_cross_account                   = local.enable_cross_account
+  sys_monitor_ec2_role_arn               = local.sys_monitor_ec2_role_arn
+  sys_monitor_rbac_group_name            = local.sys_monitor_rbac_group_name
 
-  access_iam_arn = var.access_iam_arn
-  admin_arn      = var.admin_arn
+  github_iam_arn = local.admin_github_arn
+  admin_iam_arn  = local.admin_kubapp_arn
 
   node_instance_type    = local.app_nodes.node_instance_type
   node_desired_capacity = local.app_nodes.node_desired_capacity

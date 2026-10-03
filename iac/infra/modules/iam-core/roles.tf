@@ -23,8 +23,13 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
+resource "aws_iam_role_policy_attachment" "eks_vpc_resource_controller" {
+  role       = aws_iam_role.eks_cluster.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
+}
+
 ############################################
-# NODE GROUP ROLE (EC2 WORKERS)
+# NODE GROUP ROLE
 ############################################
 resource "aws_iam_role" "node_group" {
   name = "${var.cluster_name}-nodegroup-role"
@@ -83,11 +88,33 @@ resource "aws_iam_role_policy_attachment" "fargate_attach" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
 }
 
-resource "aws_iam_role_policy_attachment" "fargate_cloudwatch_logs" {
-  role       = aws_iam_role.fargate.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+resource "aws_iam_policy" "fargate_cloudwatch_logs" {
+  name = "${var.cluster_name}-fargate-cloudwatch-logs"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+
+        Resource = "${var.fargate_log_group_arn}:*"
+      }
+    ]
+  })
+
+  tags = var.tags
 }
 
+resource "aws_iam_role_policy_attachment" "fargate_cloudwatch_logs" {
+  role       = aws_iam_role.fargate.name
+  policy_arn = aws_iam_policy.fargate_cloudwatch_logs.arn
+}
 
 ############################################
 # SYSTEM MONITOR EC2 ROLE
@@ -104,8 +131,28 @@ resource "aws_iam_role" "ec2_role" {
           Service = "ec2.amazonaws.com"
         }
         Action = "sts:AssumeRole"
+      },
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = var.kubapp_account_user_arn
+        }
+        Action = "sts:AssumeRole"
       }
     ]
+  })
+}
+
+resource "aws_iam_user_policy" "user_assume_sys_monitor" {
+  user = var.kubapp_account_user
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "sts:AssumeRole"
+      Resource = aws_iam_role.ec2_role.arn
+    }]
   })
 }
 
@@ -143,27 +190,24 @@ resource "aws_iam_role_policy_attachment" "ssm" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-resource "aws_iam_role_policy_attachment" "cloudwatch" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-}
-
 # INSTANCE PROFILE
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "sys-monitor-ec2-profile"
   role = aws_iam_role.ec2_role.name
 }
 
-# Cross-Account role
+###################3#######
+# CROSS ACCOUNR ROLE
+################################
 resource "aws_iam_role" "sys_monitor_cross_account_role" {
-  name = "sys-monitor-cross-account-role"
-
+  count = var.enable_cross_account ? 1 : 0
+  name  = "sys-monitor-cross-account-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect = "Allow"
       Principal = {
-        AWS = [aws_iam_role.ec2_role.arn, "arn:aws:iam::${var.account_id}:root"]
+        AWS = [var.cross_account_role_arn, var.sys_monitor_account_user_arn]
       }
       Action = "sts:AssumeRole"
     }]
@@ -171,13 +215,13 @@ resource "aws_iam_role" "sys_monitor_cross_account_role" {
 }
 
 resource "aws_iam_role_policy" "cross_account_policy" {
-  role = aws_iam_role.sys_monitor_cross_account_role.id
+  count = var.enable_cross_account ? 1 : 0
 
+  role = aws_iam_role.sys_monitor_cross_account_role[0].id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
 
-      # EKS full access
       {
         Effect = "Allow"
         Action = [
@@ -193,7 +237,6 @@ resource "aws_iam_role_policy" "cross_account_policy" {
         Effect = "Allow"
         Action = [
           "s3:GetObject",
-          "s3:PutObject",
           "s3:ListBucket"
         ]
         Resource = [
@@ -204,8 +247,11 @@ resource "aws_iam_role_policy" "cross_account_policy" {
 
       # Route53
       {
-        Effect   = "Allow"
-        Action   = "route53:*"
+        Effect = "Allow"
+        Action = [
+          "route53:ListHostedZones",
+          "route53:ListResourceRecordSets"
+        ]
         Resource = "*"
       }
     ]

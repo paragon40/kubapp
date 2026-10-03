@@ -34,6 +34,7 @@ command -v gh >/dev/null 2>&1 || {
 if [[ ! -f "$SETUP_ENV_FILE" ]]; then
   echo "❌ Missing $SETUP_ENV_FILE"
   echo "Create it from the project configuration template."
+  echo "OR check the Ending part of SETUP.md"
   exit 1
 fi
 
