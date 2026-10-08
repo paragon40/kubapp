@@ -7,6 +7,14 @@ variable "tf_state_bucket" {
   type = string
 }
 
+variable "database_account_arn" {
+  type = string
+}
+
+variable "enable_db_cross_account" {
+  type = bool
+}
+
 variable "enable_cross_account" {
   type = bool
 }
@@ -20,6 +28,14 @@ variable "kubapp_account_user_arn" {
 }
 
 variable "kubapp_account_user" {
+  type = string
+}
+
+variable "visitor_account_user_arn" {
+  type = string
+}
+
+variable "admin_github_arn" {
   type = string
 }
 

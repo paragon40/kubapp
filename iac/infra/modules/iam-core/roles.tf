@@ -14,7 +14,6 @@ resource "aws_iam_role" "eks_cluster" {
       Action = "sts:AssumeRole"
     }]
   })
-
   tags = var.tags
 }
 
@@ -97,7 +96,6 @@ resource "aws_iam_policy" "fargate_cloudwatch_logs" {
     Statement = [
       {
         Effect = "Allow"
-
         Action = [
           "logs:CreateLogStream",
           "logs:PutLogEvents"
@@ -255,6 +253,69 @@ resource "aws_iam_role_policy" "cross_account_policy" {
         Resource = "*"
       }
     ]
+  })
+}
+
+######################
+# DATABASE ROLE
+###############################
+resource "aws_iam_role" "db_cross_account_role" {
+  count = var.enable_db_cross_account ? 1 : 0
+
+  name = "db-cross-account-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        AWS = [var.database_account_arn, var.admin_github_arn]
+        #var.visitor_account_user_arn
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+  tags = var.tags
+}
+
+locals {
+  visitor_account_user = split("/", var.visitor_account_user_arn)[1]
+}
+
+resource "aws_iam_user_policy" "admin_assume_db_state_role" {
+  count = var.enable_db_cross_account ? 1 : 0
+  user  = local.visitor_account_user
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [{
+      Effect = "Allow"
+
+      Action   = "sts:AssumeRole"
+      Resource = aws_iam_role.db_cross_account_role[0].arn
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "db_cross_account_state" {
+  count = var.enable_db_cross_account ? 1 : 0
+
+  name = "db-cross-account-state-read"
+  role = aws_iam_role.db_cross_account_role[0].id
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "s3:GetObject"
+      ]
+      Resource = [
+        "arn:aws:s3:::${var.tf_state_bucket}",
+        "arn:aws:s3:::${var.tf_state_bucket}/*"
+      ]
+    }]
   })
 }
 

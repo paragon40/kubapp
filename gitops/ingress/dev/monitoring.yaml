@@ -4,7 +4,7 @@ ingress:
   className: alb
   baseDomain: rundailytest.online
   enableSubdomainRouting: true
-  certificateArn: arn:aws:acm:us-east-1:259183055744:certificate/01bb6356-a1b5-40ff-8457-605bf5f87df0
+  certificateArn: arn:aws:acm:us-east-1:259183055744:certificate/846e1fa2-069f-4d21-a679-e40efc282d60
   annotations:
     scheme: internet-facing
     targetType: ip

@@ -244,7 +244,7 @@ Ingress is allowed from:
 ingress
 ```
 
-### `app_cache`
+### `db_access`
 
 Defines the Security Group for the cache service.
 
@@ -306,7 +306,7 @@ The module currently provides workload-oriented groups such as:
 ingress
 ec2_app
 fargate_app
-app_cache
+db_access
 ```
 
 The resulting Security Group IDs are exported as a map.

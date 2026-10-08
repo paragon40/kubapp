@@ -27,13 +27,26 @@ variable "admin_kubapp" {
   type = string
 }
 
+variable "admin_visitor" {
+  type = string
+}
+
 variable "admin_sys_monitor" {
   type = string
 }
 
-variable "cross_account_id" {
-  type    = string
-  default = null
+variable "database_role" {
+  type = string
+}
+
+variable "cross_account_ids" {
+  type = map(string)
+  #default = null
+}
+
+variable "enable_db_local_account" {
+  type    = bool
+  default = true
 }
 
 variable "kubernetes_v" {
@@ -64,4 +77,11 @@ variable "sys_monitor_enabled" {
   default = false
 }
 
+variable "db_enabled" {
+  type    = bool
+  default = false
+}
 
+variable "db_kubapp_reciever_role" {
+  type = string
+}

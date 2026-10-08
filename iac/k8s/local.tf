@@ -28,6 +28,7 @@ locals {
   ec2_app_workloads      = data.terraform_remote_state.infra.outputs.ec2_app_workloads
   ec2_app_sg_id          = data.terraform_remote_state.infra.outputs.ec2_app_security_group_id
   cluster_sg_id          = data.terraform_remote_state.infra.outputs.cluster_security_group_id
+  db_access_sg_id        = data.terraform_remote_state.infra.outputs.db_access_security_group_id
 
   sys_monitor_rbac_name = data.terraform_remote_state.infra.outputs.sys_monitor_rbac_group_name
 

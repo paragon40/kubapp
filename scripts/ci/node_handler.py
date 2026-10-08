@@ -1,5 +1,4 @@
-import subprocess
-from reuse import get_latest_commit_id
+from reuse import get_latest_commit_id, run_command
 from command_policy import ensure_command_is_safe
 
 class NodeHandler:
@@ -56,10 +55,10 @@ class NodeHandler:
                 f"[{self.app_name}] Installing without package-lock.json"
             )
 
-        subprocess.run(
+        run_command(
             command,
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Installing dependencies",
         )
 
         print(
@@ -77,10 +76,10 @@ class NodeHandler:
         )
 
         command = ensure_command_is_safe(command, "node")
-        subprocess.run(
+        run_command(
             command,
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Lint",
         )
 
         print(
@@ -97,10 +96,11 @@ class NodeHandler:
             "security",
         )
         command = ensure_command_is_safe(command, "node")
-        subprocess.run(
+
+        run_command(
             command,
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Security Analysis",
         )
 
         print(
@@ -117,10 +117,10 @@ class NodeHandler:
             "test",
         )
         command = ensure_command_is_safe(command, "node")
-        subprocess.run(
+        run_command(
             command,
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Unit Tests",
         )
 
         print(
@@ -152,9 +152,9 @@ class NodeHandler:
             str(self.app_dir),
         ]
 
-        subprocess.run(
+        run_command(
             command,
-            check=True,
+            label=f"[{self.app_name}] Docker Build",
         )
 
         print(

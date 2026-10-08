@@ -55,6 +55,10 @@ output "vpc_id" {
   value = module.network.vpc_id
 }
 
+output "vpc_cidr" {
+  value = local.vpc_cidr
+}
+
 output "cluster_name" {
   value = module.eks.cluster_name
 }
@@ -139,4 +143,30 @@ output "dns_zone_id" {
   value = local.dns_zone_id
 }
 
+output "db_access_security_group_id" {
+  value = module.security.sg_ids["db_access"]
+}
 
+output "private_subnet_ids" {
+  value = module.network.private_subnet_ids
+}
+
+output "kubapp_db_cross_account_role_Visitor" {
+  value = local.enable_db_cross_account ? local.database_account_arn : null
+}
+
+output "kubapp_db_cross_account_role_Receiver" {
+  value = try(module.iam_core.database_account_terraform_role, null)
+}
+
+output "kubapp_reads_db_state" {
+  value = try(module.database.kubapp_reads_db_state, null)
+}
+
+output "db_lets_kubapp_read_state_arn" {
+  value = try(local.db_lets_kubapp_read_state_arn, null)
+}
+
+output "show_database_state" {
+  value = local.show_database_state
+}

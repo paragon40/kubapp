@@ -78,14 +78,14 @@ locals {
         ]
       }
 
-      app_cache = {
-        description = "Cache service"
-        workload    = "cache"
+      db_access = {
+        description = "Db access Boundary service"
+        workload    = "security"
 
         ingress = [
           {
-            from_port  = var.from_port_cache_app
-            to_port    = var.to_port_cache_app
+            from_port  = var.from_port_db_access
+            to_port    = var.to_port_db_access
             protocol   = "tcp"
             source_sgs = ["ec2_app", "fargate_app"]
           }

@@ -1,6 +1,5 @@
-import subprocess
 import sys
-from reuse import get_latest_commit_id
+from reuse import get_latest_commit_id, run_command
 from command_policy import ensure_command_is_safe
 
 class PythonHandler:
@@ -61,10 +60,10 @@ class PythonHandler:
                 f"{self.manifest.name}"
             )
 
-        subprocess.run(
+        run_command(
             command,
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Installing dependencies",
         )
 
         print(
@@ -79,10 +78,10 @@ class PythonHandler:
             "lint",
         )
         command = ensure_command_is_safe(command, "python")
-        subprocess.run(
+        run_command(
             command,
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Lint",
         )
 
         print(
@@ -99,10 +98,10 @@ class PythonHandler:
             "security",
         )
         command = ensure_command_is_safe(command, "python")
-        subprocess.run(
+        run_command(
             command,
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Security Analysis",
         )
 
         print(
@@ -117,10 +116,10 @@ class PythonHandler:
             "test",
         )
         command = ensure_command_is_safe(command, "python")
-        subprocess.run(
+        run_command(
             command,
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Unit Tests",
         )
 
         print(
@@ -142,7 +141,7 @@ class PythonHandler:
 
         id = get_latest_commit_id()
         image_name = f"{self.app_name}:{id}"
-        subprocess.run(
+        run_command(
             [
                 "docker",
                 "build",
@@ -153,17 +152,17 @@ class PythonHandler:
                 ".",
             ],
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Docker Build",
         )
 
-        subprocess.run(
+        run_command(
             [
                 "docker",
                 "image",
                 "inspect",
                 image_name,
             ],
-            check=True,
+            label=f"[{self.app_name}] Docker Image Inspect",
         )
 
         print(
@@ -171,4 +170,3 @@ class PythonHandler:
             f"{image_name}"
         )
         return image_name
-

@@ -1,10 +1,19 @@
-main_domain    = "rundailytest.online"
-region         = "us-east-1"
-cluster_name   = "kubapp"
-admin_arn      = "arn:aws:iam::259183055744:user/admin-timzapten"
-access_iam_arn = "arn:aws:iam::259183055744:role/GitHubTerraformRole-dev"
-account_id     = "259183055744"
-env            = "dev"
+main_domain             = "rundailytest.online"
+region                  = "us-east-1"
+cluster_name            = "kubapp"
+admin_kubapp            = "admin-timzapten"
+admin_sys_monitor       = "admin-timzapnine"
+admin_visitor           = "admin-timzapten"
+admin_github            = "GitHubTerraformRole-dev"
+database_role           = "db-terraform-role"
+db_kubapp_reciever_role = "db-lets-kubapp-read-state-role"
+cross_account_ids = {
+  "monitor" = "704048935807"
+  "db"      = "704048935807"
+}
+
+db_enabled = true
+env        = "dev"
 
 log_groups = {
   app_logs = {

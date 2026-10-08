@@ -42,7 +42,8 @@ resource "kubernetes_manifest" "fargate_app_sg_policy" {
       securityGroups = {
         groupIds = [
           local.fargate_app_sg_id,
-          local.cluster_sg_id
+          local.cluster_sg_id,
+          local.db_access_sg_id
         ]
       }
     }

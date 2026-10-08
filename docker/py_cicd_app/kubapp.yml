@@ -5,7 +5,7 @@ service:
 
 app:
   port: 8000
-  appUser: py_cicd_app
+  appUser: python_cicd_app
   healthPath: /health
   livePath: /health
   basePath: /

@@ -1,6 +1,5 @@
-import subprocess
 import os
-from reuse import get_latest_commit_id
+from reuse import get_latest_commit_id, run_command
 from command_policy import ensure_command_is_safe
 
 class JavaHandler:
@@ -56,10 +55,10 @@ class JavaHandler:
                 f"{self.manifest.name}"
             )
 
-        subprocess.run(
+        run_command(
             command,
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Installing dependencies",
         )
 
         print(
@@ -73,10 +72,10 @@ class JavaHandler:
 
         command = self.ensure_var_exist("lint", "lint")
         command = ensure_command_is_safe(command, "java")
-        subprocess.run(
+        run_command(
             command,
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Lint",
         )
 
         print(f"[{self.app_name}] Lint passed successfully")
@@ -100,7 +99,11 @@ class JavaHandler:
                     f"for OWASP Dependency-Check. "
                     f"'security_env' is detected. Remove it if NOT Neded.")
 
-        subprocess.run( command, cwd=self.app_dir, check=True, )
+        run_command(
+            command,
+            cwd=self.app_dir,
+            label=f"[{self.app_name}] Security Analysis",
+        )
         print(
             f"[{self.app_name}] "
             f"Security Analysis passed successfully"
@@ -114,10 +117,10 @@ class JavaHandler:
 
         command = self.ensure_var_exist("unit_tests", "test")
         command = ensure_command_is_safe(command, "java")
-        subprocess.run(
+        run_command(
             command,
             cwd=self.app_dir,
-            check=True,
+            label=f"[{self.app_name}] Unit Tests",
         )
 
         print(
@@ -143,7 +146,10 @@ class JavaHandler:
         command = [
             "docker", "build", "-t", image_name,
             "-f", str(self.dockerfile), str(self.app_dir), ]
-        subprocess.run(command, check=True,)
+        run_command(
+            command,
+            label=f"[{self.app_name}] Docker Build",
+        )
         print(
             f"[{self.app_name}] "
             f"Docker Build passed successfully"

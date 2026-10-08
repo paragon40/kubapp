@@ -3,9 +3,10 @@
   "type": "App",
   "runtime": "python",
   "computeType": "ec2",
+  "dbAccess": false,
   "context": "docker/py_cicd_app",
   "image": "paragon40/py_cicd_app",
-  "tag": "d4df75179e-2026-09-26-09-02-59",
+  "tag": "03eb6ca75a-2026-10-08-03-45-20",
   "registry": "docker.io",
   "namespace": "dev",
   "env": "dev",
@@ -22,5 +23,6 @@
   "mount_path": "/tmp",
   "NO_VARS": false,
   "NO_SECRETS": true,
-  "CREATED_AT": "2026-09-26_09-17-10"
+  "secret_file": "",
+  "CREATED_AT": "2026-10-08_03-46-10"
 }
