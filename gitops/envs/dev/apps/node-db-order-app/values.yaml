@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/node_db_order_app
-  tag: 03eb6ca75a-2026-10-08-03-45-05
+  tag: 091280c5f2-2026-10-08-08-43-22
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -59,7 +59,7 @@ hpa:
   memory: 70
 meta:
   staticFingerprint: 4d376c60cf63a391da2eae4e540b1bd78c536dc5d7ffeaca3d4b84415761399b
-  generatedAt: 2026-10-08T03:48:02Z
+  generatedAt: 2026-10-08T08:46:03Z
   source: build-pipeline
 db:
   enabled: true

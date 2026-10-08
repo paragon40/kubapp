@@ -17,23 +17,49 @@ app.get("/health", (request, response) => {
 });
 
 app.get("/orders", async (request, response) => {
-    response.status(200).json(await getOrders());
+    try {
+        const orders = await getOrders();
+
+        response.status(200).json(orders);
+    } catch (error) {
+        console.error("Failed to get orders:", error);
+
+        response.status(500).json({
+            error: "Failed to retrieve orders"
+        });
+    }
 });
 
 app.get("/orders/:id", async (request, response) => {
     const orderId = Number(request.params.id);
 
-    const order = await getOrderById(orderId);
-
-    if (!order) {
-        response.status(404).json({
-            error: "Order not found"
+    if (!Number.isInteger(orderId) || orderId < 1) {
+        response.status(400).json({
+            error: "Invalid order ID"
         });
 
         return;
     }
 
-    response.status(200).json(order);
+    try {
+        const order = await getOrderById(orderId);
+
+        if (!order) {
+            response.status(404).json({
+                error: "Order not found"
+            });
+
+            return;
+        }
+
+        response.status(200).json(order);
+    } catch (error) {
+        console.error("Failed to get order:", error);
+
+        response.status(500).json({
+            error: "Failed to retrieve order"
+        });
+    }
 });
 
 app.post("/orders", async (request, response) => {
@@ -43,7 +69,12 @@ app.post("/orders", async (request, response) => {
         quantity
     } = request.body;
 
-    if (!customer || !item || !Number.isInteger(quantity) || quantity < 1) {
+    if (
+        !customer ||
+        !item ||
+        !Number.isInteger(quantity) ||
+        quantity < 1
+    ) {
         response.status(400).json({
             error: "Invalid order data"
         });
@@ -51,13 +82,21 @@ app.post("/orders", async (request, response) => {
         return;
     }
 
-    const order = await createOrder(
-        customer,
-        item,
-        quantity
-    );
+    try {
+        const order = await createOrder(
+            customer,
+            item,
+            quantity
+        );
 
-    response.status(201).json(order);
+        response.status(201).json(order);
+    } catch (error) {
+        console.error("Failed to create order:", error);
+
+        response.status(500).json({
+            error: "Failed to create order"
+        });
+    }
 });
 
 module.exports = app;
