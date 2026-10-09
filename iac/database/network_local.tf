@@ -61,7 +61,7 @@ resource "aws_security_group" "database" {
     from_port       = local.database_port
     to_port         = local.database_port
     protocol        = "tcp"
-    security_groups = [local.sg_boundary_id]
+    security_groups = [local.sg_boundary_id, local.ec2_node_sg_id]
   }
 
   egress {

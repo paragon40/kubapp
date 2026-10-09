@@ -1,112 +1,54 @@
-# KubApp — Execution Flow
+# KUBAPP — Execution Flow
 
-KubApp is a Kubernetes-based platform that provisions infrastructure, manages application deployments through GitOps, and continuously verifies the state of the running platform.
+```mermaid
+flowchart TD
+    A(["Git Push"]) --> B["Continuous Integration<br/>Validate · Build · Prepare Artifacts"]
 
-## 1. Infrastructure Provisioning
+    B --> C["Terraform<br/>Provision AWS Infrastructure"]
 
-Terraform provisions the AWS foundation required by KubApp.
+    C --> C1["AWS Foundation<br/>VPC and Networking<br/>EKS · IAM and OIDC<br/>AWS Integrations · Remote State"]
 
-This includes:
+    C1 --> D["Kubernetes Platform Bootstrap"]
 
-* VPC and networking
-* EKS cluster
-* IAM roles and OIDC
-* Required AWS integrations
-* Terraform remote state
+    D --> D1["Platform Components<br/>ArgoCD · Ingress and Load Balancing<br/>External DNS · Storage Integrations<br/>Observability · Kubernetes Configuration"]
 
-The result is a ready Kubernetes environment.
+    D1 --> E["GitOps Configuration in Git"]
 
----
+    E --> F["ArgoCD<br/>Watch Git · Compare Desired and Live State<br/>Reconcile Differences"]
 
-## 2. Kubernetes Platform Bootstrap
+    F --> G["Kubernetes Workloads<br/>Application Deployment and Runtime"]
 
-The Kubernetes cluster is configured with the platform components required to run KubApp.
+    G --> H["Runtime Verification<br/>Workload Health · ArgoCD Sync and Health<br/>Service Availability · Ingress Routing<br/>Application Readiness"]
 
-This includes:
+    H --> I{"System Healthy?"}
 
-* ArgoCD
-* ingress and load balancing
-* external DNS
-* storage integrations
-* observability components
-* required Kubernetes configuration
+    I -- Yes --> J["Continue Monitoring"]
+    I -- No --> K["Detect and Investigate Failure"]
 
----
+    J --> L["Observability"]
+    K --> L
 
-## 3. GitOps Deployment
+    L --> L1["Operational Signals<br/>Metrics · Logs · Kubernetes Resources<br/>Workload Health · Infrastructure Behavior<br/>Deployment State"]
 
-Application configuration is maintained in Git.
+    L1 --> N["AI-Assisted Analysis<br/>Failure Analysis · Anomaly Detection<br/>Signal Correlation · Root Cause Insights"]
 
-ArgoCD watches the GitOps configuration and reconciles the Kubernetes cluster with the desired state.
+    N --> O["Detection & Alerting<br/>Identify Abnormal Behavior<br/>Generate Operational Alerts"]
 
-```text
-Git
- ↓
-ArgoCD
- ↓
-Kubernetes
- ↓
-Application
+    O --> M["Operational Feedback<br/>Investigation · Recommended Actions"]
+
+    M -. "Continuous Monitoring" .-> H
+
+    classDef source fill:#e8f1ff,stroke:#4776b9,color:#172b4d
+    classDef process fill:#f4f4f5,stroke:#71717a,color:#27272a
+    classDef decision fill:#fff4d6,stroke:#c28b20,color:#49340a
+    classDef observe fill:#e5f5eb,stroke:#39845a,color:#153d27
+    classDef ai fill:#f1e8ff,stroke:#8660b5,color:#34204d
+    classDef alert fill:#fff0e5,stroke:#c27839,color:#542b12
+
+    class A source
+    class B,C,C1,D,D1,E,F,G,H,K process
+    class I decision
+    class J,L,L1,M observe
+    class N ai
+    class O alert
 ```
-
-Changes to the GitOps configuration therefore become changes to the running workloads.
-
----
-
-## 4. Runtime Verification
-
-After deployment, KubApp verifies that the resulting system is operating correctly.
-
-Verification includes:
-
-* Kubernetes workload health
-* ArgoCD synchronization and health
-* service availability
-* ingress routing
-* application readiness
-
-The goal is to confirm that the desired state has actually become a healthy running system.
-
----
-
-## 5. Observability
-
-KubApp continuously collects operational information from the platform.
-
-The observability layer provides visibility into:
-
-* Kubernetes resources
-* application metrics
-* logs
-* workload health
-* infrastructure behavior
-* deployment state
-
-This provides the feedback needed to understand the platform while it is running.
-
----
-
-## Execution Model
-
-The current platform can therefore be summarized as:
-
-```text
-   Git Push
-     ↓
-Continous Integration
-     ↓
-Infrastructure
-     ↓
-Kubernetes
-     ↓
-GitOps
-     ↓
-Deployment
-     ↓
-Verification
-     ↓
-Observability
-```
-
-KubApp's goal is to keep the running Kubernetes environment aligned with the desired configuration stored in Git while providing the operational visibility needed to detect and investigate problems.
-

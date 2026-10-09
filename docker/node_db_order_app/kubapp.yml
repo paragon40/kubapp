@@ -1,4 +1,7 @@
 
 service:
+  compute: ec2
   dbAccess: true
+
+
 

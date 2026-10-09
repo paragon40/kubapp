@@ -3,7 +3,8 @@ set -euo pipefail
 
 ENV="${1:-dev}"
 PUSH="${PUSH:-false}"
-PUSH="${PUSH,,}"
+APPS="${APPS:-false}"
+ACTION="${ACTION:-rebase}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
@@ -14,13 +15,22 @@ if [[ -z "$ROOT" ]]; then
 fi
 
 source "$ROOT/reuse.sh"
-source "$ROOT/scripts/extra/git_functions.sh"
+source "$ROOT/scripts/extra/git_functions1.sh"
+source "$ROOT/scripts/extra/git_functions2.sh"
+source "$ROOT/scripts/extra/git_diagnosis.sh"
 
 echo "=============================="
 echo "ACTIVATION PIPELINE"
 echo "ENV: $ENV"
 echo "ROOT: $ROOT"
 echo "=============================="
+
+if [[ "${ACTION,,}" == "resolve" ||  "${ACTION,,}" == "diagnose" ]]; then
+    echo "[INFO] DIAGNOSING GIT STATE"
+    echo "--------------------------------------------------"
+    diagnose_git_history
+    exit 1
+fi
 
 ############################################
 # 1. GIT PREPARATION
@@ -45,6 +55,11 @@ echo "[ACTIVATE] RUNNING ENCRYPT SECRETS SCRIPT..."
 
 echo "[ACTIVATE] RUNNING VALIDATE GITOPS SCRIPT..."
 ./scripts/gitops/validate_gitops.sh
+
+if [[ "${APPS,,}" == "true" || "${APPS,,}" == "yes" ]]; then
+echo "[ACTIVATE] RUNNING VALIDATE APPLICATIONS SCRIPT..."
+./scripts/validate_kubapp_apps.sh
+fi
 
 ############################################
 # 4. GIT FINALIZATION

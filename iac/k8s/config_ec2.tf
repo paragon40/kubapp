@@ -17,7 +17,8 @@ resource "kubernetes_manifest" "ec2_app_sg_policy" {
 
       securityGroups = {
         groupIds = [
-          local.ec2_app_sg_id
+          local.ec2_app_sg_id,
+          local.db_access_sg_id
         ]
       }
     }

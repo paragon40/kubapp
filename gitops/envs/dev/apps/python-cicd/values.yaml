@@ -11,7 +11,7 @@ serviceMonitor:
 replicaCount: 2
 image:
   repository: paragon40/py_cicd_app
-  tag: 091280c5f2-2026-10-08-08-43-31
+  tag: 2fa6b7ba58-2026-10-08-13-30-00
   pullPolicy: Always
 service:
   type: ClusterIP
@@ -52,14 +52,14 @@ probes:
     initialDelaySeconds: 10
     periodSeconds: 15
 hpa:
-  enabled: true
+  enabled: false
   minReplicas: 2
   maxReplicas: 4
   cpu: 70
   memory: 70
 meta:
   staticFingerprint: 2a0f77290cb52fb4a241c71c8b5c6ce973f95393a379e2c2983f831efd0126ba
-  generatedAt: 2026-10-08T08:46:03Z
+  generatedAt: 2026-10-08T13:33:00Z
   source: build-pipeline
 storage:
   volumes:

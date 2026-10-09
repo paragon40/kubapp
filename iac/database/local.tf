@@ -21,6 +21,10 @@ locals {
     data.terraform_remote_state.infra.outputs.db_access_security_group_id
   )
 
+  ec2_node_sg_id = (
+    data.terraform_remote_state.infra.outputs.cluster_security_group_id
+  )
+
   account_vpc_cidr = (
     local.cross_mode_enabled
     ? "10.20.0.0/16"

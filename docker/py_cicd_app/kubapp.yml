@@ -1,7 +1,7 @@
 
 service:
   name: python-cicd
-  compute: ec2
+  compute: fargate
 
 app:
   port: 8000

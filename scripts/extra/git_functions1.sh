@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 GIT_SAFETY_BRANCH=""
+GIT_ACTIVATION_SAFETY_BRANCH=""
 GIT_STASH_CREATED="false"
-
 
 ############################################
 # SAFETY STATE
@@ -39,6 +39,36 @@ delete_git_safety_branch() {
     GIT_SAFETY_BRANCH=""
 }
 
+create_git_activation_safety_branch() {
+    GIT_ACTIVATION_SAFETY_BRANCH="git-activation-safety-$(date '+%Y%m%d-%H%M%S')-$$"
+
+    echo "[GIT] Creating activation safety branch: $GIT_ACTIVATION_SAFETY_BRANCH"
+
+    if ! git branch "$GIT_ACTIVATION_SAFETY_BRANCH"; then
+        echo "[GIT] ❌ Failed to create activation safety branch."
+        GIT_ACTIVATION_SAFETY_BRANCH=""
+        return 1
+    fi
+
+    echo "[GIT] ✅ Activation commit protected."
+}
+
+
+delete_git_activation_safety_branch() {
+    if [[ -z "$GIT_ACTIVATION_SAFETY_BRANCH" ]]; then
+        return 0
+    fi
+
+    echo "[GIT] Removing activation safety branch: $GIT_ACTIVATION_SAFETY_BRANCH"
+
+    if ! git branch -D "$GIT_ACTIVATION_SAFETY_BRANCH"; then
+        echo "[GIT] ❌ Failed to delete activation safety branch."
+        return 1
+    fi
+
+    echo "[GIT] ✅ Activation safety branch removed."
+    GIT_ACTIVATION_SAFETY_BRANCH=""
+}
 
 ############################################
 # WORKING TREE PROTECTION
@@ -198,7 +228,8 @@ prepare_git() {
     if ! rebase_git; then
         echo
         echo "[GIT] ❌ Local history could not be reconciled."
-        echo "[GIT] Safety branch preserved: $GIT_SAFETY_BRANCH"
+        echo "[GIT] Pre-activation safety branch: $GIT_SAFETY_BRANCH"
+        echo "[GIT] Activation safety branch: $GIT_ACTIVATION_SAFETY_BRANCH"
         echo
         return 1
     fi
@@ -240,10 +271,23 @@ finalize_git() {
     fi
 
     ############################################
+    # Protect activation commit.
+    ############################################
+    if ! create_git_activation_safety_branch; then
+        echo "[GIT] ❌ Cannot continue without activation safety."
+        return 1
+    fi
+
+    ############################################
     # First push attempt.
     ############################################
     if push_git; then
-        delete_git_safety_branch
+        if ! delete_git_safety_branch; then
+            return 1
+        fi
+        if ! delete_git_activation_safety_branch; then
+            return 1
+        fi
         return 0
     fi
 
@@ -267,16 +311,33 @@ finalize_git() {
     if ! rebase_git; then
         echo
         echo "[GIT] ❌ Second rebase requires manual intervention."
-        echo "[GIT] Safety branch preserved: $GIT_SAFETY_BRANCH"
+        echo "[GIT] Pre-activation safety branch: $GIT_SAFETY_BRANCH"
+        echo "[GIT] Activation safety branch: $GIT_ACTIVATION_SAFETY_BRANCH"
         echo
         return 1
     fi
 
     ############################################
+    # Update activation safety to rebased HEAD.
+    ############################################
+    echo "[GIT] Updating activation safety branch to rebased HEAD..."
+    if ! git branch -f "$GIT_ACTIVATION_SAFETY_BRANCH" HEAD; then
+        echo "[GIT] ❌ Failed to update activation safety branch."
+        echo "[GIT] Safety branch preserved: $GIT_ACTIVATION_SAFETY_BRANCH"
+        return 1
+    fi
+    echo "[GIT] ✅ Rebasing result protected."
+
+    ############################################
     # Retry push.
     ############################################
     if push_git; then
-        delete_git_safety_branch
+        if ! delete_git_safety_branch; then
+          return 1
+        fi
+        if ! delete_git_activation_safety_branch; then
+          return 1
+        fi
         return 0
     fi
 

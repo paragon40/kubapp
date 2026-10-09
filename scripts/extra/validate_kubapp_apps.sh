@@ -13,10 +13,7 @@ cd "$ROOT"
 
 DOCKER_DIR="$ROOT/docker"
 
-############################################
 # HELPERS
-############################################
-
 fail() {
     echo
     echo "[ERROR] ❌ $1"
@@ -24,22 +21,34 @@ fail() {
     exit 1
 }
 
-check_file() {
-    [[ -f "$1" ]] || fail "Missing required file: $1"
+check_yaml() {
+    local file="$1"
+    local label="$2"
+
+    yq e '.' "$file" >/dev/null \
+        || fail "$label: invalid YAML in ${file#$ROOT/}"
 }
 
-############################################
-# START
-############################################
+is_nonempty() {
+    local value="${1:-}"
+    value="${value//[[:space:]]/}"
+    [[ -n "$value" ]]
+}
 
+# PRECHECKS
+command -v yq >/dev/null 2>&1 \
+    || fail "yq is required but was not found."
+
+[[ -d "$DOCKER_DIR" ]] \
+    || fail "Missing docker directory: $DOCKER_DIR"
+
+# START
 echo
 echo "=================================================="
 echo "[INFO] KUBAPP APPLICATION VALIDATION"
 echo "[INFO] DIRECTORY: $DOCKER_DIR"
 echo "=================================================="
 echo
-
-[[ -d "$DOCKER_DIR" ]] || fail "Missing docker directory: $DOCKER_DIR"
 
 ############################################
 # DISCOVER APPLICATIONS
@@ -50,15 +59,20 @@ mapfile -t APPS < <(
         -mindepth 1 \
         -maxdepth 1 \
         -type d \
+        -name '*_app' \
         -printf '%f\n' |
         sort
 )
 
 if [[ ${#APPS[@]} -eq 0 ]]; then
-    fail "No application directories found under docker/"
+    fail "No KUBAPP applications found. Application directories must end in '_app'."
 fi
 
 echo "[INFO] Found ${#APPS[@]} application(s)"
+echo "---------------------------------------"
+for app in "${APPS[@]}"; do
+   echo "[INFO] $app"
+done
 echo
 
 ############################################
@@ -68,82 +82,142 @@ echo
 for app in "${APPS[@]}"; do
 
     APP_DIR="$DOCKER_DIR/$app"
+    CI_FILE="$APP_DIR/ci.yml"
 
     echo "--------------------------------------------------"
     echo "[INFO] APPLICATION: $app"
     echo "--------------------------------------------------"
 
     ########################################
-    # Dockerfile
+    # REQUIRED FILES
     ########################################
 
-    if [[ ! -f "$APP_DIR/Dockerfile" ]]; then
-        fail "$app: Dockerfile is required"
-    fi
+    [[ -f "$APP_DIR/Dockerfile" ]] \
+        || fail "$app: Dockerfile is required"
 
     echo "[INFO] ✅ Dockerfile found"
 
-    ########################################
-    # CI FILE
-    ########################################
+    [[ -f "$CI_FILE" ]] \
+        || fail "$app: ci.yml is required"
 
-    CI_FILE=""
-
-    if [[ -f "$APP_DIR/ci.yml" ]]; then
-        CI_FILE="$APP_DIR/ci.yml"
-    elif [[ -f "$APP_DIR/ci.yaml" ]]; then
-        CI_FILE="$APP_DIR/ci.yaml"
-    else
-        fail "$app: ci.yml or ci.yaml is required"
-    fi
-
-    echo "[INFO] ✅ CI file found: ${CI_FILE#$ROOT/}"
+    echo "[INFO] ✅ ci.yml found"
 
     ########################################
     # CI YAML SYNTAX
     ########################################
 
-    yq e '.' "$CI_FILE" >/dev/null \
-        || fail "$app: invalid YAML in ${CI_FILE#$ROOT/}"
+    check_yaml "$CI_FILE" "$app"
 
     ########################################
-    # CI STRUCTURE
+    # RUNTIME
     ########################################
 
-    if ! yq e 'has("runtime")' "$CI_FILE" | grep -q '^true$'; then
-        fail "$app: ci.yml must contain 'runtime'"
-    fi
+    RUNTIME_TYPE="$(yq e '.runtime | type' "$CI_FILE")"
 
-    if [[ "$(yq e '.runtime | type' "$CI_FILE")" != "!!str" ]]; then
-        fail "$app: ci.yml 'runtime' must be a string"
-    fi
+    [[ "$RUNTIME_TYPE" == "!!str" ]] \
+        || fail "$app: runtime must be a string"
 
-    if ! yq e 'has("ci_commands")' "$CI_FILE" | grep -q '^true$'; then
-        fail "$app: ci.yml must contain 'ci_commands'"
-    fi
+    RUNTIME="$(yq e -r '.runtime' "$CI_FILE")"
 
-    if [[ "$(yq e '.ci_commands | type' "$CI_FILE")" != "!!map" ]]; then
-        fail "$app: ci.yml 'ci_commands' must be a mapping"
-    fi
+    is_nonempty "$RUNTIME" \
+        || fail "$app: runtime must not be empty"
+
+    echo "[INFO] ✅ Runtime: $RUNTIME"
 
     ########################################
-    # OPTIONAL CI COMMANDS
+    # CI COMMANDS STRUCTURE
     ########################################
 
-    for command in lint security security_env test build; do
-        if yq e "has(\"ci_commands\") and .ci_commands | has(\"$command\")" "$CI_FILE" |
-            grep -q '^true$'; then
+    CI_COMMANDS_TYPE="$(yq e '.ci_commands | type' "$CI_FILE")"
 
-            TYPE="$(yq e ".ci_commands.$command | type" "$CI_FILE")"
+    [[ "$CI_COMMANDS_TYPE" == "!!map" ]] \
+        || fail "$app: ci_commands must be a mapping"
 
-            if [[ "$TYPE" != "!!seq" ]]; then
-                fail "$app: ci_commands.$command must be a list"
-            fi
+    CI_COMMANDS_COUNT="$(yq e '.ci_commands | length' "$CI_FILE")"
+
+    [[ "$CI_COMMANDS_COUNT" =~ ^[0-9]+$ ]] \
+        || fail "$app: unable to determine ci_commands entries"
+
+    (( CI_COMMANDS_COUNT > 0 )) \
+        || fail "$app: ci_commands must contain at least one stage"
+
+    echo "[INFO] ✅ CI commands mapping found"
+
+    ########################################
+    # VALIDATE DECLARED CI STAGES
+    ########################################
+
+    mapfile -t STAGES < <(
+        yq e -r '.ci_commands | keys | .[]' "$CI_FILE"
+    )
+
+    for stage in "${STAGES[@]}"; do
+
+        [[ -n "$stage" ]] \
+            || fail "$app: ci_commands contains an empty stage name"
+
+        ####################################
+        # EACH STAGE MUST BE A LIST
+        ####################################
+
+        STAGE_TYPE="$(
+            STAGE="$stage" \
+                yq e '.ci_commands[strenv(STAGE)] | type' "$CI_FILE"
+        )"
+
+        [[ "$STAGE_TYPE" == "!!seq" ]] \
+            || fail "$app: ci_commands.$stage must be a list"
+
+        STAGE_COUNT="$(
+            STAGE="$stage" \
+                yq e '.ci_commands[strenv(STAGE)] | length' "$CI_FILE"
+        )"
+
+        [[ "$STAGE_COUNT" =~ ^[0-9]+$ ]] \
+            || fail "$app: unable to validate ci_commands.$stage"
+
+        ####################################
+        # EMPTY STAGE POLICY
+        ####################################
+
+        # security_env may intentionally be empty.
+        if [[ "$stage" == "security_env" && "$STAGE_COUNT" -eq 0 ]]; then
+            echo "[INFO] ℹ️  ci_commands.security_env is empty (allowed)"
+            continue
         fi
+
+        (( STAGE_COUNT > 0 )) \
+            || fail "$app: ci_commands.$stage must not be empty"
+
+        ####################################
+        # VALIDATE COMMAND ENTRIES
+        ####################################
+
+        for ((i = 0; i < STAGE_COUNT; i++)); do
+
+            ITEM_TYPE="$(
+                STAGE="$stage" INDEX="$i" \
+                    yq e '.ci_commands[strenv(STAGE)][env(INDEX)] | type' "$CI_FILE"
+            )"
+
+            [[ "$ITEM_TYPE" == "!!str" ]] \
+                || fail "$app: ci_commands.$stage entries must be strings"
+
+            ITEM="$(
+                STAGE="$stage" INDEX="$i" \
+                    yq e -r '.ci_commands[strenv(STAGE)][env(INDEX)]' "$CI_FILE"
+            )"
+
+            is_nonempty "$ITEM" \
+                || fail "$app: ci_commands.$stage contains an empty command entry"
+
+        done
+
+        echo "[INFO] ✅ CI stage validated: $stage"
     done
 
     ########################################
-    # OPTIONAL KUBAPP FILE
+    # OPTIONAL KUBAPP CONFIGURATION
     ########################################
 
     KUBAPP_FILE=""
@@ -155,18 +229,14 @@ for app in "${APPS[@]}"; do
     fi
 
     if [[ -n "$KUBAPP_FILE" ]]; then
-        yq e '.' "$KUBAPP_FILE" >/dev/null \
-            || fail "$app: invalid YAML in ${KUBAPP_FILE#$ROOT/}"
-
+        check_yaml "$KUBAPP_FILE" "$app"
         echo "[INFO] ✅ kubapp configuration found"
     else
-        echo "[INFO] ℹ️  No kubapp.yml/yaml (optional)"
+        echo "[INFO] ℹ️  No kubapp configuration (optional)"
     fi
 
     ########################################
-    # OPTIONAL SECRETS
-    ########################################
-
+    # OPTIONAL SECRET FILES
     SECRET_FOUND="no"
 
     for secret_file in \
@@ -176,21 +246,20 @@ for app in "${APPS[@]}"; do
         "$APP_DIR/secret.yaml" \
         "$APP_DIR/.env"; do
 
-        if [[ -f "$secret_file" ]]; then
-            SECRET_FOUND="yes"
+        [[ -f "$secret_file" ]] || continue
 
-            case "$secret_file" in
-                *.yml|*.yaml)
-                    yq e '.' "$secret_file" >/dev/null \
-                        || fail "$app: invalid YAML in ${secret_file#$ROOT/}"
-                    ;;
-                *.env)
-                    echo "[INFO] ℹ️  .env found (encryption validation deferred)"
-                    ;;
-            esac
+        SECRET_FOUND="yes"
 
-            echo "[INFO] ✅ Optional secret file found: ${secret_file#$ROOT/}"
-        fi
+        case "$secret_file" in
+            *.yml|*.yaml)
+                check_yaml "$secret_file" "$app"
+                ;;
+            *.env)
+                echo "[INFO] ℹ️  .env found; encryption validation is handled separately"
+                ;;
+        esac
+
+        echo "[INFO] ✅ Optional secret file found: ${secret_file#$ROOT/}"
     done
 
     if [[ "$SECRET_FOUND" == "no" ]]; then
@@ -201,10 +270,6 @@ for app in "${APPS[@]}"; do
     echo
 done
 
-############################################
-# COMPLETE
-############################################
-
 echo "=================================================="
 echo "✅ KUBAPP APPLICATION VALIDATION PASSED"
-echo "=================================================="
+echo "==========================================================="
